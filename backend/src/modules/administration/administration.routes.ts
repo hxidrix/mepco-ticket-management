@@ -1,0 +1,22 @@
+import { Router } from 'express';
+import { body, param, query } from 'express-validator';
+
+import { validateRequest } from '../../middleware/validate-request.js';
+import { asyncHandler } from '../../shared/async-handler.js';
+import { sendSuccess } from '../../shared/api-response.js';
+import { requestContext } from '../../shared/request-context.js';
+import { authenticate, authorizeRoles } from '../auth/auth.middleware.js';
+import type { UserRole } from '../auth/auth.types.js';
+import { activeAnnouncements, deactivateAnnouncement, listAnnouncements, listAuditLogs, listStaffScopes, replaceStaffScopes, saveAnnouncement } from './administration.repository.js';
+
+export const administrationRouter=Router(); administrationRouter.use(authenticate);
+administrationRouter.get('/announcements',asyncHandler(async(request,response)=>sendSuccess(response,200,await activeAnnouncements(request.auth!.role))));
+administrationRouter.use(authorizeRoles('administrator'));
+administrationRouter.get('/announcements/all',asyncHandler(async(_request,response)=>sendSuccess(response,200,await listAnnouncements())));
+const announcementRules=[body('title').trim().isLength({min:3,max:180}),body('body').trim().isLength({min:3,max:10000}),body('startsAt').isISO8601(),body('endsAt').optional({values:'falsy'}).isISO8601(),body('isActive').isBoolean().toBoolean(),body('audiences').isArray({min:1,max:5}),body('audiences.*').isIn(['consumer','employee','technician','supervisor','administrator'])];
+administrationRouter.post('/announcements',...announcementRules,validateRequest,asyncHandler(async(request,response)=>{const id=await saveAnnouncement(request.auth!.id,null,request.body as {title:string;body:string;startsAt:string;endsAt?:string;isActive:boolean;audiences:UserRole[]},requestContext(request));sendSuccess(response,201,{id},'Announcement created');}));
+administrationRouter.put('/announcements/:id',param('id').isInt({min:1}).toInt(),...announcementRules,validateRequest,asyncHandler(async(request,response)=>{await saveAnnouncement(request.auth!.id,Number(request.params.id),request.body as {title:string;body:string;startsAt:string;endsAt?:string;isActive:boolean;audiences:UserRole[]},requestContext(request));sendSuccess(response,200,null,'Announcement updated');}));
+administrationRouter.delete('/announcements/:id',param('id').isInt({min:1}).toInt(),validateRequest,asyncHandler(async(request,response)=>{await deactivateAnnouncement(request.auth!.id,Number(request.params.id),requestContext(request));sendSuccess(response,200,null,'Announcement deactivated');}));
+administrationRouter.get('/audit',query('page').optional().isInt({min:1}).toInt(),query('pageSize').optional().isInt({min:1,max:100}).toInt(),query('search').optional().trim().isLength({max:140}),query('result').optional().isIn(['success','failure']),validateRequest,asyncHandler(async(request,response)=>{const page=Number(request.query.page??1);const pageSize=Number(request.query.pageSize??30);const result=await listAuditLogs({page,pageSize,...(typeof request.query.search==='string'&&request.query.search!==''?{search:request.query.search}:{}),...(typeof request.query.result==='string'?{result:request.query.result}:{})});sendSuccess(response,200,result.items,undefined,{page,pageSize,totalItems:result.totalItems,totalPages:Math.ceil(result.totalItems/pageSize)});}));
+administrationRouter.get('/scopes',asyncHandler(async(_request,response)=>sendSuccess(response,200,await listStaffScopes())));
+administrationRouter.put('/scopes/:userId',param('userId').isInt({min:1}).toInt(),body('scopes').isArray({max:20}),body('scopes.*.domain').isIn(['consumer','employee']),body('scopes.*.departmentId').optional({values:'falsy'}).isInt({min:1}).toInt(),body('scopes.*.categoryId').optional({values:'falsy'}).isInt({min:1}).toInt(),body('scopes.*.circleId').optional({values:'falsy'}).isInt({min:1}).toInt(),body('scopes.*.canSelfAssign').optional().isBoolean().toBoolean(),validateRequest,asyncHandler(async(request,response)=>{await replaceStaffScopes(request.auth!.id,Number(request.params.userId),(request.body as {scopes:Array<{domain:'consumer'|'employee';departmentId?:number;categoryId?:number;circleId?:number;canSelfAssign?:boolean}>}).scopes,requestContext(request));sendSuccess(response,200,null,'Staff scopes updated');}));

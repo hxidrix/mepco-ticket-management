@@ -40,6 +40,12 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-mepco_help_desk}
       LOG_LEVEL: info
       UPLOAD_DIR: /app/uploads
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-5242880}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-docker-local-access-secret-change-before-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-docker-local-refresh-secret-change-before-production}
+      ACCESS_TOKEN_TTL_MINUTES: ${ACCESS_TOKEN_TTL_MINUTES:-15}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      REOPEN_WINDOW_DAYS: ${REOPEN_WINDOW_DAYS:-7}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
     volumes:
@@ -83,4 +89,3 @@ services:
 volumes:
   mysql_data:
   attachment_data:
-

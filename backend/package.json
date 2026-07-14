@@ -8,30 +8,49 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && node scripts/copy-static.mjs",
     "start": "node dist/server.js",
+    "start:docker": "node dist/database/scripts/migrate.js && node dist/database/scripts/seed.js && node dist/server.js",
+    "db:migrate": "tsx src/database/scripts/migrate.ts",
+    "db:status": "tsx src/database/scripts/status.ts",
+    "db:seed": "tsx src/database/scripts/seed.ts",
+    "db:reset": "tsx src/database/scripts/reset.ts",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "db:backup": "tsx src/database/scripts/backup.ts",
+    "db:restore": "tsx src/database/scripts/restore.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "cross-env DB_NAME=mepco_help_desk_test tsx src/test/prepare-test-db.ts && cross-env DB_NAME=mepco_help_desk_test vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
     "mysql2": "^3.14.3",
     "pino": "^9.9.0",
     "pino-http": "^10.5.0",
+    "express-rate-limit": "^8.1.0",
+    "express-validator": "^7.2.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.34.0",
     "@types/cors": "^2.8.19",
+    "@types/cookie-parser": "^1.4.9",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "^4.1.8",
+    "cross-env": "^10.0.0",
     "eslint": "^9.34.0",
     "supertest": "^7.1.4",
     "tsx": "^4.20.5",
@@ -40,4 +59,3 @@
     "vitest": "^3.2.4"
   }
 }
-

@@ -31,8 +31,19 @@ function readNodeEnvironment(): NodeEnvironment {
   return value as NodeEnvironment;
 }
 
+function readSecret(name: string, fallback: string): string {
+  const value = readString(name, fallback);
+  if (value.length < 32) throw new Error(`${name} must contain at least 32 characters`);
+  return value;
+}
+
+const nodeEnv = readNodeEnvironment();
+const jwtAccessSecret = readSecret('JWT_ACCESS_SECRET', 'local-development-access-secret-change-me-now');
+const jwtRefreshSecret = readSecret('JWT_REFRESH_SECRET', 'local-development-refresh-secret-change-me');
+if (jwtAccessSecret === jwtRefreshSecret) throw new Error('JWT access and refresh secrets must be different');
+
 export const env = Object.freeze({
-  nodeEnv: readNodeEnvironment(),
+  nodeEnv,
   host: readString('HOST', '127.0.0.1'),
   port: readInteger('PORT', 5000, 1, 65_535),
   corsOrigin: readString('CORS_ORIGIN', 'http://localhost:5173'),
@@ -44,8 +55,14 @@ export const env = Object.freeze({
     password: readOptionalString('DB_PASSWORD'),
     name: readString('DB_NAME', 'mepco_help_desk'),
     connectionLimit: readInteger('DB_CONNECTION_LIMIT', 10, 1, 100),
+    mysqlBinDirectory: readOptionalString('MYSQL_BIN_DIR'),
   }),
   uploadDirectory: readString('UPLOAD_DIR', 'uploads'),
   maxUploadBytes: readInteger('MAX_UPLOAD_BYTES', 5_242_880, 1_024, 25_000_000),
+  jwtAccessSecret,
+  jwtRefreshSecret,
+  accessTokenTtlMinutes: readInteger('ACCESS_TOKEN_TTL_MINUTES', 15, 1, 1_440),
+  refreshTokenTtlDays: readInteger('REFRESH_TOKEN_TTL_DAYS', 7, 1, 90),
+  refreshCookieName: readString('REFRESH_COOKIE_NAME', 'mepco_refresh'),
+  reopenWindowDays: readInteger('REOPEN_WINDOW_DAYS', 7, 1, 90),
 });
-

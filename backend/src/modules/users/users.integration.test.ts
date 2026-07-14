@@ -1,0 +1,130 @@
+import request from 'supertest';
+import type { Response as SupertestResponse } from 'supertest';
+
+import { app } from '../../app.js';
+
+function token(response: SupertestResponse): string {
+  const body = response.body as { data?: { accessToken?: unknown } };
+  if (typeof body.data?.accessToken !== 'string') throw new Error('Expected an access token');
+  return body.data.accessToken;
+}
+
+async function login(mode: string, identifier: string): Promise<string> {
+  const response = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ mode, identifier, password: 'Demo@12345' })
+    .expect(200);
+  return token(response);
+}
+
+describe('user profile and account administration API', () => {
+  it('allows a requester to read and update only their own profile', async () => {
+    const accessToken = await login('consumer', '10000000000001');
+    const before = await request(app)
+      .get('/api/v1/users/me/profile')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    const profile = (before.body as { data: { profile: {
+      circleId: number; cityId: number; displayName: string; address: string;
+    } } }).data.profile;
+
+    const response = await request(app)
+      .put('/api/v1/users/me/profile')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        displayName: profile.displayName,
+        email: 'consumer.profile@example.test',
+        phone: '0300-1111111',
+        address: profile.address,
+        circleId: profile.circleId,
+        cityId: profile.cityId,
+        serviceAddress: 'Fictional updated service address',
+      })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      data: { profile: { role: 'consumer', serviceAddress: 'Fictional updated service address' } },
+    });
+    await request(app)
+      .get('/api/v1/users/admin')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(403);
+  });
+
+  it('supports the administrator account lifecycle with audit-safe soft deletion', async () => {
+    const adminToken = await login('staff', 'admin.demo');
+    const departments = await request(app).get('/api/v1/auth/registration-options').expect(200);
+    const departmentId = (departments.body as { data: { departments: Array<{ id: number }> } })
+      .data.departments[0]?.id;
+    if (departmentId === undefined) throw new Error('Expected a seeded department');
+
+    const created = await request(app)
+      .post('/api/v1/users/admin')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        role: 'technician', username: 'tech.milestone4', displayName: 'Milestone Four Technician',
+        email: 'm4-tech@example.test', phone: '0300-4444444', password: 'Demo@12345',
+        departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
+      })
+      .expect(201);
+    const profile = (created.body as { data: { profile: { id: number } } }).data.profile;
+
+    const list = await request(app)
+      .get('/api/v1/users/admin?search=tech.milestone4')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(list.body).toMatchObject({ meta: { totalItems: 1 } });
+
+    await request(app)
+      .put(`/api/v1/users/admin/${profile.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        displayName: 'Milestone Four Technician', email: 'm4-tech@example.test', phone: '0300-4444444',
+        status: 'suspended', statusReason: 'Fictional acceptance check', role: 'technician',
+        departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
+      })
+      .expect(200);
+    await request(app)
+      .post('/api/v1/auth/login')
+      .send({ mode: 'staff', identifier: 'tech.milestone4', password: 'Demo@12345' })
+      .expect(403);
+
+    await request(app)
+      .post(`/api/v1/users/admin/${profile.id}/reset-password`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ password: 'ResetDemo@456' })
+      .expect(200);
+
+    await request(app)
+      .delete(`/api/v1/users/admin/${profile.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const afterDelete = await request(app)
+      .get('/api/v1/users/admin?search=tech.milestone4')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    expect(afterDelete.body).toMatchObject({ data: [], meta: { totalItems: 0 } });
+  });
+
+  it('prevents an administrator from deactivating or deleting their own account', async () => {
+    const adminToken = await login('staff', 'admin.demo');
+    const me = await request(app)
+      .get('/api/v1/users/me/profile')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+    const profile = (me.body as { data: { profile: {
+      id: number; displayName: string; email: string; phone: string;
+      departmentId: number; designation: string; workLocation: string;
+    } } }).data.profile;
+
+    await request(app)
+      .put(`/api/v1/users/admin/${profile.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...profile, status: 'inactive', role: 'administrator' })
+      .expect(409);
+    await request(app)
+      .delete(`/api/v1/users/admin/${profile.id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(409);
+  });
+});

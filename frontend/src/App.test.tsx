@@ -10,27 +10,31 @@ vi.mock('framer-motion', async (importOriginal) => {
   };
 });
 
-vi.mock('./lib/api', () => ({
-  getPlatformStatus: vi.fn().mockResolvedValue({
-    service: 'mepco-help-desk-api',
-    status: 'ready',
-    database: 'connected',
-    timestamp: '2026-07-14T00:00:00.000Z',
-  }),
+vi.mock('./components/DotGridCanvas', () => ({
+  DotGridCanvas: () => <div data-testid="dot-grid" />,
+}));
+
+vi.mock('./lib/auth-api', () => ({
+  refreshRequest: vi.fn().mockRejectedValue(new Error('No existing session')),
+  registrationOptionsRequest: vi.fn().mockResolvedValue({ departments: [], circles: [] }),
+  getApiErrorMessage: vi.fn().mockReturnValue('Unable to sign in'),
+  loginRequest: vi.fn(),
+  logoutRequest: vi.fn(),
+  registerConsumerRequest: vi.fn(),
+  registerEmployeeRequest: vi.fn(),
 }));
 
 import App from './App';
 
-describe('foundation page', () => {
-  it('presents the MEPCO service proposition and real readiness slice', async () => {
+describe('authentication page', () => {
+  it('presents the branded identity modes after session discovery', async () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: /report\. track\. resolve\./i })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: /report\. track\. resolve\./i })).toBeVisible();
     expect(screen.getByAltText('MEPCO')).toBeVisible();
-    expect(await screen.findByText('API and database are ready')).toBeVisible();
-    expect(screen.getByRole('link', { name: /open api docs/i })).toHaveAttribute(
-      'href',
-      'http://localhost:5000/api-docs',
-    );
+    expect(screen.getByRole('button', { name: 'Consumer' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Employee' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Staff' })).toBeVisible();
+    expect(screen.getByTestId('dot-grid')).toBeInTheDocument();
   });
 });

@@ -5,9 +5,9 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     restoreMocks: true,
+    exclude: ['src/**/*.integration.test.ts', '**/node_modules/**', '**/dist/**'],
     coverage: {
       reporter: ['text', 'html'],
     },
   },
 });
-

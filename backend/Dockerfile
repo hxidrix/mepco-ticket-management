@@ -5,6 +5,7 @@ RUN npm ci
 
 FROM dependencies AS build
 COPY tsconfig*.json ./
+COPY scripts ./scripts
 COPY src ./src
 RUN npm run build
 
@@ -17,5 +18,4 @@ COPY --from=build /app/dist ./dist
 RUN mkdir -p uploads && chown -R node:node /app
 USER node
 EXPOSE 5000
-CMD ["node", "dist/server.js"]
-
+CMD ["npm", "run", "start:docker"]

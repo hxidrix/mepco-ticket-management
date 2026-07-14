@@ -2,7 +2,17 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'uploads', 'eslint.config.js', 'vitest.config.ts'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'uploads',
+      'scripts',
+      'eslint.config.js',
+      'vitest.config.ts',
+      'vitest.integration.config.ts',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

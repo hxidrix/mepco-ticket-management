@@ -28,6 +28,11 @@ describe('application foundation', () => {
     expect(body.openapi).toBe('3.1.0');
     expect(body.paths).toHaveProperty('/api/v1/health/live');
     expect(body.paths).toHaveProperty('/api/v1/health/ready');
+    expect(body.paths).toHaveProperty('/api/v1/auth/login');
+    expect(body.paths).toHaveProperty('/api/v1/tickets/{id}/attachments');
+    expect(body.paths).toHaveProperty('/api/v1/tickets/reports/export.csv');
+    expect(body.paths).toHaveProperty('/api/v1/administration/audit');
+    expect(Object.keys(body.paths as object).length).toBeGreaterThanOrEqual(30);
   });
 
   it('uses the standardized safe error envelope for unknown routes', async () => {

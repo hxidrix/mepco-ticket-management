@@ -7,10 +7,19 @@ const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api/v1
 export const apiClient = axios.create({
   baseURL: apiBaseUrl,
   timeout: 10_000,
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
   },
 });
+
+export function setApiAccessToken(token: string | null): void {
+  if (token === null) {
+    delete apiClient.defaults.headers.common.Authorization;
+    return;
+  }
+  apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
