@@ -1,0 +1,40 @@
+import axios from 'axios';
+
+import type { ApiSuccess, HealthData } from '../types/health';
+
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api/v1';
+
+export const apiClient = axios.create({
+  baseURL: apiBaseUrl,
+  timeout: 10_000,
+  headers: {
+    Accept: 'application/json',
+  },
+});
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isHealthResponse(value: unknown): value is ApiSuccess<HealthData> {
+  if (!isRecord(value) || value.success !== true || !isRecord(value.data)) return false;
+
+  return (
+    typeof value.data.service === 'string' &&
+    value.data.status === 'ready' &&
+    value.data.database === 'connected' &&
+    typeof value.data.timestamp === 'string'
+  );
+}
+
+export async function getPlatformStatus(signal?: AbortSignal): Promise<HealthData> {
+  const config = signal === undefined ? undefined : { signal };
+  const response = await apiClient.get('/health/ready', config);
+  const payload: unknown = response.data;
+
+  if (!isHealthResponse(payload)) {
+    throw new Error('The API returned an invalid health response');
+  }
+
+  return payload.data;
+}
