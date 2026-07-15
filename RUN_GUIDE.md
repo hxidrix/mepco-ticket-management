@@ -145,7 +145,7 @@ npm.cmd run dev:backend
 
 Keep this terminal open.
 
-The backend uses port `5000`. It connects the website to MySQL and handles login, tickets, files, reports, and administration.
+The backend uses port `5000`. It connects the website to MySQL and handles login, tickets, files, reports and administration.
 
 Check that the backend and database are ready by opening this URL in your browser:
 
