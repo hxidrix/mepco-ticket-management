@@ -4,6 +4,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/auth';
 import { BrandLogo } from './BrandLogo';
+import { DotGridCanvas } from './DotGridCanvas';
 
 interface NavigationItem {
   label: string;
@@ -34,6 +35,10 @@ export function AppShell() {
 
   return (
     <div className="workspace-shell">
+      <div className="workspace-background" aria-hidden="true">
+        <DotGridCanvas />
+        <div className="workspace-background__glow" />
+      </div>
       <aside className={menuOpen ? 'workspace-sidebar is-open' : 'workspace-sidebar'}>
         <div className="workspace-sidebar__brand"><BrandLogo /></div>
         <nav aria-label="Primary navigation">
