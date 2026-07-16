@@ -14,7 +14,9 @@ import {
   addTicketAttachment,
   addTicketComment,
   changeTicketPriority,
+  closeTicketWithReview,
   createTicket,
+  deleteTicket,
   exportTicketsCsv,
   getTicketDetail,
   getTicketAttachment,
@@ -23,7 +25,7 @@ import {
   ticketMetrics,
   transitionTicket,
 } from './tickets.repository.js';
-import type { TicketCreateInput, TicketDomain, TicketListInput } from './tickets.types.js';
+import type { TicketClosureReviewInput, TicketCreateInput, TicketDomain, TicketListInput } from './tickets.types.js';
 
 export const ticketsRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { files: 1, fileSize: env.maxUploadBytes } });
@@ -37,7 +39,7 @@ ticketsRouter.post(
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('circleId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('cityId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
-  body('priorityId').isInt({ min: 1 }).toInt(),
+  body('priorityId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('otherCategory').optional({ values: 'falsy' }).trim().isLength({ max: 180 }),
   body('otherComplaintType').optional({ values: 'falsy' }).trim().isLength({ max: 255 }),
   body('locationDetails').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
@@ -154,6 +156,24 @@ ticketsRouter.post(
 );
 
 ticketsRouter.post(
+  '/:id/close-review', authorizeRoles('consumer', 'employee'),
+  param('id').isInt({ min: 1 }).toInt(),
+  body('issueResolved').isBoolean().toBoolean(),
+  body('satisfactionRating').isInt({ min: 1, max: 5 }).toInt(),
+  body('reviewText').optional({ values: 'falsy' }).trim().isLength({ max: 2000 }),
+  body('version').isInt({ min: 1 }).toInt(), validateRequest,
+  asyncHandler(async (request, response) => {
+    await closeTicketWithReview(
+      request.auth!,
+      Number(request.params.id),
+      request.body as TicketClosureReviewInput,
+      requestContext(request),
+    );
+    sendSuccess(response, 200, null, 'Ticket closed and review submitted successfully');
+  }),
+);
+
+ticketsRouter.post(
   '/:id/priority', authorizeRoles('supervisor', 'administrator'),
   param('id').isInt({ min: 1 }).toInt(), body('priorityId').isInt({ min: 1 }).toInt(),
   body('reason').trim().isLength({ min: 3, max: 1000 }), body('version').isInt({ min: 1 }).toInt(), validateRequest,
@@ -182,6 +202,20 @@ ticketsRouter.post(
     if (request.file === undefined) throw new AppError(400, 'ATTACHMENT_REQUIRED', 'Select a file to upload');
     const attachmentId = await addTicketAttachment(request.auth!, Number(request.params.id), request.file, requestContext(request));
     sendSuccess(response, 201, { attachmentId }, 'Attachment uploaded successfully');
+  }),
+);
+
+ticketsRouter.delete(
+  '/:id', authorizeRoles('administrator'),
+  param('id').isInt({ min: 1 }).toInt(),
+  body('reason').trim().isLength({ min: 3, max: 500 }),
+  body('version').isInt({ min: 1 }).toInt(), validateRequest,
+  asyncHandler(async (request, response) => {
+    const input = request.body as { reason: string; version: number };
+    await deleteTicket(
+      request.auth!, Number(request.params.id), input.reason, input.version, requestContext(request),
+    );
+    sendSuccess(response, 200, null, 'Ticket deleted successfully');
   }),
 );
 

@@ -10,8 +10,8 @@ All records and credentials in this repository are fictional. The application ha
 - Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
 - Role-specific profiles and administrator account lifecycle controls.
 - Complete SRS reference catalog: 14 departments, 11 circles, 52 cities, 18 categories, 154 complaint types, priorities, statuses, and protected `Other` values.
-- Requester ticket submission with dependent catalog fields, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
-- Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
+- Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
+- Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
 - Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications.
 - Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and supervisor CSV export.
 - Administrator master data, announcements/audiences, staff routing scopes, users, and immutable audit-log views.

@@ -13,9 +13,10 @@ async function login(mode: 'consumer' | 'employee' | 'staff', identifier: string
     .send({ mode, identifier, password: 'Demo@12345' }).expect(200));
 }
 async function firstConsumerTicket(accessToken: string): Promise<number> {
-  const response = await request(app).get('/api/v1/tickets?pageSize=1')
+  const response = await request(app).get('/api/v1/tickets?pageSize=100')
     .set('Authorization', `Bearer ${accessToken}`).expect(200);
-  const id = (response.body as { data: Array<{ id: number }> }).data[0]?.id;
+  const id = (response.body as { data: Array<{ id: number; statusSlug: string }> }).data
+    .find((ticket) => !['closed', 'cancelled'].includes(ticket.statusSlug))?.id;
   if (id === undefined) throw new Error('Seed consumer ticket missing');
   return id;
 }

@@ -9,11 +9,14 @@ import { AppError } from '../../shared/app-error.js';
 import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext } from '../auth/auth.types.js';
 import type {
-  TicketActor, TicketCreateInput, TicketDomain, TicketListInput,
+  TicketActor, TicketClosureReviewInput, TicketCreateInput, TicketDomain, TicketListInput,
 } from './tickets.types.js';
+import { classifyConsumerPriority } from './consumer-priority.js';
+import { consumerRoutingDepartment } from './ticket-routing.js';
 
 type SqlValue = string | number | null;
 interface IdRow extends RowDataPacket { id: number; name: string }
+interface PriorityRow extends IdRow { slug: string }
 interface CategoryRow extends RowDataPacket {
   id: number; name: string; domain: TicketDomain; departmentId: number | null; departmentName: string | null;
 }
@@ -30,6 +33,10 @@ interface TicketRow extends RowDataPacket {
   version: number; createdAt: Date; updatedAt: Date; resolvedAt: Date | null; closedAt: Date | null;
 }
 interface DetailChildRow extends RowDataPacket { id: number }
+interface TicketReviewRow extends RowDataPacket {
+  id: number; issueResolved: boolean; satisfactionRating: number; reviewText: string | null;
+  requesterId: number; requesterName: string; createdAt: Date;
+}
 interface WorkflowRow extends RowDataPacket {
   id: number; requesterId: number; domain: TicketDomain; departmentId: number | null;
   categoryId: number; circleId: number | null; assigneeId: number | null;
@@ -37,6 +44,9 @@ interface WorkflowRow extends RowDataPacket {
 }
 interface TechnicianRow extends RowDataPacket {
   id: number; displayName: string; departmentName: string | null; activeAssignments: number;
+}
+interface AutoAssigneeRow extends RowDataPacket {
+  id: number; displayName: string; activeAssignments: number;
 }
 interface MetricRow extends RowDataPacket { label: string; count: number }
 interface SummaryMetricRow extends RowDataPacket {
@@ -111,10 +121,6 @@ async function validateCreation(
   );
   const complaintType = types[0];
   if (complaintType === undefined) throw new AppError(422, 'INVALID_COMPLAINT_TYPE', 'The complaint type does not belong to this category');
-  const [priorities] = await connection.execute<IdRow[]>(
-    'SELECT id, name FROM priorities WHERE id = ? AND is_active = TRUE', [input.priorityId],
-  );
-  if (priorities[0] === undefined) throw new AppError(422, 'INVALID_PRIORITY', 'The selected priority is unavailable');
   if (category.name === 'Other' && (input.otherCategory?.trim() ?? '') === '') {
     throw new AppError(422, 'OTHER_CATEGORY_REQUIRED', 'Please describe the other category');
   }
@@ -123,6 +129,8 @@ async function validateCreation(
   }
   let departmentId = category.departmentId;
   let departmentName = category.departmentName;
+  let routingDepartmentId = category.departmentId;
+  let routingDepartmentName = category.departmentName;
   let circle: IdRow | undefined;
   let city: IdRow | undefined;
   if (domain === 'consumer') {
@@ -134,6 +142,12 @@ async function validateCreation(
     const [cities] = await connection.execute<IdRow[]>('SELECT id, name FROM cities WHERE id = ? AND circle_id = ? AND is_active = TRUE', [input.cityId, input.circleId]);
     [city] = cities;
     if (circle === undefined || city === undefined) throw new AppError(422, 'INVALID_LOCATION', 'The circle and city selection is invalid');
+    routingDepartmentName = consumerRoutingDepartment(category.name);
+    const [routingDepartments] = await connection.execute<IdRow[]>(
+      'SELECT id, name FROM departments WHERE name = ? AND is_active = TRUE',
+      [routingDepartmentName],
+    );
+    routingDepartmentId = routingDepartments[0]?.id ?? null;
     departmentId = null; departmentName = null;
   } else {
     const requestedDepartment = input.departmentId ?? category.departmentId;
@@ -145,8 +159,56 @@ async function validateCreation(
       throw new AppError(422, 'CATEGORY_DEPARTMENT_MISMATCH', 'The category does not belong to this department');
     }
     departmentId = department.id; departmentName = department.name;
+    routingDepartmentId = department.id; routingDepartmentName = department.name;
   }
-  return { category, complaintType, departmentId, departmentName, circle, city };
+  let priority: PriorityRow | undefined;
+  if (domain === 'consumer') {
+    const prioritySlug = classifyConsumerPriority({
+      categoryName: category.name,
+      complaintTypeName: complaintType.name,
+      subject: input.subject,
+      description: input.description,
+      ...(input.otherCategory === undefined ? {} : { otherCategory: input.otherCategory }),
+      ...(input.otherComplaintType === undefined ? {} : { otherComplaintType: input.otherComplaintType }),
+    });
+    const [priorities] = await connection.execute<PriorityRow[]>(
+      'SELECT id, name, slug FROM priorities WHERE slug = ? AND is_active = TRUE', [prioritySlug],
+    );
+    [priority] = priorities;
+  } else {
+    if (input.priorityId === undefined) {
+      throw new AppError(422, 'PRIORITY_REQUIRED', 'Select a priority for the employee ticket');
+    }
+    const [priorities] = await connection.execute<PriorityRow[]>(
+      'SELECT id, name, slug FROM priorities WHERE id = ? AND is_active = TRUE', [input.priorityId],
+    );
+    [priority] = priorities;
+  }
+  if (priority === undefined) throw new AppError(422, 'INVALID_PRIORITY', 'The ticket priority is unavailable');
+  return {
+    category, complaintType, departmentId, departmentName, routingDepartmentId,
+    routingDepartmentName, circle, city, priority,
+  };
+}
+
+async function leastBusyTechnician(
+  connection: PoolConnection,
+  departmentId: number | null,
+): Promise<AutoAssigneeRow | undefined> {
+  if (departmentId === null) return undefined;
+  const [technicians] = await connection.execute<AutoAssigneeRow[]>(
+    `SELECT u.id, u.display_name AS displayName, COUNT(a.id) AS activeAssignments
+     FROM users u
+     JOIN roles r ON r.id = u.role_id AND r.name = 'technician'
+     JOIN staff_profiles sp ON sp.user_id = u.id AND sp.department_id = ?
+     LEFT JOIN assignments a ON a.technician_id = u.id AND a.ended_at IS NULL
+     WHERE u.status = 'active' AND u.deleted_at IS NULL
+     GROUP BY u.id, u.display_name
+     ORDER BY activeAssignments ASC, u.id ASC
+     LIMIT 1`,
+    [departmentId],
+  );
+  return technicians[0];
 }
 
 export async function createTicket(
@@ -169,9 +231,14 @@ export async function createTicket(
       if (existing[0] !== undefined) { await connection.commit(); return existing[0]; }
     }
     const validated = await validateCreation(connection, domain, input);
-    const [statuses] = await connection.execute<IdRow[]>(`SELECT id, name FROM ticket_statuses WHERE slug = 'new' AND is_active = TRUE`);
+    const assignee = await leastBusyTechnician(connection, validated.routingDepartmentId);
+    const initialStatusSlug = assignee === undefined ? 'new' : 'assigned';
+    const [statuses] = await connection.execute<PriorityRow[]>(
+      'SELECT id, name, slug FROM ticket_statuses WHERE slug = ? AND is_active = TRUE',
+      [initialStatusSlug],
+    );
     const statusId = statuses[0]?.id;
-    if (statusId === undefined) throw new Error('New ticket status is not configured');
+    if (statusId === undefined) throw new Error(`${initialStatusSlug} ticket status is not configured`);
     let number = ticketNumber();
     let result: ResultSetHeader | null = null;
     for (let attempt = 0; attempt < 4; attempt += 1) {
@@ -180,14 +247,15 @@ export async function createTicket(
           `INSERT INTO tickets
            (ticket_number, idempotency_key, requester_id, domain, subject, description,
             category_id, complaint_type_id, department_id, circle_id, city_id, other_category,
-            other_complaint_type, location_details, priority_id, status_id,
+            other_complaint_type, location_details, priority_id, status_id, current_assignee_id,
             category_name_snapshot, complaint_type_name_snapshot, department_name_snapshot,
             circle_name_snapshot, city_name_snapshot)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [number, input.idempotencyKey ?? null, actor.id, domain, input.subject, input.description,
             input.categoryId, input.complaintTypeId, validated.departmentId, validated.circle?.id ?? null,
             validated.city?.id ?? null, input.otherCategory ?? null, input.otherComplaintType ?? null,
-            input.locationDetails ?? null, input.priorityId, statusId, validated.category.name,
+            input.locationDetails ?? null, validated.priority.id, statusId, assignee?.id ?? null,
+            validated.category.name,
             validated.complaintType.name, validated.departmentName, validated.circle?.name ?? null,
             validated.city?.name ?? null],
         );
@@ -201,12 +269,44 @@ export async function createTicket(
     await connection.execute(
       `INSERT INTO ticket_history (ticket_id, event_type, actor_id, new_value, reason)
        VALUES (?, 'ticket_created', ?, ?, 'Ticket submitted by requester')`,
-      [result.insertId, actor.id, JSON.stringify({ status: 'new', priorityId: input.priorityId })],
+      [result.insertId, actor.id, JSON.stringify({
+        status: initialStatusSlug,
+        priorityId: validated.priority.id,
+        priority: validated.priority.slug,
+        prioritySource: domain === 'consumer' ? 'automatic' : 'requester',
+      })],
     );
+    if (assignee !== undefined) {
+      const assignmentReason = `Automatic routing to ${validated.routingDepartmentName ?? 'the responsible department'} based on ticket category and complaint type`;
+      await connection.execute(
+        `INSERT INTO assignments (ticket_id, technician_id, assigned_by, reason)
+         VALUES (?, ?, ?, ?)`,
+        [result.insertId, assignee.id, actor.id, assignmentReason],
+      );
+      await connection.execute(
+        `INSERT INTO ticket_history (ticket_id, event_type, actor_id, old_value, new_value, reason)
+         VALUES (?, 'auto_assigned', NULL, ?, ?, ?)`,
+        [result.insertId, JSON.stringify({ assigneeId: null, status: 'new' }), JSON.stringify({
+          assigneeId: assignee.id,
+          assigneeName: assignee.displayName,
+          status: 'assigned',
+          departmentId: validated.routingDepartmentId,
+          departmentName: validated.routingDepartmentName,
+        }), assignmentReason],
+      );
+      await connection.execute(
+        `INSERT INTO notifications (recipient_id, type, title, message, target_type, target_id)
+         VALUES (?, 'ticket_assigned', 'Ticket assigned automatically', ?, 'ticket', ?)`,
+        [assignee.id, `${number}: ${input.subject}`, result.insertId],
+      );
+    }
     await connection.execute(
       `INSERT INTO notifications (recipient_id, type, title, message, target_type, target_id)
        VALUES (?, 'ticket_created', 'Ticket submitted', ?, 'ticket', ?)`,
-      [actor.id, `${number} was submitted successfully`, result.insertId],
+      [actor.id, assignee === undefined
+        ? `${number} was submitted successfully and is awaiting assignment`
+        : `${number} was submitted and assigned to ${assignee.displayName}`,
+      result.insertId],
     );
     await connection.execute(
       `INSERT INTO notifications (recipient_id, type, title, message, target_type, target_id)
@@ -215,7 +315,7 @@ export async function createTicket(
        WHERE r.name IN ('supervisor', 'administrator') AND u.status = 'active' AND u.deleted_at IS NULL`,
       [`${number}: ${input.subject}`, result.insertId],
     );
-    await writeAudit(connection, { actorId: actor.id, action: 'ticket.created', entityType: 'ticket', entityId: String(result.insertId), context, metadata: { ticketNumber: number, domain } });
+    await writeAudit(connection, { actorId: actor.id, action: 'ticket.created', entityType: 'ticket', entityId: String(result.insertId), context, metadata: { ticketNumber: number, domain, priority: validated.priority.slug, prioritySource: domain === 'consumer' ? 'automatic' : 'requester', assignmentSource: assignee === undefined ? 'unassigned' : 'automatic_department_routing', routingDepartmentId: validated.routingDepartmentId, routingDepartmentName: validated.routingDepartmentName, assigneeId: assignee?.id ?? null } });
     await connection.commit();
     return { id: result.insertId, ticketNumber: number };
   } catch (error) {
@@ -282,7 +382,25 @@ export async function getTicketDetail(actor: TicketActor, ticketId: number) {
     `SELECT id, original_name AS originalName, mime_type AS mimeType, size_bytes AS sizeBytes,
       created_at AS createdAt FROM attachments WHERE ticket_id=? AND deleted_at IS NULL ORDER BY created_at`, [ticketId],
   );
-  return { ticket, comments, history, attachments };
+  const [reviews] = await databasePool.execute<TicketReviewRow[]>(
+    `SELECT review.id, review.issue_resolved AS issueResolved,
+      review.satisfaction_rating AS satisfactionRating, review.review_text AS reviewText,
+      review.requester_id AS requesterId, requester.display_name AS requesterName,
+      review.created_at AS createdAt
+     FROM ticket_reviews review JOIN users requester ON requester.id=review.requester_id
+     WHERE review.ticket_id=? LIMIT 1`, [ticketId],
+  );
+  const review = reviews[0];
+  return {
+    ticket,
+    comments,
+    history,
+    attachments,
+    review: review === undefined ? null : { ...review, issueResolved: Boolean(review.issueResolved) },
+    allowedStatusTransitions: actor.role === 'consumer' || actor.role === 'employee'
+      ? []
+      : allowedWorkflowTargets(actor, ticket),
+  };
 }
 
 async function workflowTicket(connection: PoolConnection, ticketId: number): Promise<WorkflowRow> {
@@ -380,16 +498,26 @@ export async function assignTicket(
   finally { connection.release(); }
 }
 
-const technicianTransitions: Record<string, string[]> = {
-  assigned: ['in-progress'], 'in-progress': ['pending-user', 'resolved'],
-  'pending-user': ['in-progress'], reopened: ['in-progress', 'resolved'],
-};
-const managerTransitions: Record<string, string[]> = {
-  new: ['cancelled'], assigned: ['in-progress', 'cancelled'],
-  'in-progress': ['pending-user', 'resolved', 'cancelled'],
-  'pending-user': ['in-progress', 'resolved', 'cancelled'], reopened: ['in-progress', 'resolved', 'cancelled'],
-  resolved: ['closed', 'reopened'], closed: ['reopened'],
-};
+function allowedWorkflowTargets(
+  actor: TicketActor,
+  ticket: Pick<WorkflowRow, 'assigneeId' | 'requesterId' | 'statusSlug' | 'resolvedAt' | 'closedAt'>,
+): string[] {
+  if (actor.role === 'technician') {
+    if (ticket.assigneeId !== actor.id || !['assigned', 'in-progress', 'pending-user', 'reopened'].includes(ticket.statusSlug)) {
+      return [];
+    }
+    return ['in-progress', 'pending-user', 'resolved'].filter((status) => status !== ticket.statusSlug);
+  }
+  if (actor.role === 'supervisor' || actor.role === 'administrator') {
+    if (['closed', 'cancelled', 'resolved'].includes(ticket.statusSlug)) return ['reopened'];
+    return ['in-progress', 'pending-user', 'resolved', 'cancelled']
+      .filter((status) => status !== ticket.statusSlug);
+  }
+  if (ticket.requesterId !== actor.id) return [];
+  if (ticket.statusSlug === 'new') return ['cancelled'];
+  if (['resolved', 'closed'].includes(ticket.statusSlug)) return ['reopened'];
+  return [];
+}
 
 export async function transitionTicket(
   actor: TicketActor,
@@ -406,18 +534,11 @@ export async function transitionTicket(
     await connection.beginTransaction();
     const ticket = await workflowTicket(connection, ticketId);
     if (ticket.version !== expectedVersion) throw new AppError(409, 'VERSION_CONFLICT', 'The ticket changed; reload and try again');
-    let allowed = false;
-    if (actor.role === 'technician') allowed = ticket.assigneeId === actor.id && (technicianTransitions[ticket.statusSlug]?.includes(targetStatus) ?? false);
-    else if (actor.role === 'supervisor' || actor.role === 'administrator') allowed = managerTransitions[ticket.statusSlug]?.includes(targetStatus) ?? false;
-    else if (ticket.requesterId === actor.id) {
-      allowed = (ticket.statusSlug === 'new' && targetStatus === 'cancelled')
-        || (ticket.statusSlug === 'resolved' && targetStatus === 'closed')
-        || (['resolved', 'closed'].includes(ticket.statusSlug) && targetStatus === 'reopened');
-      if (targetStatus === 'reopened') {
-        const reference = ticket.closedAt ?? ticket.resolvedAt;
-        if (reference === null || Date.now() - reference.getTime() > env.reopenWindowDays * 86_400_000) {
-          throw new AppError(409, 'REOPEN_WINDOW_EXPIRED', `Tickets can be reopened within ${env.reopenWindowDays} days`);
-        }
+    const allowed = allowedWorkflowTargets(actor, ticket).includes(targetStatus);
+    if (ticket.requesterId === actor.id && targetStatus === 'reopened') {
+      const reference = ticket.closedAt ?? ticket.resolvedAt;
+      if (reference === null || Date.now() - reference.getTime() > env.reopenWindowDays * 86_400_000) {
+        throw new AppError(409, 'REOPEN_WINDOW_EXPIRED', `Tickets can be reopened within ${env.reopenWindowDays} days`);
       }
     }
     if (!allowed) throw new AppError(409, 'INVALID_STATUS_TRANSITION', `Cannot move from ${ticket.statusSlug} to ${targetStatus}`);
@@ -458,6 +579,129 @@ export async function transitionTicket(
     await connection.commit();
   } catch (error) { await connection.rollback(); throw error; }
   finally { connection.release(); }
+}
+
+export async function closeTicketWithReview(
+  actor: TicketActor,
+  ticketId: number,
+  input: TicketClosureReviewInput,
+  context: RequestContext,
+): Promise<void> {
+  if (actor.role !== 'consumer' && actor.role !== 'employee') {
+    throw new AppError(403, 'REQUESTER_ROLE_REQUIRED', 'Only the requester can close a ticket with a review');
+  }
+  if (!(await canAccessTicket(actor, ticketId))) {
+    throw new AppError(404, 'TICKET_NOT_FOUND', 'The ticket was not found');
+  }
+  if (!Number.isInteger(input.satisfactionRating) || input.satisfactionRating < 1 || input.satisfactionRating > 5) {
+    throw new AppError(422, 'INVALID_SATISFACTION_RATING', 'Satisfaction rating must be between 1 and 5');
+  }
+  const reviewText = input.reviewText?.trim() || null;
+  const connection = await databasePool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const ticket = await workflowTicket(connection, ticketId);
+    if (ticket.requesterId !== actor.id) throw new AppError(404, 'TICKET_NOT_FOUND', 'The ticket was not found');
+    if (ticket.version !== input.version) throw new AppError(409, 'VERSION_CONFLICT', 'The ticket changed; reload and try again');
+    if (['closed', 'cancelled'].includes(ticket.statusSlug)) {
+      throw new AppError(409, 'TICKET_ALREADY_FINISHED', 'A closed or cancelled ticket cannot be closed again');
+    }
+    const [statuses] = await connection.execute<IdRow[]>(
+      "SELECT id, name FROM ticket_statuses WHERE slug='closed' AND is_active=TRUE",
+    );
+    const closedStatus = statuses[0];
+    if (closedStatus === undefined) throw new Error('Closed ticket status is not configured');
+    const [result] = await connection.execute<ResultSetHeader>(
+      `UPDATE tickets SET status_id=?, requester_confirmed_at=UTC_TIMESTAMP(), closed_at=UTC_TIMESTAMP(),
+        version=version+1 WHERE id=? AND version=?`,
+      [closedStatus.id, ticketId, input.version],
+    );
+    if (result.affectedRows === 0) throw new AppError(409, 'VERSION_CONFLICT', 'The ticket changed; reload and try again');
+    await connection.execute(
+      `INSERT INTO ticket_reviews
+        (ticket_id, requester_id, issue_resolved, satisfaction_rating, review_text)
+       VALUES (?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE requester_id=VALUES(requester_id), issue_resolved=VALUES(issue_resolved),
+         satisfaction_rating=VALUES(satisfaction_rating), review_text=VALUES(review_text), created_at=CURRENT_TIMESTAMP`,
+      [ticketId, actor.id, input.issueResolved, input.satisfactionRating, reviewText],
+    );
+    await connection.execute(
+      `UPDATE assignments SET ended_at=UTC_TIMESTAMP(), ended_reason='Ticket closed by requester'
+       WHERE ticket_id=? AND ended_at IS NULL`,
+      [ticketId],
+    );
+    await connection.execute(
+      `INSERT INTO ticket_history (ticket_id, event_type, actor_id, old_value, new_value, reason)
+       VALUES (?, 'ticket_closed_with_review', ?, ?, ?, 'Requester closed the ticket and submitted feedback')`,
+      [ticketId, actor.id, JSON.stringify({ status: ticket.statusSlug }), JSON.stringify({
+        status: 'closed', issueResolved: input.issueResolved, satisfactionRating: input.satisfactionRating,
+      })],
+    );
+    if (ticket.assigneeId !== null && ticket.assigneeId !== actor.id) {
+      await connection.execute(
+        `INSERT INTO notifications (recipient_id, type, title, message, target_type, target_id)
+         VALUES (?, 'ticket_reviewed', 'Ticket closed and reviewed', 'The requester closed a ticket and submitted feedback', 'ticket', ?)`,
+        [ticket.assigneeId, ticketId],
+      );
+    }
+    await writeAudit(connection, {
+      actorId: actor.id,
+      action: 'ticket.closed_with_review',
+      entityType: 'ticket',
+      entityId: String(ticketId),
+      context,
+      metadata: { issueResolved: input.issueResolved, satisfactionRating: input.satisfactionRating },
+    });
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function deleteTicket(
+  actor: TicketActor,
+  ticketId: number,
+  reason: string,
+  expectedVersion: number,
+  context: RequestContext,
+): Promise<void> {
+  if (actor.role !== 'administrator') {
+    throw new AppError(403, 'FORBIDDEN', 'Only administrators can delete tickets');
+  }
+  const connection = await databasePool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const ticket = await workflowTicket(connection, ticketId);
+    if (ticket.version !== expectedVersion) throw new AppError(409, 'VERSION_CONFLICT', 'The ticket changed; reload and try again');
+    const [result] = await connection.execute<ResultSetHeader>(
+      `UPDATE tickets SET deleted_at=UTC_TIMESTAMP(), deleted_by=?, deleted_reason=?, version=version+1
+       WHERE id=? AND version=? AND deleted_at IS NULL`,
+      [actor.id, reason, ticketId, expectedVersion],
+    );
+    if (result.affectedRows === 0) throw new AppError(409, 'VERSION_CONFLICT', 'The ticket changed; reload and try again');
+    await connection.execute(
+      `UPDATE assignments SET ended_at=UTC_TIMESTAMP(), ended_reason='Ticket deleted by administrator'
+       WHERE ticket_id=? AND ended_at IS NULL`,
+      [ticketId],
+    );
+    await writeAudit(connection, {
+      actorId: actor.id,
+      action: 'ticket.deleted',
+      entityType: 'ticket',
+      entityId: String(ticketId),
+      context,
+      metadata: { reason, previousStatus: ticket.statusSlug },
+    });
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 export async function changeTicketPriority(
@@ -502,6 +746,9 @@ export async function addTicketComment(
   try {
     await connection.beginTransaction();
     const ticket = await workflowTicket(connection, ticketId);
+    if (requester && ['closed', 'cancelled'].includes(ticket.statusSlug)) {
+      throw new AppError(409, 'TICKET_READ_ONLY', 'Closed or cancelled tickets are read-only for requesters');
+    }
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO comments (ticket_id, author_id, visibility, body) VALUES (?, ?, ?, ?)`,
       [ticketId, actor.id, visibility, body],
@@ -554,7 +801,11 @@ export async function addTicketAttachment(
   const connection = await databasePool.getConnection();
   try {
     await connection.beginTransaction();
-    await workflowTicket(connection, ticketId);
+    const ticket = await workflowTicket(connection, ticketId);
+    const requester = actor.role === 'consumer' || actor.role === 'employee';
+    if (requester && ['closed', 'cancelled'].includes(ticket.statusSlug)) {
+      throw new AppError(409, 'TICKET_READ_ONLY', 'Closed or cancelled tickets are read-only for requesters');
+    }
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO attachments
         (ticket_id, uploader_id, original_name, stored_name, mime_type, extension, size_bytes, checksum_sha256, storage_path)

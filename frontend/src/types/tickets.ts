@@ -43,9 +43,21 @@ export interface TicketAttachment {
   id: number; originalName: string; mimeType: string; sizeBytes: number; createdAt: string;
 }
 
+export interface TicketReview {
+  id: number;
+  issueResolved: boolean;
+  satisfactionRating: number;
+  reviewText: string | null;
+  requesterId: number;
+  requesterName: string;
+  createdAt: string;
+}
+
 export interface TicketDetail {
   ticket: TicketSummary;
   comments: TicketComment[];
   history: TicketHistory[];
   attachments: TicketAttachment[];
+  review: TicketReview | null;
+  allowedStatusTransitions: string[];
 }

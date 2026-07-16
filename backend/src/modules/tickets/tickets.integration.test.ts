@@ -30,7 +30,7 @@ describe('requester ticket API', () => {
   it('creates one consumer ticket for a repeated idempotent submission and returns it privately', async () => {
     const consumerToken = await login('consumer', '10000000000001');
     const data = await catalog(consumerToken);
-    const category = data.categories.find((item) => item.domain === 'consumer' && item.name !== 'Other');
+    const category = data.categories.find((item) => item.domain === 'consumer' && item.name === 'Line Complaints');
     const type = category?.complaintTypes.find((item) => item.name !== 'Other');
     const circle = data.circles[0];
     const city = circle?.cities[0];
@@ -59,7 +59,35 @@ describe('requester ticket API', () => {
     expect(list.body).toMatchObject({ meta: { totalItems: 1 } });
     const detail = await request(app).get(`/api/v1/tickets/${firstTicket.id}`)
       .set('Authorization', `Bearer ${consumerToken}`).expect(200);
-    expect(detail.body).toMatchObject({ data: { ticket: { id: firstTicket.id, domain: 'consumer' } } });
+    expect(detail.body).toMatchObject({ data: { ticket: {
+      id: firstTicket.id,
+      domain: 'consumer',
+      prioritySlug: 'high',
+      statusSlug: 'assigned',
+      assigneeName: 'Bilal Operations Technician',
+    } } });
+    const version = (detail.body as { data: { ticket: { version: number } } }).data.ticket.version;
+    await request(app).post(`/api/v1/tickets/${firstTicket.id}/close-review`)
+      .set('Authorization', `Bearer ${consumerToken}`)
+      .send({
+        issueResolved: false,
+        satisfactionRating: 2,
+        reviewText: 'The requester chose to close this fictional new ticket.',
+        version,
+      }).expect(200);
+    const closed = await request(app).get(`/api/v1/tickets/${firstTicket.id}`)
+      .set('Authorization', `Bearer ${consumerToken}`).expect(200);
+    expect(closed.body).toMatchObject({ data: {
+      ticket: { statusSlug: 'closed' },
+      review: { issueResolved: false, satisfactionRating: 2 },
+    } });
+    await request(app).post(`/api/v1/tickets/${firstTicket.id}/comments`)
+      .set('Authorization', `Bearer ${consumerToken}`)
+      .send({ body: 'A closed requester ticket must be read-only.', visibility: 'public' }).expect(409);
+    await request(app).post(`/api/v1/tickets/${firstTicket.id}/attachments`)
+      .set('Authorization', `Bearer ${consumerToken}`)
+      .attach('file', Buffer.from('Must not be stored.'), { filename: 'closed.txt', contentType: 'text/plain' })
+      .expect(409);
   });
 
   it('rejects a category from the other requester domain', async () => {
@@ -95,5 +123,26 @@ describe('requester ticket API', () => {
     expect(numbers).toEqual([...numbers].sort((left, right) => left.localeCompare(right)));
     await request(app).get('/api/v1/tickets?sortBy=unsafe_sql')
       .set('Authorization', `Bearer ${consumerToken}`).expect(422);
+  });
+
+  it('allows only an administrator to soft-delete a ticket', async () => {
+    const employeeToken = await login('employee', 'EMP-DEMO-001');
+    const cancelled = await request(app).get('/api/v1/tickets?status=cancelled&pageSize=1')
+      .set('Authorization', `Bearer ${employeeToken}`).expect(200);
+    const item = (cancelled.body as { data: Array<{ id: number; version: number }> }).data[0];
+    if (item === undefined) throw new Error('Seed cancelled ticket missing');
+    await request(app).delete(`/api/v1/tickets/${item.id}`)
+      .set('Authorization', `Bearer ${employeeToken}`)
+      .send({ reason: 'Requester must not delete tickets', version: item.version }).expect(403);
+
+    const administratorToken = await login('staff', 'admin.demo');
+    const detail = await request(app).get(`/api/v1/tickets/${item.id}`)
+      .set('Authorization', `Bearer ${administratorToken}`).expect(200);
+    const version = (detail.body as { data: { ticket: { version: number } } }).data.ticket.version;
+    await request(app).delete(`/api/v1/tickets/${item.id}`)
+      .set('Authorization', `Bearer ${administratorToken}`)
+      .send({ reason: 'Fictional administrative cleanup', version }).expect(200);
+    await request(app).get(`/api/v1/tickets/${item.id}`)
+      .set('Authorization', `Bearer ${administratorToken}`).expect(404);
   });
 });

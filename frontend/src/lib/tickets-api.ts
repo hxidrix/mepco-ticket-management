@@ -79,6 +79,20 @@ export async function changePriorityRequest(
   await apiClient.post(`/tickets/${ticketId}/priority`, input);
 }
 
+export async function closeTicketWithReviewRequest(
+  ticketId: number,
+  input: { issueResolved: boolean; satisfactionRating: number; reviewText?: string; version: number },
+): Promise<void> {
+  await apiClient.post(`/tickets/${ticketId}/close-review`, input);
+}
+
+export async function deleteTicketRequest(
+  ticketId: number,
+  input: { reason: string; version: number },
+): Promise<void> {
+  await apiClient.delete(`/tickets/${ticketId}`, { data: input });
+}
+
 export async function addCommentRequest(
   ticketId: number,
   input: { body: string; visibility: 'public' | 'internal' },

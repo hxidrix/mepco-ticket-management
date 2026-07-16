@@ -13,8 +13,15 @@ export interface TicketCreateInput {
   otherCategory?: string;
   otherComplaintType?: string;
   locationDetails?: string;
-  priorityId: number;
+  priorityId?: number;
   idempotencyKey?: string;
+}
+
+export interface TicketClosureReviewInput {
+  issueResolved: boolean;
+  satisfactionRating: number;
+  reviewText?: string;
+  version: number;
 }
 
 export interface TicketActor {

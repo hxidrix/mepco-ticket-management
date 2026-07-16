@@ -9,20 +9,19 @@ import { DotGridCanvas } from './DotGridCanvas';
 interface NavigationItem {
   label: string;
   to: string;
-  mark: string;
   roles?: UserRole[];
 }
 
 const navigation: NavigationItem[] = [
-  { label: 'Overview', to: '/app', mark: 'OV' },
-  { label: 'Tickets', to: '/app/tickets', mark: 'TK' },
-  { label: 'Notifications', to: '/app/notifications', mark: 'NT' },
-  { label: 'Reports & SLA', to: '/app/reports', mark: 'RP', roles: ['supervisor', 'administrator'] },
-  { label: 'Submit ticket', to: '/app/tickets/new', mark: 'NW', roles: ['consumer', 'employee'] },
-  { label: 'My profile', to: '/app/profile', mark: 'ME' },
-  { label: 'User accounts', to: '/app/admin/users', mark: 'US', roles: ['administrator'] },
-  { label: 'Master data', to: '/app/admin/master-data', mark: 'MD', roles: ['administrator'] },
-  { label: 'Operations admin', to: '/app/admin/operations', mark: 'OP', roles: ['administrator'] },
+  { label: 'Overview', to: '/app' },
+  { label: 'Tickets', to: '/app/tickets' },
+  { label: 'Notifications', to: '/app/notifications' },
+  { label: 'Reports & SLA', to: '/app/reports', roles: ['supervisor', 'administrator'] },
+  { label: 'Submit ticket', to: '/app/tickets/new', roles: ['consumer', 'employee'] },
+  { label: 'My profile', to: '/app/profile' },
+  { label: 'User accounts', to: '/app/admin/users', roles: ['administrator'] },
+  { label: 'Master data', to: '/app/admin/master-data', roles: ['administrator'] },
+  { label: 'Operations admin', to: '/app/admin/operations', roles: ['administrator'] },
 ];
 
 export function AppShell() {
@@ -50,7 +49,7 @@ export function AppShell() {
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) => isActive ? 'is-active' : undefined}
             >
-              <span>{item.mark}</span>{item.label}
+              {item.label}
             </NavLink>
           ))}
         </nav>

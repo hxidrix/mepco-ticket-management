@@ -19,6 +19,7 @@ export function NewTicketPage() {
   const [categoryId, setCategoryId] = useState('');
   const [complaintTypeId, setComplaintTypeId] = useState('');
   const [circleId, setCircleId] = useState('');
+  const [priorityId, setPriorityId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const domain = user?.role === 'consumer' || user?.role === 'employee' ? user.role : null;
@@ -30,6 +31,7 @@ export function NewTicketPage() {
       setCategoryId(String(firstCategory?.id ?? ''));
       setComplaintTypeId(String(firstCategory?.complaintTypes[0]?.id ?? ''));
       setCircleId(String(next.circles[0]?.id ?? ''));
+      setPriorityId(String(next.priorities.find((priority) => priority.slug === 'medium')?.id ?? next.priorities[0]?.id ?? ''));
     }).catch((caught: unknown) => setError(getApiErrorMessage(caught)));
   }, [domain]);
 
@@ -48,10 +50,10 @@ export function NewTicketPage() {
       const ticket = await createTicketRequest({
         subject: value(data, 'subject'), description: value(data, 'description'),
         categoryId: Number(value(data, 'categoryId')), complaintTypeId: Number(value(data, 'complaintTypeId')),
-        priorityId: Number(value(data, 'priorityId')), locationDetails: value(data, 'locationDetails'),
+        locationDetails: value(data, 'locationDetails'),
         otherCategory: value(data, 'otherCategory'), otherComplaintType: value(data, 'otherComplaintType'),
         ...(domain === 'consumer' ? { circleId: Number(value(data, 'circleId')), cityId: Number(value(data, 'cityId')) }
-          : { departmentId: Number(value(data, 'departmentId')) }),
+          : { departmentId: Number(value(data, 'departmentId')), priorityId: Number(value(data, 'priorityId')) }),
         idempotencyKey: crypto.randomUUID(),
       });
       void navigate(`/app/tickets/${ticket.id}`, { replace: true });
@@ -71,7 +73,9 @@ export function NewTicketPage() {
         {selectedCategory?.name === 'Other' && <label className="form-grid__wide"><span>Describe the other category</span><input name="otherCategory" required /></label>}
         {selectedType?.name === 'Other' && <label className="form-grid__wide"><span>Describe the other complaint type</span><input name="otherComplaintType" required /></label>}
         {domain === 'consumer' ? <><label><span>Circle</span><select name="circleId" value={circleId} onChange={(event) => setCircleId(event.target.value)} required>{catalog?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label><label><span>City</span><select name="cityId" required>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label></> : <label className="form-grid__wide"><span>Department</span><input name="departmentName" value={selectedCategory?.parentName ?? 'Select a departmental category'} disabled /><input name="departmentId" type="hidden" value={selectedCategory?.departmentId ?? ''} /></label>}
-        <label><span>Priority</span><select name="priorityId" required defaultValue={catalog?.priorities.find((priority) => priority.slug === 'medium')?.id}>{catalog?.priorities.map((priority) => <option key={priority.id} value={priority.id}>{priority.name}</option>)}</select></label>
+        {domain === 'consumer'
+          ? <div className="ticket-form__auto-priority"><strong>Priority is assigned automatically</strong><p>We use the selected issue type and your description to identify routine, important, urgent, and safety-critical complaints. Support staff can review it later.</p></div>
+          : <label><span>Priority</span><select name="priorityId" required value={priorityId} onChange={(event) => setPriorityId(event.target.value)}>{catalog?.priorities.map((priority) => <option key={priority.id} value={priority.id}>{priority.name}</option>)}</select></label>}
         <label><span>Location / context</span><input name="locationDetails" placeholder="Office, feeder, landmark, or room" /></label>
         <div className="ticket-form__note form-grid__wide"><strong>Before submitting</strong><p>Use only fictional or demonstration information in this local environment. A unique ticket number and complete history will be created.</p></div>
         <button className="button button--primary form-grid__wide" type="submit" disabled={busy || catalog === null}>{busy ? 'Submitting...' : 'Submit ticket'}</button>

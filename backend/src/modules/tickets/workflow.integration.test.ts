@@ -60,6 +60,11 @@ describe('ticket assignment and workflow API', () => {
       .set('Authorization', `Bearer ${otherTechnician}`).expect(404);
     ticket = await detail(operationsTechnician, ticketId);
     expect(ticket.statusSlug).toBe('assigned');
+    const technicianDetail = await request(app).get(`/api/v1/tickets/${ticketId}`)
+      .set('Authorization', `Bearer ${operationsTechnician}`).expect(200);
+    expect(technicianDetail.body).toMatchObject({
+      data: { allowedStatusTransitions: ['in-progress', 'pending-user', 'resolved'] },
+    });
     await request(app).post(`/api/v1/tickets/${ticketId}/status`)
       .set('Authorization', `Bearer ${operationsTechnician}`)
       .send({ status: 'in-progress', reason: 'Work started', version: ticket.version }).expect(200);
@@ -72,10 +77,25 @@ describe('ticket assignment and workflow API', () => {
     const consumer = await login('consumer', '10000000000001');
     ticket = await detail(consumer, ticketId);
     expect(ticket.statusSlug).toBe('resolved');
-    await request(app).post(`/api/v1/tickets/${ticketId}/status`)
+    const requesterDetail = await request(app).get(`/api/v1/tickets/${ticketId}`)
+      .set('Authorization', `Bearer ${consumer}`).expect(200);
+    expect(requesterDetail.body).toMatchObject({ data: { allowedStatusTransitions: [] } });
+    await request(app).post(`/api/v1/tickets/${ticketId}/close-review`)
       .set('Authorization', `Bearer ${consumer}`)
-      .send({ status: 'closed', reason: 'Requester confirmed the resolution', version: ticket.version }).expect(200);
+      .send({
+        issueResolved: true,
+        satisfactionRating: 5,
+        reviewText: 'The fictional issue was resolved successfully.',
+        version: ticket.version,
+      }).expect(200);
     ticket = await detail(consumer, ticketId);
+    const reviewed = await request(app).get(`/api/v1/tickets/${ticketId}`)
+      .set('Authorization', `Bearer ${consumer}`).expect(200);
+    expect(reviewed.body).toMatchObject({ data: { review: {
+      issueResolved: true,
+      satisfactionRating: 5,
+      reviewText: 'The fictional issue was resolved successfully.',
+    } } });
     await request(app).post(`/api/v1/tickets/${ticketId}/status`)
       .set('Authorization', `Bearer ${consumer}`)
       .send({ status: 'reopened', reason: 'Fictional issue returned within the configured window', version: ticket.version })

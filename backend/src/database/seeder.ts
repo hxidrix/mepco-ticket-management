@@ -28,6 +28,7 @@ interface DemoUserIds {
   employee: number;
   technicianIt: number;
   technicianOps: number;
+  technicianCsd: number;
   supervisor: number;
   administrator: number;
 }
@@ -354,6 +355,15 @@ async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
     'Operations (OP) Directorate',
     'Operations Technician',
   );
+  const technicianCsd = await upsertStaffUser(
+    connection,
+    'technician',
+    'tech.csd',
+    'Zain Customer Services Technician',
+    passwordHash,
+    'Commercial/Customer Services Directorate (CSD)',
+    'Customer Services Technician',
+  );
   const supervisor = await upsertStaffUser(
     connection,
     'supervisor',
@@ -398,14 +408,22 @@ async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
     'name',
     'Operations (OP) Directorate',
   );
-  await connection.execute('DELETE FROM staff_scopes WHERE user_id IN (?, ?, ?)', [
+  const csdDepartmentId = await idBy(
+    connection,
+    'departments',
+    'name',
+    'Commercial/Customer Services Directorate (CSD)',
+  );
+  await connection.execute('DELETE FROM staff_scopes WHERE user_id IN (?, ?, ?, ?)', [
     technicianIt,
     technicianOps,
+    technicianCsd,
     supervisor,
   ]);
   await connection.execute(
     `INSERT INTO staff_scopes (user_id, domain, department_id, can_self_assign)
      VALUES (?, 'employee', ?, FALSE), (?, 'consumer', NULL, FALSE),
+            (?, 'employee', ?, FALSE), (?, 'consumer', NULL, FALSE),
             (?, 'employee', ?, FALSE), (?, 'consumer', NULL, FALSE),
             (?, 'employee', NULL, FALSE), (?, 'consumer', NULL, FALSE)`,
     [
@@ -415,6 +433,9 @@ async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
       technicianOps,
       opsDepartmentId,
       technicianOps,
+      technicianCsd,
+      csdDepartmentId,
+      technicianCsd,
       supervisor,
       supervisor,
     ],
@@ -426,6 +447,7 @@ async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
     employee,
     technicianIt,
     technicianOps,
+    technicianCsd,
     supervisor,
     administrator,
   };
