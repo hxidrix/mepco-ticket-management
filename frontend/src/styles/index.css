@@ -2298,3 +2298,38 @@ time,
   .auth-form-side__top { justify-content: flex-end; }
   .auth-form-side__actions { width: 100%; justify-content: space-between; }
 }
+
+/* Keep the short sign-in view inside a standard desktop viewport at 100% zoom. */
+@media (min-width: 821px) and (min-height: 640px) {
+  .auth-page--login {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .auth-page--login .auth-hero,
+  .auth-page--login .auth-form-side {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .auth-page--login .auth-form-side {
+    overflow: hidden;
+    padding-top: clamp(4.4rem, 8vh, 5.2rem);
+    padding-bottom: clamp(0.8rem, 2.5vh, 1.5rem);
+  }
+
+  .auth-page--login .auth-card {
+    padding: clamp(1.35rem, 3vh, 2.1rem);
+  }
+
+  .auth-page--login .auth-tabs {
+    margin-top: clamp(1rem, 2.5vh, 1.45rem);
+    margin-bottom: clamp(0.9rem, 2.2vh, 1.2rem);
+  }
+
+  .auth-page--login .auth-form { gap: clamp(0.72rem, 1.7vh, 0.95rem); }
+  .auth-page--login .auth-form input { min-height: clamp(2.65rem, 6vh, 3rem); }
+  .auth-page--login .auth-submit { min-height: clamp(2.9rem, 6.5vh, 3.2rem); }
+  .auth-page--login .auth-card__demo { margin-top: clamp(0.8rem, 2vh, 1.2rem); padding-top: clamp(0.7rem, 1.7vh, 0.95rem); }
+}

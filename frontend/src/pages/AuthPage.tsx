@@ -120,7 +120,7 @@ export function AuthPage() {
   };
 
   return (
-    <main className="auth-page">
+    <main className={`auth-page auth-page--${view}`}>
       <section className="auth-hero" aria-labelledby="auth-hero-title">
         <DotGridCanvas />
         <div className="auth-hero__glow" aria-hidden="true" />
