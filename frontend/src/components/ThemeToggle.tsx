@@ -8,13 +8,18 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
   const { theme, toggleTheme } = useTheme();
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   return (
-    <button
+    <label
       className={compact ? 'theme-toggle is-compact' : 'theme-toggle'}
-      type="button"
-      aria-label={`Switch to ${nextTheme} theme`}
       title={`Switch to ${nextTheme} theme`}
-      onClick={toggleTheme}
     >
+      <input
+        className="theme-toggle__input"
+        type="checkbox"
+        role="switch"
+        checked={theme === 'dark'}
+        aria-label={`Switch to ${nextTheme} theme`}
+        onChange={toggleTheme}
+      />
       <span className="theme-toggle__track" aria-hidden="true">
         <span className="theme-toggle__thumb">
           {theme === 'dark' ? (
@@ -25,7 +30,6 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
         </span>
       </span>
       {!compact && <span className="theme-toggle__label">{theme === 'dark' ? 'Dark' : 'Light'}</span>}
-    </button>
+    </label>
   );
 }
-

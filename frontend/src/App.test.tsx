@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import type * as FramerMotion from 'framer-motion';
 
@@ -41,5 +41,11 @@ describe('authentication page', () => {
     expect(screen.getByRole('button', { name: 'Staff' })).toBeVisible();
     expect(screen.getByTestId('dot-grid')).toBeInTheDocument();
     expect(screen.getByTestId('spider-effect')).toBeInTheDocument();
+
+    const password = screen.getByLabelText('Password');
+    expect(password).toHaveAttribute('type', 'password');
+    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
+    expect(password).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

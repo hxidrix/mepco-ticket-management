@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { BrandLogo } from '../components/BrandLogo';
 import { DotGridCanvas } from '../components/DotGridCanvas';
+import { PasswordInput } from '../components/PasswordInput';
 import { SpiderCircleEffect } from '../components/SpiderCircleEffect';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../hooks/useAuth';
@@ -231,16 +232,7 @@ export function AuthPage() {
                     placeholder={loginLabels[loginMode].placeholder}
                   />
                 </label>
-                <label>
-                  <span>Password</span>
-                  <input
-                    name="password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    placeholder="Enter your password"
-                  />
-                </label>
+                <PasswordInput autoComplete="current-password" placeholder="Enter your password" />
                 {error !== null && <p className="auth-message auth-message--error">{error}</p>}
                 {success !== null && <p className="auth-message auth-message--success">{success}</p>}
                 <button className="auth-submit" type="submit" disabled={isSubmitting}>
@@ -300,11 +292,12 @@ export function AuthPage() {
                     <label><span>Work location</span><input name="workLocation" required /></label>
                   </>
                 )}
-                <label className="auth-form__wide">
-                  <span>Password</span>
-                  <input name="password" type="password" required minLength={10} autoComplete="new-password" />
-                  <small>10+ characters with uppercase, lowercase, number, and symbol.</small>
-                </label>
+                <PasswordInput
+                  className="auth-form__wide"
+                  autoComplete="new-password"
+                  minLength={10}
+                  hint="10+ characters with uppercase, lowercase, number, and symbol."
+                />
                 {error !== null && <p className="auth-message auth-message--error auth-form__wide">{error}</p>}
                 <button className="auth-submit auth-form__wide" type="submit" disabled={isSubmitting || options === null}>
                   {isSubmitting ? 'Creating account…' : 'Create account'} <span aria-hidden="true">→</span>
