@@ -16,6 +16,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource-variable/geist-mono": "^5.2.8",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
     "react": "^19.1.1",
@@ -44,4 +46,3 @@
     "vitest": "^3.2.4"
   }
 }
-

@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { BrandLogo } from '../components/BrandLogo';
 import { DotGridCanvas } from '../components/DotGridCanvas';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../hooks/useAuth';
 import {
   getApiErrorMessage,
@@ -150,7 +151,10 @@ export function AuthPage() {
       <section className="auth-form-side" aria-label="Authentication">
         <div className="auth-form-side__top">
           <span>Secure portal</span>
-          <a href="http://localhost:5000/api-docs">API docs ↗</a>
+          <div className="auth-form-side__actions">
+            <ThemeToggle compact />
+            <a href="http://localhost:5000/api-docs">API docs <span aria-hidden="true">↗</span></a>
+          </div>
         </div>
 
         <motion.div

@@ -145,7 +145,7 @@ export function TicketDetailPage() {
   const transitions = detail.allowedStatusTransitions;
   return (
     <main className="workspace-page ticket-detail">
-      <Link className="back-link" to="/app/tickets">← Back to tickets</Link>
+      <Link className="back-link" to="/app/tickets">Back to tickets</Link>
       <div className="workspace-page__heading"><div><p>{ticket.ticketNumber} / {ticket.domain}</p><h1>{ticket.subject}</h1></div><div className="ticket-detail__badges"><span className={`priority-mark priority-mark--${ticket.prioritySlug}`}>{ticket.priorityName}</span><span className={`ticket-status ticket-status--${ticket.statusSlug}`}>{ticket.statusName}</span></div></div>
       {(message !== null || error !== null) && <p className={error === null ? 'page-message is-success' : 'page-message is-error'}>{error ?? message}</p>}
       {(manager || transitions.length > 0) && <section className="workflow-bar">

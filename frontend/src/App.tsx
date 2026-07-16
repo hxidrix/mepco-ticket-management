@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleRoute } from './components/RoleRoute';
 import { AuthProvider } from './context/AuthProvider';
+import { ThemeProvider } from './context/ThemeProvider';
 import { useAuth } from './hooks/useAuth';
 import { AuthPage } from './pages/AuthPage';
 import { AdministrationPage } from './pages/AdministrationPage';
@@ -45,10 +46,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

@@ -5,23 +5,26 @@ import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/auth';
 import { BrandLogo } from './BrandLogo';
 import { DotGridCanvas } from './DotGridCanvas';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavigationItem {
   label: string;
   to: string;
   roles?: UserRole[];
+  section: 'Workspace' | 'Administration';
+  emphasis?: boolean;
 }
 
 const navigation: NavigationItem[] = [
-  { label: 'Overview', to: '/app' },
-  { label: 'Tickets', to: '/app/tickets' },
-  { label: 'Notifications', to: '/app/notifications' },
-  { label: 'Reports & SLA', to: '/app/reports', roles: ['supervisor', 'administrator'] },
-  { label: 'Submit ticket', to: '/app/tickets/new', roles: ['consumer', 'employee'] },
-  { label: 'My profile', to: '/app/profile' },
-  { label: 'User accounts', to: '/app/admin/users', roles: ['administrator'] },
-  { label: 'Master data', to: '/app/admin/master-data', roles: ['administrator'] },
-  { label: 'Operations admin', to: '/app/admin/operations', roles: ['administrator'] },
+  { label: 'Overview', to: '/app', section: 'Workspace' },
+  { label: 'Tickets', to: '/app/tickets', section: 'Workspace' },
+  { label: 'Submit ticket', to: '/app/tickets/new', roles: ['consumer', 'employee'], section: 'Workspace', emphasis: true },
+  { label: 'Notifications', to: '/app/notifications', section: 'Workspace' },
+  { label: 'Reports & SLA', to: '/app/reports', roles: ['supervisor', 'administrator'], section: 'Workspace' },
+  { label: 'My profile', to: '/app/profile', section: 'Workspace' },
+  { label: 'User accounts', to: '/app/admin/users', roles: ['administrator'], section: 'Administration' },
+  { label: 'Master data', to: '/app/admin/master-data', roles: ['administrator'], section: 'Administration' },
+  { label: 'Operations admin', to: '/app/admin/operations', roles: ['administrator'], section: 'Administration' },
 ];
 
 export function AppShell() {
@@ -31,6 +34,8 @@ export function AppShell() {
   const visibleNavigation = navigation.filter(
     (item) => item.roles === undefined || item.roles.includes(user.role),
   );
+  const initials = user.displayName.split(' ').slice(0, 2)
+    .map((part) => part[0]).join('').toUpperCase();
 
   return (
     <div className="workspace-shell">
@@ -41,21 +46,30 @@ export function AppShell() {
       <aside className={menuOpen ? 'workspace-sidebar is-open' : 'workspace-sidebar'}>
         <div className="workspace-sidebar__brand"><BrandLogo /></div>
         <nav aria-label="Primary navigation">
-          {visibleNavigation.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/app'}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) => isActive ? 'is-active' : undefined}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {(['Workspace', 'Administration'] as const).map((section) => {
+            const items = visibleNavigation.filter((item) => item.section === section);
+            if (items.length === 0) return null;
+            return <section className="workspace-nav-group" key={section} aria-label={section}>
+              <span className="workspace-nav-group__label">{section}</span>
+              {items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === '/app'}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) => [
+                    isActive ? 'is-active' : '', item.emphasis ? 'is-emphasis' : '',
+                  ].filter(Boolean).join(' ')}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </section>;
+          })}
         </nav>
         <div className="workspace-sidebar__foot">
-          <span>{user.role}</span>
-          <strong>{user.displayName}</strong>
+          <div className="workspace-user-avatar" aria-hidden="true">{initials}</div>
+          <div><span>{user.role}</span><strong>{user.displayName}</strong></div>
           <button type="button" onClick={() => void logout()}>Sign out</button>
         </div>
       </aside>
@@ -70,7 +84,8 @@ export function AppShell() {
           >
             <span /><span /><span />
           </button>
-          <div><small>MEPCO help desk</small><strong>{user.displayName}</strong></div>
+          <ThemeToggle />
+          <div className="workspace-topbar__identity"><small>MEPCO help desk</small><strong>{user.displayName}</strong></div>
           <span className="workspace-topbar__role">{user.role}</span>
         </header>
         <div className="workspace-content"><Outlet /></div>

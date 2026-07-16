@@ -20,7 +20,7 @@ All records and credentials in this repository are fictional. The application ha
 
 ## Stack and layout
 
-- Frontend: React 19, TypeScript, Vite, React Router, Axios, Framer Motion, Tailwind tooling, and a custom responsive design system.
+- Frontend: React 19, TypeScript, Vite, React Router, Axios, Framer Motion, Tailwind tooling, self-hosted Geist typography, persistent light/dark themes, and a responsive liquid-glass design system.
 - Backend: Node.js 22+, Express 5, TypeScript, `mysql2/promise`, `express-validator`, bcrypt, JWT, Multer, Pino, Helmet, Swagger UI, Vitest, and Supertest.
 - Database: MySQL 8.4 through Docker Compose or XAMPP MariaDB 10.4 on Windows.
 
