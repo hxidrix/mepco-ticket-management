@@ -14,6 +14,10 @@ vi.mock('./components/DotGridCanvas', () => ({
   DotGridCanvas: () => <div data-testid="dot-grid" />,
 }));
 
+vi.mock('./components/SpiderCircleEffect', () => ({
+  SpiderCircleEffect: () => <div data-testid="spider-effect" />,
+}));
+
 vi.mock('./lib/auth-api', () => ({
   refreshRequest: vi.fn().mockRejectedValue(new Error('No existing session')),
   registrationOptionsRequest: vi.fn().mockResolvedValue({ departments: [], circles: [] }),
@@ -36,5 +40,6 @@ describe('authentication page', () => {
     expect(screen.getByRole('button', { name: 'Employee' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Staff' })).toBeVisible();
     expect(screen.getByTestId('dot-grid')).toBeInTheDocument();
+    expect(screen.getByTestId('spider-effect')).toBeInTheDocument();
   });
 });

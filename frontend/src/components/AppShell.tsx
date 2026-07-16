@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/auth';
 import { BrandLogo } from './BrandLogo';
 import { DotGridCanvas } from './DotGridCanvas';
+import { SpiderCircleEffect } from './SpiderCircleEffect';
 import { ThemeToggle } from './ThemeToggle';
 
 interface NavigationItem {
@@ -42,6 +43,7 @@ export function AppShell() {
       <div className="workspace-background" aria-hidden="true">
         <DotGridCanvas />
         <div className="workspace-background__glow" />
+        <SpiderCircleEffect />
       </div>
       <aside className={menuOpen ? 'workspace-sidebar is-open' : 'workspace-sidebar'}>
         <div className="workspace-sidebar__brand"><BrandLogo /></div>

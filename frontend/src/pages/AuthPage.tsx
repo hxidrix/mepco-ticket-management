@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { BrandLogo } from '../components/BrandLogo';
 import { DotGridCanvas } from '../components/DotGridCanvas';
+import { SpiderCircleEffect } from '../components/SpiderCircleEffect';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -124,6 +125,7 @@ export function AuthPage() {
       <section className="auth-hero" aria-labelledby="auth-hero-title">
         <DotGridCanvas />
         <div className="auth-hero__glow" aria-hidden="true" />
+        <SpiderCircleEffect />
         <div className="auth-hero__content">
           <BrandLogo />
           <motion.div
