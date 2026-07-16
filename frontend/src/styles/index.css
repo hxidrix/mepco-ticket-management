@@ -1893,6 +1893,7 @@ textarea:focus-visible {
 .audit-row { display:grid;grid-template-columns:minmax(12rem,1fr) minmax(14rem,1fr) auto auto;gap:1rem;align-items:center;padding:0.75rem 0;border-bottom:1px solid #eaecf0;font-size:0.6rem; }
 .audit-row span,.audit-row time { color:#667085; }.audit-row strong { color:#067647;text-transform:uppercase; }
 .ticket-comment-form { display: grid; grid-template-columns: minmax(0, 1fr) 13rem auto; gap: 0.7rem; align-items: end; margin-bottom: 1rem; padding: 0.9rem; border-radius: 0.75rem; background: #f9fafb; }
+.ticket-comment-form--requester { grid-template-columns: minmax(0, 1fr) auto; }
 .ticket-comment-form label { display: grid; gap: 0.35rem; color: #475467; font-size: 0.62rem; font-weight: 700; }
 .ticket-comment-form textarea,
 .ticket-comment-form select { width: 100%; min-height: 2.65rem; padding: 0.65rem 0.7rem; border: 1px solid #d0d5dd; border-radius: 0.6rem; background: #fff; font: inherit; }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import type * as FramerMotion from 'framer-motion';
 
@@ -32,7 +32,10 @@ import App from './App';
 
 describe('authentication page', () => {
   it('presents the branded identity modes after session discovery', async () => {
-    render(<App />);
+    await act(async () => {
+      render(<App />);
+      await Promise.resolve();
+    });
 
     expect(await screen.findByRole('heading', { name: /report\. track\. resolve\./i })).toBeVisible();
     expect(screen.getByAltText('MEPCO')).toBeVisible();

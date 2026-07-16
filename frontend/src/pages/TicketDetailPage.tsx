@@ -43,6 +43,8 @@ export function TicketDetailPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const manager = user?.role === 'supervisor' || user?.role === 'administrator';
+  const requester = user?.role === 'consumer' || user?.role === 'employee';
 
   const load = useCallback(async () => {
     if (!Number.isSafeInteger(ticketId)) { setError('The ticket identifier is invalid.'); return; }
@@ -124,8 +126,10 @@ export function TicketDetailPage() {
 
   const submitComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
+    const selectedVisibility = formValue(data, 'visibility');
     await mutate(() => addCommentRequest(ticketId, {
-      body: formValue(data, 'body'), visibility: formValue(data, 'visibility') as 'public' | 'internal',
+      body: formValue(data, 'body'),
+      visibility: requester || selectedVisibility !== 'internal' ? 'public' : 'internal',
     }), 'Comment added.');
     form.reset();
   };
@@ -139,8 +143,6 @@ export function TicketDetailPage() {
 
   if (detail === null) return <div className="workspace-loading">{error ?? 'Loading ticket...'}</div>;
   const { ticket } = detail;
-  const manager = user?.role === 'supervisor' || user?.role === 'administrator';
-  const requester = user?.role === 'consumer' || user?.role === 'employee';
   const requesterReadOnly = requester && ['closed', 'cancelled'].includes(ticket.statusSlug);
   const transitions = detail.allowedStatusTransitions;
   return (
@@ -170,10 +172,10 @@ export function TicketDetailPage() {
         <div className="ticket-detail__main">
           <section className="panel ticket-section"><div className="panel__heading"><div><span>Request</span><h2>Issue details</h2></div></div><p className="ticket-description">{ticket.description}</p><dl className="ticket-facts"><div><dt>Category</dt><dd>{ticket.categoryName}</dd></div><div><dt>Complaint type</dt><dd>{ticket.complaintTypeName}</dd></div><div><dt>Department / location</dt><dd>{ticket.departmentName ?? [ticket.circleName, ticket.cityName].filter(Boolean).join(' / ')}</dd></div><div><dt>Assigned to</dt><dd>{ticket.assigneeName ?? 'Awaiting assignment'}</dd></div></dl></section>
           <section className="panel ticket-section"><div className="panel__heading"><div><span>Conversation</span><h2>Ticket updates</h2></div></div>
-            {!requesterReadOnly && <form className="ticket-comment-form" onSubmit={(event) => void submitComment(event)}><label><span>Add comment</span><textarea name="body" minLength={1} maxLength={10000} required placeholder="Share an update or ask for more information" /></label>
-              <label><span>Visibility</span><select name="visibility" defaultValue="public"><option value="public">Public — requester can see</option>{(user?.role === 'technician' || manager) && <option value="internal">Internal — staff only</option>}</select></label>
+            {!requesterReadOnly && <form className={requester ? 'ticket-comment-form ticket-comment-form--requester' : 'ticket-comment-form'} onSubmit={(event) => void submitComment(event)}><label><span>Add comment</span><textarea name="body" minLength={1} maxLength={10000} required placeholder="Share an update or ask for more information" /></label>
+              {!requester && <label><span>Visibility</span><select name="visibility" defaultValue="public"><option value="public">Public — requester can see</option>{(user?.role === 'technician' || manager) && <option value="internal">Internal — staff only</option>}</select></label>}
               <button className="button button--primary" type="submit" disabled={busy}>Post comment</button></form>}
-            {detail.comments.length === 0 ? <p className="empty-state">No updates yet.</p> : <div className="comment-list">{detail.comments.map((comment) => <article key={comment.id}><div><strong>{comment.authorName}</strong><span>{comment.authorRole} · {comment.visibility}</span><time>{formatDate(comment.createdAt)}</time></div><p>{comment.body}</p></article>)}</div>}
+            {detail.comments.length === 0 ? <p className="empty-state">No updates yet.</p> : <div className="comment-list">{detail.comments.map((comment) => <article key={comment.id}><div><strong>{comment.authorName}</strong><span>{comment.authorRole}{!requester && ` · ${comment.visibility}`}</span><time>{formatDate(comment.createdAt)}</time></div><p>{comment.body}</p></article>)}</div>}
           </section>
           <section className="panel ticket-section"><div className="panel__heading"><div><span>Evidence</span><h2>Attachments</h2></div></div>
             {!requesterReadOnly && <><form className="ticket-attachment-form" onSubmit={(event) => void submitAttachment(event)}><input name="file" type="file" accept=".jpg,.jpeg,.png,.pdf,.txt,.doc,.docx" required /><button className="button button--secondary" type="submit" disabled={busy}>Upload</button></form>
