@@ -18,6 +18,7 @@ import {
   createTicket,
   deleteTicket,
   exportTicketsCsv,
+  exportTicketsPdf,
   getTicketDetail,
   getTicketAttachment,
   listTechnicians,
@@ -115,6 +116,23 @@ ticketsRouter.get(
     if (typeof request.query.dateTo === 'string') input.dateTo = request.query.dateTo;
     response.type('text/csv').attachment(`mepco-tickets-${new Date().toISOString().slice(0, 10)}.csv`)
       .send(await exportTicketsCsv(request.auth!, input));
+  }),
+);
+
+ticketsRouter.get(
+  '/reports/export.pdf', authorizeRoles('supervisor', 'administrator'),
+  query('status').optional().trim().isLength({ max: 70 }), query('priority').optional().trim().isLength({ max: 50 }),
+  query('domain').optional().isIn(['consumer', 'employee']), query('dateFrom').optional().isISO8601(),
+  query('dateTo').optional().isISO8601(), validateRequest,
+  asyncHandler(async (request, response) => {
+    const input: Omit<TicketListInput, 'page' | 'pageSize'> = {};
+    if (typeof request.query.status === 'string' && request.query.status !== '') input.status = request.query.status;
+    if (typeof request.query.priority === 'string' && request.query.priority !== '') input.priority = request.query.priority;
+    if (request.query.domain === 'consumer' || request.query.domain === 'employee') input.domain = request.query.domain;
+    if (typeof request.query.dateFrom === 'string') input.dateFrom = request.query.dateFrom;
+    if (typeof request.query.dateTo === 'string') input.dateTo = request.query.dateTo;
+    response.type('application/pdf').attachment(`mepco-tickets-${new Date().toISOString().slice(0, 10)}.pdf`)
+      .send(await exportTicketsPdf(request.auth!, input));
   }),
 );
 

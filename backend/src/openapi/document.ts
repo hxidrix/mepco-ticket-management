@@ -70,6 +70,7 @@ export const openApiDocument = {
     '/api/v1/notifications/{id}/read': { post: operation('Notifications', 'Mark one own notification read', { parameters: [idParameter] }) },
     '/api/v1/tickets/reports/metrics': { get: operation('Reports', 'Get role-scoped status, SLA, and workload metrics') },
     '/api/v1/tickets/reports/export.csv': { get: { ...operation('Reports', 'Export a manager-scoped UTF-8 ticket CSV'), responses: { '200': { description: 'CSV export', content: { 'text/csv': { schema: { type: 'string' } } } }, ...errorResponses } } },
+    '/api/v1/tickets/reports/export.pdf': { get: { ...operation('Reports', 'Export a manager-scoped paginated ticket PDF'), responses: { '200': { description: 'PDF export', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } }, ...errorResponses } } },
     '/api/v1/administration/announcements': { get: operation('Administration', 'List active announcements for own role'), post: operation('Administration', 'Create a targeted announcement', { body: true, created: true }) },
     '/api/v1/administration/announcements/all': { get: operation('Administration', 'List all announcements') },
     '/api/v1/administration/announcements/{id}': { put: operation('Administration', 'Update an announcement', { body: true, parameters: [idParameter] }), delete: operation('Administration', 'Deactivate an announcement', { parameters: [idParameter] }) },

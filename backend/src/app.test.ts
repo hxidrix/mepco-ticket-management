@@ -31,6 +31,7 @@ describe('application foundation', () => {
     expect(body.paths).toHaveProperty('/api/v1/auth/login');
     expect(body.paths).toHaveProperty('/api/v1/tickets/{id}/attachments');
     expect(body.paths).toHaveProperty('/api/v1/tickets/reports/export.csv');
+    expect(body.paths).toHaveProperty('/api/v1/tickets/reports/export.pdf');
     expect(body.paths).toHaveProperty('/api/v1/administration/audit');
     expect(Object.keys(body.paths as object).length).toBeGreaterThanOrEqual(30);
   });

@@ -13,7 +13,7 @@ All records and credentials in this repository are fictional. The application ha
 - Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
 - Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications.
-- Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and supervisor CSV export.
+- Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and manager-scoped CSV/PDF exports.
 - Administrator master data, announcements/audiences, staff routing scopes, users, and immutable audit-log views.
 - Structured Pino logs, request IDs, safe error envelopes, Helmet/CORS, parameterized SQL, transactions, foreign keys, and soft deactivation.
 - OpenAPI 3.1 / Swagger for the complete API surface.

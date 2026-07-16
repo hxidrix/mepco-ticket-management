@@ -35,4 +35,17 @@ describe('role-scoped reporting API', () => {
     await request(app).get('/api/v1/tickets/reports/export.csv')
       .set('Authorization', `Bearer ${consumer}`).expect(403);
   });
+
+  it('exports a valid scoped PDF for managers and denies requester exports', async () => {
+    const supervisor = await login('staff', 'supervisor.demo');
+    const pdf = await request(app).get('/api/v1/tickets/reports/export.pdf?domain=consumer')
+      .set('Authorization', `Bearer ${supervisor}`).expect(200);
+    expect(pdf.headers['content-type']).toContain('application/pdf');
+    expect(pdf.headers['content-disposition']).toContain('.pdf');
+    expect(Buffer.isBuffer(pdf.body)).toBe(true);
+    expect((pdf.body as Buffer).subarray(0, 4).toString()).toBe('%PDF');
+    const consumer = await login('consumer', '10000000000001');
+    await request(app).get('/api/v1/tickets/reports/export.pdf')
+      .set('Authorization', `Bearer ${consumer}`).expect(403);
+  });
 });

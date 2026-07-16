@@ -2,6 +2,7 @@ import { createHash, randomInt, randomUUID } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import PDFDocument from 'pdfkit';
 
 import { env } from '../../config/env.js';
 import { databasePool } from '../../database/pool.js';
@@ -894,4 +895,115 @@ export async function exportTicketsCsv(actor: TicketActor, input: Omit<TicketLis
     ticket.complaintTypeName, ticket.priorityName, ticket.statusName, ticket.requesterName, ticket.assigneeName,
     ticket.createdAt.toISOString(), ticket.updatedAt.toISOString()].map(csvCell).join(','));
   return `\uFEFF${header.map(csvCell).join(',')}\r\n${rows.join('\r\n')}\r\n`;
+}
+
+function pdfFilterSummary(input: Omit<TicketListInput, 'page' | 'pageSize'>): string {
+  const filters = [
+    input.domain === undefined ? undefined : `Domain: ${input.domain}`,
+    input.status === undefined ? undefined : `Status: ${input.status}`,
+    input.priority === undefined ? undefined : `Priority: ${input.priority}`,
+    input.dateFrom === undefined ? undefined : `From: ${input.dateFrom}`,
+    input.dateTo === undefined ? undefined : `To: ${input.dateTo}`,
+  ].filter((value): value is string => value !== undefined);
+  return filters.length === 0 ? 'Filters: All tickets within your authorized scope' : `Filters: ${filters.join(' | ')}`;
+}
+
+export async function exportTicketsPdf(
+  actor: TicketActor,
+  input: Omit<TicketListInput, 'page' | 'pageSize'>,
+): Promise<Buffer> {
+  const result = await listTickets(actor, { ...input, page: 1, pageSize: 10_000 });
+  const document = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 36, bufferPages: true });
+  const chunks: Buffer[] = [];
+  document.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+  const columns = [
+    { label: 'Ticket', key: 'ticketNumber', width: 88 },
+    { label: 'Domain', key: 'domain', width: 55 },
+    { label: 'Subject', key: 'subject', width: 155 },
+    { label: 'Category', key: 'categoryName', width: 110 },
+    { label: 'Priority', key: 'priorityName', width: 58 },
+    { label: 'Status', key: 'statusName', width: 72 },
+    { label: 'Assigned to', key: 'assigneeName', width: 112 },
+    { label: 'Created', key: 'createdAt', width: 84 },
+  ] as const;
+  const left = document.page.margins.left;
+  const rowHeight = 34;
+  const tableBottom = document.page.height - document.page.margins.bottom - 18;
+
+  const drawReportHeading = () => {
+    document.fillColor('#0863b5').font('Helvetica-Bold').fontSize(18)
+      .text('MEPCO Ticket Management Report', left, 30);
+    document.fillColor('#344054').font('Helvetica').fontSize(8)
+      .text(`Generated: ${new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC`, left, 56)
+      .text(pdfFilterSummary(input), left, 69)
+      .text(`Total tickets: ${result.totalItems}`, left, 82);
+  };
+
+  const drawTableHeader = (y: number) => {
+    document.rect(left, y, columns.reduce((sum, column) => sum + column.width, 0), 22).fill('#0863b5');
+    let x = left;
+    for (const column of columns) {
+      document.fillColor('#ffffff').font('Helvetica-Bold').fontSize(7)
+        .text(column.label, x + 4, y + 7, { width: column.width - 8, lineBreak: false });
+      x += column.width;
+    }
+  };
+
+  drawReportHeading();
+  let y = 105;
+  drawTableHeader(y);
+  y += 22;
+
+  for (const [index, ticket] of result.items.entries()) {
+    if (y + rowHeight > tableBottom) {
+      document.addPage();
+      y = 36;
+      drawTableHeader(y);
+      y += 22;
+    }
+    const background = index % 2 === 0 ? '#f8fafc' : '#ffffff';
+    document.rect(left, y, columns.reduce((sum, column) => sum + column.width, 0), rowHeight).fill(background);
+    const values: Record<(typeof columns)[number]['key'], string> = {
+      ticketNumber: ticket.ticketNumber,
+      domain: ticket.domain,
+      subject: ticket.subject,
+      categoryName: ticket.categoryName,
+      priorityName: ticket.priorityName,
+      statusName: ticket.statusName,
+      assigneeName: ticket.assigneeName ?? 'Unassigned',
+      createdAt: ticket.createdAt.toISOString().slice(0, 10),
+    };
+    let x = left;
+    for (const column of columns) {
+      document.fillColor('#344054').font('Helvetica').fontSize(7)
+        .text(values[column.key], x + 4, y + 7, {
+          width: column.width - 8,
+          height: rowHeight - 10,
+          ellipsis: true,
+        });
+      x += column.width;
+    }
+    document.moveTo(left, y + rowHeight).lineTo(x, y + rowHeight).strokeColor('#e4e7ec').lineWidth(0.5).stroke();
+    y += rowHeight;
+  }
+
+  if (result.items.length === 0) {
+    document.fillColor('#667085').font('Helvetica-Oblique').fontSize(9)
+      .text('No tickets matched the selected filters.', left + 8, y + 12);
+  }
+
+  const pageRange = document.bufferedPageRange();
+  for (let pageIndex = pageRange.start; pageIndex < pageRange.start + pageRange.count; pageIndex += 1) {
+    document.switchToPage(pageIndex);
+    document.fillColor('#667085').font('Helvetica').fontSize(7)
+      .text(`MEPCO Help Desk | Page ${pageIndex + 1} of ${pageRange.count}`, left,
+        document.page.height - 25, { align: 'right', width: document.page.width - left - document.page.margins.right });
+  }
+
+  return await new Promise<Buffer>((resolvePdf, rejectPdf) => {
+    document.on('end', () => resolvePdf(Buffer.concat(chunks)));
+    document.on('error', rejectPdf);
+    document.end();
+  });
 }

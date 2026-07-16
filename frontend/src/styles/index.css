@@ -1720,6 +1720,7 @@ textarea:focus-visible {
 .dashboard-breakdown article span { color: #667085; font-size: 0.62rem; }
 .dashboard-breakdown article strong { margin-left: auto; color: #101828; }
 .report-summary { margin-bottom: 1.2rem; }
+.report-export-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
 .report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
 .report-card { padding: 1.5rem; }
 .report-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #eaecf0; color: #475467; font-size: 0.68rem; }

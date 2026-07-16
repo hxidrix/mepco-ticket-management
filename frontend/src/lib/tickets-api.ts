@@ -46,10 +46,10 @@ export async function ticketMetricsRequest(): Promise<TicketMetrics> {
   return unwrap<TicketMetrics>(response.data);
 }
 
-export async function exportTicketsRequest(params: Record<string, string> = {}): Promise<void> {
-  const response = await apiClient.get('/tickets/reports/export.csv', { params, responseType: 'blob' });
+export async function exportTicketsRequest(format: 'csv' | 'pdf', params: Record<string, string> = {}): Promise<void> {
+  const response = await apiClient.get(`/tickets/reports/export.${format}`, { params, responseType: 'blob' });
   const url = URL.createObjectURL(response.data as Blob); const anchor = document.createElement('a');
-  anchor.href = url; anchor.download = `mepco-tickets-${new Date().toISOString().slice(0, 10)}.csv`; anchor.click();
+  anchor.href = url; anchor.download = `mepco-tickets-${new Date().toISOString().slice(0, 10)}.${format}`; anchor.click();
   URL.revokeObjectURL(url);
 }
 
