@@ -1668,6 +1668,7 @@ textarea:focus-visible {
 .ticket-directory { overflow: hidden; }
 .ticket-filters { grid-template-columns: minmax(15rem, 1.6fr) repeat(4, minmax(8rem, 0.7fr)); }
 .ticket-filters button { align-self: end; }
+.ticket-filters--without-domain > button { grid-column: span 2; }
 .ticket-list { display: grid; }
 .ticket-row { display: flex; gap: 2rem; align-items: center; justify-content: space-between; min-height: 6.2rem; padding: 1rem 1.25rem; border-top: 1px solid #eaecf0; color: inherit; text-decoration: none; transition: background 150ms ease; }
 .ticket-row:hover { background: #f9fbfd; }
@@ -1836,6 +1837,7 @@ textarea:focus-visible {
   .form-grid__wide { grid-column: 1; }
   .directory-filters { grid-template-columns: 1fr; }
   .ticket-filters { grid-template-columns: 1fr; }
+  .ticket-filters--without-domain > button { grid-column: auto; }
   .row-actions { min-width: 19rem; }
   .master-list__summary small { display: none; }
   .ticket-row { align-items: flex-start; flex-direction: column; gap: 0.8rem; }

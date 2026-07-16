@@ -49,18 +49,19 @@ export function TicketsPage() {
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { void catalogRequest().then(setCatalog).catch((caught: unknown) => setError(getApiErrorMessage(caught))); }, []);
   const canSubmit = user?.role === 'consumer' || user?.role === 'employee';
+  const categoryDomain = canSubmit ? user.role : domain;
 
   return (
     <main className="workspace-page">
       <div className="workspace-page__heading"><div><p>Tickets / {user?.role}</p><h1>{canSubmit ? 'My tickets' : 'Ticket queue'}</h1></div>{canSubmit && <Link className="button button--primary" to="/app/tickets/new">Submit ticket</Link>}</div>
       {error !== null && <p className="page-message is-error">{error}</p>}
       <section className="panel ticket-directory">
-        <form className="directory-filters ticket-filters" onSubmit={(event) => { event.preventDefault(); setFilters({ search, status, priority, domain, categoryId, dateFrom, dateTo, sortBy, sortOrder }); }}>
+        <form className={`directory-filters ticket-filters${canSubmit ? ' ticket-filters--without-domain' : ''}`} onSubmit={(event) => { event.preventDefault(); setFilters({ search, status, priority, domain: canSubmit ? '' : domain, categoryId, dateFrom, dateTo, sortBy, sortOrder }); }}>
           <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ticket number, subject, or description" /></label>
           <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{catalog?.statuses.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
           <label><span>Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="">All priorities</option>{catalog?.priorities.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
-          <label><span>Domain</span><select value={domain} onChange={(event) => { setDomain(event.target.value); setCategoryId(''); }}><option value="">All domains</option><option value="consumer">Consumer</option><option value="employee">Employee</option></select></label>
-          <label><span>Category</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">All categories</option>{catalog?.categories.filter((item) => domain === '' || item.domain === domain).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          {!canSubmit && <label><span>Domain</span><select value={domain} onChange={(event) => { setDomain(event.target.value); setCategoryId(''); }}><option value="">All domains</option><option value="consumer">Consumer</option><option value="employee">Employee</option></select></label>}
+          <label><span>Category</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">All categories</option>{catalog?.categories.filter((item) => categoryDomain === '' || item.domain === categoryDomain).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label><span>Created from</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
           <label><span>Created to</span><input type="date" value={dateTo} min={dateFrom} onChange={(event) => setDateTo(event.target.value)} /></label>
           <label><span>Sort by</span><select value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="createdAt">Created date</option><option value="updatedAt">Last updated</option><option value="ticketNumber">Ticket number</option><option value="priority">Priority</option><option value="status">Status</option></select></label>
