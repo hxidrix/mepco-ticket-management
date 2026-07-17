@@ -43,7 +43,15 @@ export function AppShell() {
         <SpiderCircleEffect />
       </div>
       <aside id="workspace-sidebar" className={menuOpen ? 'workspace-sidebar is-open' : 'workspace-sidebar'}>
-        <div className="workspace-sidebar__brand"><BrandLogo /></div>
+        <div className="workspace-sidebar__brand">
+          <BrandLogo />
+          <button
+            type="button"
+            className="workspace-sidebar__close"
+            aria-label="Close navigation"
+            onClick={() => setMenuOpen(false)}
+          />
+        </div>
         <nav aria-label="Primary navigation">
           {(['Workspace', 'Administration'] as const).map((section) => {
             const items = visibleNavigation.filter((item) => item.section === section);

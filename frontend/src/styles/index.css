@@ -1261,11 +1261,16 @@ textarea:focus-visible {
 }
 
 .workspace-sidebar__brand {
+  position: relative;
   display: flex;
   min-height: 7.25rem;
   align-items: center;
   padding-inline: 1.45rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.workspace-sidebar__close {
+  display: none;
 }
 
 .workspace-sidebar__brand .brand-lockup__plate {
@@ -1927,8 +1932,43 @@ textarea:focus-visible {
 
 @media (max-width: 760px) {
   .workspace-background { left: 0; }
-  .workspace-sidebar { transform: translateX(-105%); transition: transform 220ms var(--ease-out); }
-  .workspace-sidebar.is-open { transform: translateX(0); }
+  .workspace-sidebar {
+    visibility: hidden;
+    transform: translateX(-105%);
+    transition: transform 220ms var(--ease-out), visibility 0s linear 220ms;
+  }
+  .workspace-sidebar.is-open { visibility: visible; transform: translateX(0); transition-delay: 0s; }
+  .workspace-sidebar__brand { padding-right: 4.25rem; }
+  .workspace-sidebar__close {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    transform: translateY(-50%);
+    place-items: center;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--control);
+    box-shadow: inset 0 1px var(--glass-highlight);
+    cursor: pointer;
+  }
+  .workspace-sidebar__close::before,
+  .workspace-sidebar__close::after {
+    position: absolute;
+    width: 1rem;
+    height: 1.5px;
+    border-radius: 999px;
+    background: currentColor;
+    content: '';
+  }
+  .workspace-sidebar__close::before { transform: rotate(45deg); }
+  .workspace-sidebar__close::after { transform: rotate(-45deg); }
+  .workspace-sidebar__close:hover { color: var(--text-primary); background: var(--control-hover); }
+  .workspace-sidebar__close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
   .workspace-main { margin-left: 0; }
   .workspace-menu { position: fixed; z-index: 24; top: 0.75rem; left: 0.75rem; display: block; margin: 0; }
   .workspace-backdrop { position: fixed; z-index: 25; inset: 0; display: block; border: 0; background: rgba(15, 23, 42, 0.48); }
