@@ -49,7 +49,7 @@ export function ProfilePage() {
       };
       const input = profile?.role === 'consumer'
         ? { ...common, address: value(data, 'address'), circleId: Number(value(data, 'circleId')),
-            cityId: Number(value(data, 'cityId')), serviceAddress: value(data, 'serviceAddress') }
+            cityId: Number(value(data, 'cityId')) }
         : { ...common, departmentId: Number(value(data, 'departmentId')) || undefined,
             designation: value(data, 'designation'), workLocation: value(data, 'workLocation') };
       const updated = await updateProfileRequest(input);
@@ -90,7 +90,6 @@ export function ProfilePage() {
               <label className="form-grid__wide"><span>Address</span><input name="address" defaultValue={profile.address} required /></label>
               <label><span>Circle</span><select name="circleId" value={circleId} onChange={(event) => setCircleId(event.target.value)}>{options?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>
               <label><span>City</span><select name="cityId" defaultValue={profile.cityId}>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
-              <label className="form-grid__wide"><span>Service address</span><input name="serviceAddress" defaultValue={profile.serviceAddress ?? ''} /></label>
             </>
           ) : (
             <>
