@@ -14,13 +14,13 @@
   --surface-elevated: rgba(255, 255, 255, 0.48);
   --surface-soft: rgba(255, 255, 255, 0.16);
   --brand-blue-deep: #1d4ed8;
-  --brand-blue: #2563eb;
-  --brand-cyan: #60a5fa;
+  --brand-blue: #1d4ed8;
+  --brand-cyan: #0369a1;
   --brand-red: #dc2626;
   --brand-yellow: #d97706;
   --text-primary: #17171a;
-  --text-secondary: #5c5c66;
-  --text-tertiary: #7d7d86;
+  --text-secondary: #3f3f46;
+  --text-tertiary: #52525b;
   --border: rgba(24, 24, 27, 0.09);
   --border-strong: rgba(24, 24, 27, 0.15);
   --app-background: #eeeeef;
@@ -669,7 +669,7 @@ textarea:focus-visible {
 .auth-hero__lead {
   max-width: 38rem;
   margin: 2rem 0 0;
-  color: #aebbd0;
+  color: rgba(255, 255, 255, 0.82);
   font-size: clamp(1rem, 1.35vw, 1.18rem);
   line-height: 1.75;
 }
@@ -679,7 +679,7 @@ textarea:focus-visible {
   flex-wrap: wrap;
   gap: 0.75rem 1.4rem;
   margin-top: clamp(3rem, 8vh, 5.5rem);
-  color: #8493aa;
+  color: rgba(255, 255, 255, 0.68);
   font-size: 0.72rem;
   letter-spacing: 0.04em;
 }
@@ -3219,6 +3219,10 @@ time,
 
 .auth-hero__eyebrow {
   color: rgba(255, 255, 255, 0.72);
+}
+
+.auth-hero .brand-lockup__copy span {
+  color: rgba(255, 255, 255, 0.76);
 }
 
 .auth-hero h1 span {

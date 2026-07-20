@@ -1,20 +1,20 @@
 .border-glow-card {
   --edge-proximity: 0;
   --cursor-angle: 45deg;
-  --edge-sensitivity: 29;
+  --edge-sensitivity: 10;
   --color-sensitivity: calc(var(--edge-sensitivity) + 20);
   --border-radius: 28px;
-  --glow-padding: 70px;
-  --cone-spread: 25;
+  --glow-padding: 80px;
+  --cone-spread: 30;
 
   position: relative;
+  overflow: visible;
   border-radius: var(--border-radius);
   isolation: isolate;
   transform: translate3d(0, 0, 0.01px);
   display: grid;
   border: 1px solid rgb(255 255 255 / 15%);
   background: var(--card-bg, #120F17);
-  overflow: visible;
   box-shadow:
     rgba(0, 0, 0, 0.1) 0px 1px 2px,
     rgba(0, 0, 0, 0.1) 0px 2px 4px,
@@ -156,20 +156,20 @@
 .border-glow-target {
   --edge-proximity: 0;
   --cursor-angle: 110deg;
-  --edge-sensitivity: 29;
-  --color-sensitivity: 49;
+  --edge-sensitivity: 10;
+  --color-sensitivity: 30;
   --border-radius: 28px;
-  --glow-padding: 70px;
-  --cone-spread: 25;
-  --fill-opacity: 0.5;
+  --glow-padding: 80px;
+  --cone-spread: 30;
+  --fill-opacity: 0;
   --card-bg: #120f17;
   --glow-color: hsl(40deg 80% 80% / 100%);
   --glow-color-60: hsl(40deg 80% 80% / 100%);
   --glow-color-50: hsl(40deg 80% 80% / 100%);
-  --glow-color-40: hsl(40deg 80% 80% / 80%);
-  --glow-color-30: hsl(40deg 80% 80% / 60%);
-  --glow-color-20: hsl(40deg 80% 80% / 40%);
-  --glow-color-10: hsl(40deg 80% 80% / 20%);
+  --glow-color-40: hsl(40deg 80% 80% / 100%);
+  --glow-color-30: hsl(40deg 80% 80% / 90%);
+  --glow-color-20: hsl(40deg 80% 80% / 60%);
+  --glow-color-10: hsl(40deg 80% 80% / 30%);
   --gradient-one: radial-gradient(at 80% 55%, #c084fc 0, transparent 50%);
   --gradient-two: radial-gradient(at 69% 34%, #f472b6 0, transparent 50%);
   --gradient-three: radial-gradient(at 8% 6%, #38bdf8 0, transparent 50%);
@@ -180,15 +180,10 @@
   --gradient-base: linear-gradient(#c084fc 0 100%);
 
   position: relative;
+  overflow: visible;
   border-radius: var(--border-radius);
   isolation: isolate;
   transform: translate3d(0, 0, 0.01px);
-}
-
-.border-glow-target::before,
-.border-glow-target::after {
-  z-index: 2;
-  pointer-events: none;
 }
 
 .border-glow-target::before {
@@ -205,7 +200,6 @@
     #f472b6 335deg,
     #c084fc 360deg
   );
-  opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -214,46 +208,32 @@
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  filter:
-    drop-shadow(0 0 4px var(--glow-color-40))
-    drop-shadow(0 0 calc(var(--glow-padding) * 0.24) var(--glow-color-20));
-  mix-blend-mode: normal;
 }
 
 .border-glow-target::after {
   display: none;
 }
 
+.border-glow-target > .edge-light::before {
+  box-shadow:
+    inset 0 0 0 1px var(--glow-color, hsl(40deg 80% 80% / 100%)),
+    0 0 1px 0 var(--glow-color-60, hsl(40deg 80% 80% / 60%)),
+    0 0 3px 0 var(--glow-color-50, hsl(40deg 80% 80% / 50%)),
+    0 0 6px 0 var(--glow-color-40, hsl(40deg 80% 80% / 40%)),
+    0 0 15px 0 var(--glow-color-30, hsl(40deg 80% 80% / 30%)),
+    0 0 25px 2px var(--glow-color-20, hsl(40deg 80% 80% / 20%)),
+    0 0 50px 2px var(--glow-color-10, hsl(40deg 80% 80% / 10%));
+}
+
+.border-glow-target.border-glow-target {
+  overflow: visible;
+}
+
+.workspace-sidebar.border-glow-target {
+  overflow: hidden;
+}
+
 .border-glow-target > :not(.edge-light) {
   position: relative;
   z-index: 1;
-}
-
-.border-glow-target.border-glow-animated {
-  animation: border-glow-sweep 4s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes border-glow-sweep {
-  0% {
-    --edge-proximity: 0;
-    --cursor-angle: 110deg;
-  }
-  12.5% {
-    --edge-proximity: 100;
-    --cursor-angle: 145deg;
-  }
-  62.5% {
-    --edge-proximity: 100;
-    --cursor-angle: 430deg;
-  }
-  100% {
-    --edge-proximity: 0;
-    --cursor-angle: 465deg;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .border-glow-target.border-glow-animated {
-    animation: none;
-  }
 }
