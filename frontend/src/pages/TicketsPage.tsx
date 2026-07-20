@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { getApiErrorMessage } from '../lib/auth-api';
@@ -17,16 +17,18 @@ function formatDate(value: string): string {
 
 export function TicketsPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status') ?? '';
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [catalog, setCatalog] = useState<MasterCatalog | null>(null);
   const [meta, setMeta] = useState(emptyMeta);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(initialStatus);
   const [priority, setPriority] = useState('');
   const [domain, setDomain] = useState(''); const [categoryId, setCategoryId] = useState('');
   const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('createdAt'); const [sortOrder, setSortOrder] = useState('desc');
-  const [filters, setFilters] = useState({ search: '', status: '', priority: '', domain: '', categoryId: '', dateFrom: '', dateTo: '', sortBy: 'createdAt', sortOrder: 'desc' });
+  const [filters, setFilters] = useState({ search: '', status: initialStatus, priority: '', domain: '', categoryId: '', dateFrom: '', dateTo: '', sortBy: 'createdAt', sortOrder: 'desc' });
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (page = 1) => {

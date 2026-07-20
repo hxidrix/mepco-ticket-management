@@ -1,0 +1,81 @@
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
+
+import type { TicketSummary } from '../types/tickets';
+import { DashboardPage } from './DashboardPage';
+
+vi.mock('framer-motion', () => ({
+  motion: {
+    main: ({ children }: { children?: React.ReactNode }) => <main>{children}</main>,
+  },
+}));
+
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { id: 2, displayName: 'Hamza Demo Employee', role: 'employee', status: 'active' },
+  }),
+}));
+
+const pendingTicket = vi.hoisted(() => ({
+  id: 4,
+  ticketNumber: 'MEPCO-2026-000004',
+  domain: 'employee',
+  subject: 'VPN details required',
+  description: 'Additional connection details are required.',
+  categoryId: 1,
+  categoryName: 'Information Technology',
+  complaintTypeId: 1,
+  complaintTypeName: 'Network & Connectivity',
+  departmentName: 'Information Technology',
+  circleName: null,
+  cityName: null,
+  priorityId: 1,
+  priorityName: 'Low',
+  prioritySlug: 'low',
+  priorityColor: '#22a06b',
+  statusName: 'Pending User',
+  statusSlug: 'pending-user',
+  assigneeId: 7,
+  assigneeName: 'Demo Technician',
+  requesterId: 2,
+  requesterName: 'Hamza Demo Employee',
+  resolutionSummary: null,
+  version: 2,
+  createdAt: '2026-07-06T18:15:00.000Z',
+  updatedAt: '2026-07-14T23:15:00.000Z',
+} satisfies TicketSummary));
+
+vi.mock('../lib/tickets-api', () => ({
+  ticketMetricsRequest: vi.fn().mockResolvedValue({
+    summary: { total: 4, open: 2, overdue: 2, resolved: 1, averageResolutionHours: '12.5' },
+    byStatus: [{ label: 'Pending User', count: 2 }],
+    byPriority: [{ label: 'Low', count: 1 }],
+    workload: [],
+    recent: [pendingTicket],
+  }),
+  ticketsRequest: vi.fn().mockResolvedValue({
+    items: [pendingTicket],
+    meta: { page: 1, pageSize: 4, totalItems: 2, totalPages: 1 },
+  }),
+}));
+
+vi.mock('../lib/administration-api', () => ({
+  activeAnnouncementsRequest: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../lib/auth-api', () => ({
+  getApiErrorMessage: vi.fn().mockReturnValue('Unable to load dashboard'),
+}));
+
+describe('dashboard overview', () => {
+  it('shows response-needed tickets and links to the filtered queue', async () => {
+    render(<MemoryRouter><DashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByRole('heading', { name: 'Waiting for your response' })).toBeVisible();
+    expect(screen.getAllByText('VPN details required')).toHaveLength(2);
+    expect(screen.getByText('13 hours')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'View all awaiting-response tickets' }))
+      .toHaveAttribute('href', '/app/tickets?status=pending-user');
+  });
+});
