@@ -76,14 +76,14 @@ function animateValue({ start = 0, end = 100, duration = 1000, delay = 0, ease =
 export function BorderGlow({
   children,
   className = '',
-  edgeSensitivity = 29,
+  edgeSensitivity = 30,
   glowColor = '40 80 80',
   backgroundColor = '#120F17',
   borderRadius = 28,
-  glowRadius = 70,
-  glowIntensity = 2,
+  glowRadius = 40,
+  glowIntensity = 1.0,
   coneSpread = 25,
-  animated = true,
+  animated = false,
   colors = ['#c084fc', '#f472b6', '#38bdf8'],
   fillOpacity = 0.5,
 }: BorderGlowProps) {
@@ -103,7 +103,7 @@ export function BorderGlow({
     if (dx !== 0) kx = cx / Math.abs(dx);
     if (dy !== 0) ky = cy / Math.abs(dy);
     return Math.min(Math.max(1 / Math.min(kx, ky), 0), 1);
-  }, [getCenterOfElement]);
+  }, [getCenterOfElement]); 
 
   const getCursorAngle = useCallback((el: HTMLElement, x: number, y: number) => {
     const [cx, cy] = getCenterOfElement(el);
