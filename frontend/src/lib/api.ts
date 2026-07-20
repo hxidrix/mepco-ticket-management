@@ -2,7 +2,9 @@ import axios from 'axios';
 
 import type { ApiSuccess, HealthData } from '../types/health';
 
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api/v1';
+// Keep browser requests on the frontend origin. Vite and Nginx proxy /api to
+// the backend, so the HttpOnly refresh cookie remains first-party on reload.
+const apiBaseUrl = import.meta.env.VITE_API_URL ?? '/api/v1';
 
 export const apiClient = axios.create({
   baseURL: apiBaseUrl,

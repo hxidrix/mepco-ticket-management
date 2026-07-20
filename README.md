@@ -112,6 +112,11 @@ Prerequisites: Node.js 22.12+, npm, Git, and XAMPP. Only XAMPP MySQL is required
 
 5. Open the application and Swagger URLs listed above.
 
+The frontend calls `/api/v1` through Vite's same-origin proxy. Open the app at
+`http://127.0.0.1:5173` (the URL printed by Vite); do not replace the frontend API
+setting with a different host name. Keeping the page and refresh-cookie origin
+identical allows the secure session to survive a browser refresh.
+
 ## Database operations
 
 ```powershell
@@ -167,18 +172,19 @@ Swagger UI: <http://localhost:5000/api-docs>. The machine-readable OpenAPI 3.1 d
 Backend variables are documented in `backend/.env.example`; frontend variables are in `frontend/.env.example`; Compose host/database/JWT defaults are in the root `.env.example`. Important settings include:
 
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_CONNECTION_LIMIT`
-- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, access/refresh TTLs, and refresh cookie name
+- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, access/refresh TTLs, refresh cookie name, and `REFRESH_COOKIE_SECURE`
 - `CORS_ORIGIN`, `HOST`, `PORT`, and `LOG_LEVEL`
 - `UPLOAD_DIR`, `MAX_UPLOAD_BYTES`, and `REOPEN_WINDOW_DAYS`
-- `VITE_API_URL`
+- `VITE_API_URL` (normally `/api/v1`, routed by Vite or Nginx)
 
-JWT secrets must be different and at least 32 characters. Replace every example password/secret before any non-local deployment. Never commit `.env` files.
+JWT secrets must be different and at least 32 characters. `REFRESH_COOKIE_SECURE` is false only for the local HTTP examples; it defaults to true in production and must remain true behind HTTPS. Replace every example password/secret before any non-local deployment. Never commit `.env` files.
 
 ## Troubleshooting
 
 - Port conflict: XAMPP normally owns `3306`; Docker defaults to `3307`. Change only `MYSQL_HOST_PORT` for the Docker host mapping.
 - API live but not ready: check XAMPP/MySQL state and backend DB variables, then run `npm.cmd run db:status`.
 - CORS: use an origin listed exactly in `CORS_ORIGIN`; `localhost` and `127.0.0.1` are distinct origins.
+- Session disappears after refresh: keep `VITE_API_URL=/api/v1`, restart the frontend after changing `.env`, and use the exact frontend URL printed by Vite.
 - PowerShell blocks `npm.ps1`: use `npm.cmd` as shown.
 - XAMPP failure: inspect its MySQL error log; never delete `C:\xampp\mysql\data` as a shortcut.
 - Docker failure: start Docker Desktop, confirm `docker compose version`, then inspect `docker compose ps` and backend logs.

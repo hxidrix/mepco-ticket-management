@@ -12,6 +12,7 @@ export const logger = pino({
     paths: [
       'req.headers.authorization',
       'req.headers.cookie',
+      'res.headers["set-cookie"]',
       'password',
       '*.password',
       'refreshToken',
@@ -22,4 +23,3 @@ export const logger = pino({
     censor: '[REDACTED]',
   },
 });
-

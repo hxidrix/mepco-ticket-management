@@ -32,7 +32,7 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 5000
-      CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
+      CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-5173},http://127.0.0.1:${FRONTEND_PORT:-5173}
       DB_HOST: database
       DB_PORT: 3306
       DB_USER: ${MYSQL_USER:-mepco_app}
@@ -45,6 +45,8 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-docker-local-refresh-secret-change-before-production}
       ACCESS_TOKEN_TTL_MINUTES: ${ACCESS_TOKEN_TTL_MINUTES:-15}
       REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      # This Compose stack is served over local HTTP. Set true behind production HTTPS.
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
       REOPEN_WINDOW_DAYS: ${REOPEN_WINDOW_DAYS:-7}
     ports:
       - "${BACKEND_PORT:-5000}:5000"
@@ -68,7 +70,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: http://localhost:${BACKEND_PORT:-5000}/api/v1
+        VITE_API_URL: /api/v1
     restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-5173}:5173"

@@ -35,7 +35,11 @@ describe('authentication API', () => {
 
     expect(accessToken(response)).toBeTypeOf('string');
     expect(responseCookie(response)).toContain('mepco_refresh=');
-    expect(response.headers['set-cookie']?.[0]).toContain('HttpOnly');
+    const setCookie = response.headers['set-cookie']?.[0];
+    expect(setCookie).toContain('HttpOnly');
+    expect(setCookie).toContain('SameSite=Lax');
+    expect(setCookie).toContain('Path=/api/v1/auth');
+    expect(setCookie).not.toContain('Secure');
   });
 
   it('rejects a suspended account', async () => {

@@ -54,7 +54,7 @@ function getRefreshCookie(request: Request): string | null {
 function setRefreshCookie(response: Response, token: string): void {
   response.cookie(env.refreshCookieName, token, {
     httpOnly: true,
-    secure: env.nodeEnv === 'production',
+    secure: env.refreshCookieSecure,
     sameSite: 'lax',
     path: '/api/v1/auth',
     maxAge: env.refreshTokenTtlDays * 86_400_000,
@@ -158,7 +158,7 @@ authRouter.post(
     await logout(getRefreshCookie(request), requestContext(request));
     response.clearCookie(env.refreshCookieName, {
       httpOnly: true,
-      secure: env.nodeEnv === 'production',
+      secure: env.refreshCookieSecure,
       sameSite: 'lax',
       path: '/api/v1/auth',
     });

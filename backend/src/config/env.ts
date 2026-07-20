@@ -23,6 +23,14 @@ function readInteger(name: string, fallback: number, minimum: number, maximum: n
   return value;
 }
 
+function readBoolean(name: string, fallback: boolean): boolean {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (raw === undefined || raw === '') return fallback;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  throw new Error(`${name} must be either true or false`);
+}
+
 function readNodeEnvironment(): NodeEnvironment {
   const value = readString('NODE_ENV', 'development');
   if (!nodeEnvironments.includes(value as NodeEnvironment)) {
@@ -64,5 +72,6 @@ export const env = Object.freeze({
   accessTokenTtlMinutes: readInteger('ACCESS_TOKEN_TTL_MINUTES', 15, 1, 1_440),
   refreshTokenTtlDays: readInteger('REFRESH_TOKEN_TTL_DAYS', 7, 1, 90),
   refreshCookieName: readString('REFRESH_COOKIE_NAME', 'mepco_refresh'),
+  refreshCookieSecure: readBoolean('REFRESH_COOKIE_SECURE', nodeEnv === 'production'),
   reopenWindowDays: readInteger('REOPEN_WINDOW_DAYS', 7, 1, 90),
 });
