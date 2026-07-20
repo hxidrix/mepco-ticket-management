@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AppShell } from './components/AppShell';
+import { BorderGlowSystem } from './components/BorderGlowSystem';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleRoute } from './components/RoleRoute';
 import { AuthProvider } from './context/AuthProvider';
@@ -49,6 +50,7 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
+          <BorderGlowSystem />
           <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
