@@ -10,12 +10,8 @@ vi.mock('framer-motion', async (importOriginal) => {
   };
 });
 
-vi.mock('./components/DotGridCanvas', () => ({
-  DotGridCanvas: () => <div data-testid="dot-grid" />,
-}));
-
-vi.mock('./components/SpiderCircleEffect', () => ({
-  SpiderCircleEffect: () => <div data-testid="spider-effect" />,
+vi.mock('./components/SilkBackground', () => ({
+  SilkBackground: () => <div data-testid="silk-background" />,
 }));
 
 vi.mock('./lib/auth-api', () => ({
@@ -42,8 +38,7 @@ describe('authentication page', () => {
     expect(screen.getByRole('button', { name: 'Consumer' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Employee' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Staff' })).toBeVisible();
-    expect(screen.getByTestId('dot-grid')).toBeInTheDocument();
-    expect(screen.getByTestId('spider-effect')).toBeInTheDocument();
+    expect(screen.getByTestId('silk-background')).toBeInTheDocument();
 
     const password = screen.getByLabelText('Password');
     expect(password).toHaveAttribute('type', 'password');

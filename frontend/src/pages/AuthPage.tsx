@@ -4,10 +4,9 @@ import type { FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { BrandLogo } from '../components/BrandLogo';
-import { DotGridCanvas } from '../components/DotGridCanvas';
 import { GlassSurface } from '../components/GlassSurface';
 import { PasswordInput } from '../components/PasswordInput';
-import { SpiderCircleEffect } from '../components/SpiderCircleEffect';
+import { SilkBackground } from '../components/SilkBackground';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -124,10 +123,8 @@ export function AuthPage() {
 
   return (
     <main className={`auth-page auth-page--${view}`}>
+      <SilkBackground className="silk-background--auth" />
       <section className="auth-hero" aria-labelledby="auth-hero-title">
-        <DotGridCanvas />
-        <div className="auth-hero__glow" aria-hidden="true" />
-        <SpiderCircleEffect />
         <div className="auth-hero__content">
           <BrandLogo />
           <motion.div
