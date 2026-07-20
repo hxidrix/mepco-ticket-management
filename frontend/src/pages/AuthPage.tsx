@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { BrandLogo } from '../components/BrandLogo';
 import { DotGridCanvas } from '../components/DotGridCanvas';
+import { GlassSurface } from '../components/GlassSurface';
 import { PasswordInput } from '../components/PasswordInput';
 import { SpiderCircleEffect } from '../components/SpiderCircleEffect';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -161,11 +162,15 @@ export function AuthPage() {
         </div>
 
         <motion.div
-          className="auth-card"
+          className="auth-card-wrap"
           initial={reduceMotion ? false : { opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
         >
+          <GlassSurface
+            className="auth-card"
+            borderRadius={24}
+          >
           <div className="auth-card__heading">
             <p>{view === 'login' ? 'Welcome back' : 'Create an account'}</p>
             <h2>{view === 'login' ? 'Sign in to continue' : 'Join the help desk'}</h2>
@@ -314,6 +319,7 @@ export function AuthPage() {
             <code>{loginLabels[loginMode].placeholder}</code>
             <code>Demo@12345</code>
           </div>
+          </GlassSurface>
         </motion.div>
       </section>
     </main>

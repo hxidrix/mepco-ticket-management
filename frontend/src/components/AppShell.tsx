@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import type { UserRole } from '../types/auth';
 import { BrandLogo } from './BrandLogo';
 import { DotGridCanvas } from './DotGridCanvas';
+import { SidebarNavGroup } from './SidebarNavGroup';
 import { SpiderCircleEffect } from './SpiderCircleEffect';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -56,22 +57,14 @@ export function AppShell() {
           {(['Workspace', 'Administration'] as const).map((section) => {
             const items = visibleNavigation.filter((item) => item.section === section);
             if (items.length === 0) return null;
-            return <section className="workspace-nav-group" key={section} aria-label={section}>
-              <span className="workspace-nav-group__label">{section}</span>
-              {items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === '/app'}
-                  onClick={() => setMenuOpen(false)}
-                  className={({ isActive }) => [
-                    isActive ? 'is-active' : '',
-                  ].filter(Boolean).join(' ')}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </section>;
+            return (
+              <SidebarNavGroup
+                key={section}
+                label={section}
+                items={items}
+                onNavigate={() => setMenuOpen(false)}
+              />
+            );
           })}
         </nav>
         <div className="workspace-sidebar__foot">
