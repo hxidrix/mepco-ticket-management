@@ -4,9 +4,11 @@ import { hash } from 'bcryptjs';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { databasePool } from './pool.js';
+import { effectiveSlaTargetHours } from '../shared/sla.js';
 import {
   categories,
   circles,
+  complaintTypeSlaTargetHours,
   departments,
   priorities,
   roles,
@@ -160,14 +162,27 @@ async function upsertMasterData(connection: PoolConnection): Promise<void> {
 
     for (const [typeIndex, complaintType] of category.complaintTypes.entries()) {
       const isConfidential = category.confidentialTypes?.includes(complaintType) ?? false;
+      const slaTargetHours = complaintTypeSlaTargetHours(
+        category.domain,
+        category.name,
+        complaintType,
+      );
       await connection.execute(
         `INSERT INTO complaint_types
-           (category_id, name, slug, is_confidential, is_active, sort_order)
-         VALUES (?, ?, ?, ?, TRUE, ?)
+           (category_id, name, slug, sla_target_hours, is_confidential, is_active, sort_order)
+         VALUES (?, ?, ?, ?, ?, TRUE, ?)
          ON DUPLICATE KEY UPDATE
-           name = VALUES(name), is_confidential = VALUES(is_confidential), is_active = TRUE,
+           name = VALUES(name), sla_target_hours = VALUES(sla_target_hours),
+           is_confidential = VALUES(is_confidential), is_active = TRUE,
            sort_order = VALUES(sort_order)`,
-        [categoryId, complaintType, slugify(complaintType), isConfidential, typeIndex + 1],
+        [
+          categoryId,
+          complaintType,
+          slugify(complaintType),
+          slaTargetHours,
+          isConfidential,
+          typeIndex + 1,
+        ],
       );
     }
   }
@@ -488,6 +503,17 @@ async function ensureTicket(
   const complaintTypeId = complaintRows[0]?.id;
   if (complaintTypeId === undefined) throw new Error(`Missing complaint type ${seed.complaintTypeName}`);
   const priorityId = await idBy(connection, 'priorities', 'slug', seed.prioritySlug);
+  const complaintSlaTargetHours = complaintTypeSlaTargetHours(
+    seed.domain,
+    seed.categoryName,
+    seed.complaintTypeName,
+  );
+  const prioritySlaTargetHours = priorities.find(([, slug]) => slug === seed.prioritySlug)?.[4]
+    ?? null;
+  const slaTargetHours = effectiveSlaTargetHours(
+    complaintSlaTargetHours,
+    prioritySlaTargetHours,
+  );
   const statusId = await idBy(connection, 'ticket_statuses', 'slug', seed.statusSlug);
   const departmentId =
     seed.departmentName === undefined
@@ -507,11 +533,12 @@ async function ensureTicket(
   const [ticketResult] = await connection.execute<ResultSetHeader>(
     `INSERT INTO tickets (
        ticket_number, requester_id, domain, subject, description, category_id, complaint_type_id,
-       department_id, circle_id, city_id, location_details, priority_id, status_id,
+       department_id, circle_id, city_id, location_details, priority_id,
+       complaint_sla_target_hours, sla_target_hours, status_id,
        current_assignee_id, resolution_summary, category_name_snapshot,
        complaint_type_name_snapshot, department_name_snapshot, circle_name_snapshot,
        city_name_snapshot, resolved_at, closed_at, created_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       seed.ticketNumber,
       seed.requesterId,
@@ -525,6 +552,8 @@ async function ensureTicket(
       cityId,
       seed.domain === 'consumer' ? 'Fictional service location, Multan' : 'Fictional demo office',
       priorityId,
+      complaintSlaTargetHours,
+      slaTargetHours,
       statusId,
       seed.assigneeId ?? null,
       seed.resolution ?? null,
@@ -635,6 +664,14 @@ async function seedDemoActivity(connection: PoolConnection, users: DemoUserIds):
   for (const ticket of tickets) {
     await ensureTicket(connection, ticket, users.supervisor);
   }
+
+  await connection.execute(
+    `UPDATE tickets t
+     JOIN complaint_types ct ON ct.id = t.complaint_type_id
+     JOIN priorities p ON p.id = t.priority_id
+     SET t.complaint_sla_target_hours = ct.sla_target_hours,
+         t.sla_target_hours = LEAST(ct.sla_target_hours, COALESCE(p.sla_target_hours, ct.sla_target_hours))`,
+  );
 
   const [announcementRows] = await connection.execute<CountRow[]>(
     "SELECT COUNT(*) AS count FROM announcements WHERE title = 'Welcome to the MEPCO Help Desk Demo'",

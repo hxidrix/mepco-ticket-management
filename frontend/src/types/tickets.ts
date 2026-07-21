@@ -17,6 +17,10 @@ export interface TicketSummary {
   priorityName: string;
   prioritySlug: string;
   priorityColor: string;
+  complaintSlaTargetHours: number;
+  slaTargetHours: number;
+  slaDueAt: string;
+  isOverdue: 0 | 1;
   statusName: string;
   statusSlug: string;
   assigneeId: number | null;

@@ -64,7 +64,10 @@ export function MasterDataPage() {
     if (resource === 'categories') {
       input.domain = value(data, 'domain'); input.departmentId = Number(value(data, 'departmentId')) || undefined;
     }
-    if (resource === 'complaint-types') input.isConfidential = checked(data, 'isConfidential');
+    if (resource === 'complaint-types') {
+      input.isConfidential = checked(data, 'isConfidential');
+      input.slaTargetHours = Number(value(data, 'slaTargetHours')) || 120;
+    }
     if (resource === 'priorities') {
       input.colorToken = value(data, 'colorToken'); input.slaTargetHours = Number(value(data, 'slaTargetHours')) || undefined;
     }
@@ -104,7 +107,7 @@ export function MasterDataPage() {
           <label className="check-label"><input name="isActive" type="checkbox" defaultChecked={editing === null || active(editing)} /><span>Active</span></label>
           {resource === 'cities' && <label className="form-grid__wide"><span>Circle</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select circle</option>{catalog?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>}
           {resource === 'categories' && <><label><span>Domain</span><select name="domain" defaultValue={editing?.domain ?? 'consumer'}><option value="consumer">Consumer</option><option value="employee">Employee</option></select></label><label><span>Department</span><select name="departmentId" defaultValue={editing?.departmentId ?? ''}><option value="">No department</option>{catalog?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label></>}
-          {resource === 'complaint-types' && <><label className="form-grid__wide"><span>Category</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select category</option>{catalog?.categories.map((category) => <option key={category.id} value={category.id}>{category.domain} / {category.name}</option>)}</select></label><label className="check-label"><input name="isConfidential" type="checkbox" defaultChecked={editing?.isConfidential === 1 || editing?.isConfidential === true} /><span>Confidential type</span></label></>}
+          {resource === 'complaint-types' && <><label className="form-grid__wide"><span>Category</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select category</option>{catalog?.categories.map((category) => <option key={category.id} value={category.id}>{category.domain} / {category.name}</option>)}</select></label><label><span>Normal SLA target (hours)</span><input name="slaTargetHours" type="number" min="1" max="10000" defaultValue={editing?.slaTargetHours ?? 120} required /></label><label className="check-label"><input name="isConfidential" type="checkbox" defaultChecked={editing?.isConfidential === 1 || editing?.isConfidential === true} /><span>Confidential type</span></label></>}
           {resource === 'priorities' && <><label><span>Color token</span><input name="colorToken" defaultValue={editing?.colorToken ?? 'blue'} required /></label><label><span>SLA target (hours)</span><input name="slaTargetHours" type="number" min="1" defaultValue={editing?.slaTargetHours ?? ''} /></label></>}
           {resource === 'statuses' && <label className="check-label"><input name="isTerminal" type="checkbox" defaultChecked={editing?.isTerminal === 1 || editing?.isTerminal === true} /><span>Terminal status</span></label>}
           <button className="button button--primary form-grid__wide" type="submit" disabled={busy}>{busy ? 'Saving...' : 'Save item'}</button>

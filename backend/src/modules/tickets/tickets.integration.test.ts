@@ -27,6 +27,42 @@ async function catalog(accessToken: string): Promise<CatalogShape> {
 }
 
 describe('requester ticket API', () => {
+  it('keeps the long complaint target when automatic priority is low', async () => {
+    const consumerToken = await login('consumer', '10000000000001');
+    const data = await catalog(consumerToken);
+    const category = data.categories.find((item) =>
+      item.domain === 'consumer' && item.name === 'Leads / Requests / Others');
+    const complaintType = category?.complaintTypes.find((item) => item.name === 'Electrification');
+    const circle = data.circles[0];
+    const city = circle?.cities[0];
+    if (category === undefined || complaintType === undefined || circle === undefined || city === undefined) {
+      throw new Error('Long-term consumer complaint data is missing');
+    }
+
+    const response = await request(app).post('/api/v1/tickets')
+      .set('Authorization', `Bearer ${consumerToken}`)
+      .send({
+        subject: 'Fictional long-term electrification request',
+        description: 'Acceptance scenario for a planned request with a ninety-day normal target.',
+        categoryId: category.id,
+        complaintTypeId: complaintType.id,
+        circleId: circle.id,
+        cityId: city.id,
+        locationDetails: 'Fictional long-term request location',
+      })
+      .expect(201);
+    const ticketId = (response.body as { data: { ticket: { id: number } } }).data.ticket.id;
+    const detail = await request(app).get(`/api/v1/tickets/${ticketId}`)
+      .set('Authorization', `Bearer ${consumerToken}`)
+      .expect(200);
+
+    expect(detail.body).toMatchObject({ data: { ticket: {
+      prioritySlug: 'low',
+      complaintSlaTargetHours: 2160,
+      slaTargetHours: 2160,
+    } } });
+  });
+
   it('creates one consumer ticket for a repeated idempotent submission and returns it privately', async () => {
     const consumerToken = await login('consumer', '10000000000001');
     const data = await catalog(consumerToken);
@@ -63,9 +99,14 @@ describe('requester ticket API', () => {
       id: firstTicket.id,
       domain: 'consumer',
       prioritySlug: 'high',
+      complaintSlaTargetHours: 12,
+      slaTargetHours: 12,
+      isOverdue: 0,
       statusSlug: 'assigned',
       assigneeName: 'Bilal Operations Technician',
     } } });
+    const slaDueAt = (detail.body as { data: { ticket: { slaDueAt: unknown } } }).data.ticket.slaDueAt;
+    expect(typeof slaDueAt).toBe('string');
     const version = (detail.body as { data: { ticket: { version: number } } }).data.ticket.version;
     await request(app).post(`/api/v1/tickets/${firstTicket.id}/close-review`)
       .set('Authorization', `Bearer ${consumerToken}`)

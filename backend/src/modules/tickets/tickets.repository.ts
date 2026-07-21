@@ -8,6 +8,7 @@ import { env } from '../../config/env.js';
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
 import { writeAudit } from '../../shared/audit.js';
+import { effectiveSlaTargetHours } from '../../shared/sla.js';
 import type { RequestContext } from '../auth/auth.types.js';
 import type {
   TicketActor, TicketClosureReviewInput, TicketCreateInput, TicketDomain, TicketListInput,
@@ -17,7 +18,8 @@ import { consumerRoutingDepartment } from './ticket-routing.js';
 
 type SqlValue = string | number | null;
 interface IdRow extends RowDataPacket { id: number; name: string }
-interface PriorityRow extends IdRow { slug: string }
+interface ComplaintTypeRow extends IdRow { slaTargetHours: number }
+interface PriorityRow extends IdRow { slug: string; slaTargetHours: number | null }
 interface CategoryRow extends RowDataPacket {
   id: number; name: string; domain: TicketDomain; departmentId: number | null; departmentName: string | null;
 }
@@ -29,6 +31,7 @@ interface TicketRow extends RowDataPacket {
   circleName: string | null; cityId: number | null; cityName: string | null;
   otherCategory: string | null; otherComplaintType: string | null; locationDetails: string | null;
   priorityId: number; priorityName: string; prioritySlug: string; priorityColor: string;
+  complaintSlaTargetHours: number; slaTargetHours: number; slaDueAt: Date; isOverdue: number;
   statusId: number; statusName: string; statusSlug: string; assigneeId: number | null;
   assigneeName: string | null; requesterId: number; requesterName: string; resolutionSummary: string | null;
   version: number; createdAt: Date; updatedAt: Date; resolvedAt: Date | null; closedAt: Date | null;
@@ -41,7 +44,8 @@ interface TicketReviewRow extends RowDataPacket {
 interface WorkflowRow extends RowDataPacket {
   id: number; requesterId: number; domain: TicketDomain; departmentId: number | null;
   categoryId: number; circleId: number | null; assigneeId: number | null;
-  statusId: number; statusSlug: string; version: number; resolvedAt: Date | null; closedAt: Date | null;
+  statusId: number; statusSlug: string; version: number; complaintSlaTargetHours: number;
+  resolvedAt: Date | null; closedAt: Date | null;
 }
 interface TechnicianRow extends RowDataPacket {
   id: number; displayName: string; departmentName: string | null; activeAssignments: number;
@@ -74,6 +78,11 @@ const ticketSelect = `
     t.city_id AS cityId, t.city_name_snapshot AS cityName, t.other_category AS otherCategory,
     t.other_complaint_type AS otherComplaintType, t.location_details AS locationDetails,
     p.id AS priorityId, p.name AS priorityName, p.slug AS prioritySlug, p.color_token AS priorityColor,
+    t.complaint_sla_target_hours AS complaintSlaTargetHours,
+    t.sla_target_hours AS slaTargetHours,
+    DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR) AS slaDueAt,
+    (s.slug NOT IN ('resolved', 'closed', 'cancelled', 'pending-user')
+      AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)) AS isOverdue,
     s.id AS statusId, s.name AS statusName, s.slug AS statusSlug,
     t.current_assignee_id AS assigneeId, assignee.display_name AS assigneeName,
     t.requester_id AS requesterId, requester.display_name AS requesterName,
@@ -116,8 +125,9 @@ async function validateCreation(
   if (category === undefined || category.domain !== domain) {
     throw new AppError(422, 'INVALID_CATEGORY', 'The category is not valid for this ticket domain');
   }
-  const [types] = await connection.execute<IdRow[]>(
-    `SELECT id, name FROM complaint_types WHERE id = ? AND category_id = ? AND is_active = TRUE`,
+  const [types] = await connection.execute<ComplaintTypeRow[]>(
+    `SELECT id, name, sla_target_hours AS slaTargetHours
+     FROM complaint_types WHERE id = ? AND category_id = ? AND is_active = TRUE`,
     [input.complaintTypeId, input.categoryId],
   );
   const complaintType = types[0];
@@ -173,7 +183,8 @@ async function validateCreation(
       ...(input.otherComplaintType === undefined ? {} : { otherComplaintType: input.otherComplaintType }),
     });
     const [priorities] = await connection.execute<PriorityRow[]>(
-      'SELECT id, name, slug FROM priorities WHERE slug = ? AND is_active = TRUE', [prioritySlug],
+      `SELECT id, name, slug, sla_target_hours AS slaTargetHours
+       FROM priorities WHERE slug = ? AND is_active = TRUE`, [prioritySlug],
     );
     [priority] = priorities;
   } else {
@@ -181,14 +192,19 @@ async function validateCreation(
       throw new AppError(422, 'PRIORITY_REQUIRED', 'Select a priority for the employee ticket');
     }
     const [priorities] = await connection.execute<PriorityRow[]>(
-      'SELECT id, name, slug FROM priorities WHERE id = ? AND is_active = TRUE', [input.priorityId],
+      `SELECT id, name, slug, sla_target_hours AS slaTargetHours
+       FROM priorities WHERE id = ? AND is_active = TRUE`, [input.priorityId],
     );
     [priority] = priorities;
   }
   if (priority === undefined) throw new AppError(422, 'INVALID_PRIORITY', 'The ticket priority is unavailable');
+  const slaTargetHours = effectiveSlaTargetHours(
+    complaintType.slaTargetHours,
+    priority.slaTargetHours,
+  );
   return {
     category, complaintType, departmentId, departmentName, routingDepartmentId,
-    routingDepartmentName, circle, city, priority,
+    routingDepartmentName, circle, city, priority, slaTargetHours,
   };
 }
 
@@ -249,13 +265,15 @@ export async function createTicket(
            (ticket_number, idempotency_key, requester_id, domain, subject, description,
             category_id, complaint_type_id, department_id, circle_id, city_id, other_category,
             other_complaint_type, location_details, priority_id, status_id, current_assignee_id,
+            complaint_sla_target_hours, sla_target_hours,
             category_name_snapshot, complaint_type_name_snapshot, department_name_snapshot,
             circle_name_snapshot, city_name_snapshot)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [number, input.idempotencyKey ?? null, actor.id, domain, input.subject, input.description,
             input.categoryId, input.complaintTypeId, validated.departmentId, validated.circle?.id ?? null,
             validated.city?.id ?? null, input.otherCategory ?? null, input.otherComplaintType ?? null,
             input.locationDetails ?? null, validated.priority.id, statusId, assignee?.id ?? null,
+            validated.complaintType.slaTargetHours, validated.slaTargetHours,
             validated.category.name,
             validated.complaintType.name, validated.departmentName, validated.circle?.name ?? null,
             validated.city?.name ?? null],
@@ -275,6 +293,8 @@ export async function createTicket(
         priorityId: validated.priority.id,
         priority: validated.priority.slug,
         prioritySource: domain === 'consumer' ? 'automatic' : 'requester',
+        complaintSlaTargetHours: validated.complaintType.slaTargetHours,
+        slaTargetHours: validated.slaTargetHours,
       })],
     );
     if (assignee !== undefined) {
@@ -409,6 +429,7 @@ async function workflowTicket(connection: PoolConnection, ticketId: number): Pro
     `SELECT t.id, t.requester_id AS requesterId, t.domain, t.department_id AS departmentId,
       t.category_id AS categoryId, t.circle_id AS circleId, t.current_assignee_id AS assigneeId,
       t.status_id AS statusId, s.slug AS statusSlug, t.version,
+      t.complaint_sla_target_hours AS complaintSlaTargetHours,
       t.resolved_at AS resolvedAt, t.closed_at AS closedAt
      FROM tickets t JOIN ticket_statuses s ON s.id=t.status_id
      WHERE t.id=? AND t.deleted_at IS NULL FOR UPDATE`, [ticketId],
@@ -719,13 +740,18 @@ export async function changeTicketPriority(
   try {
     await connection.beginTransaction(); const ticket = await workflowTicket(connection, ticketId);
     if (ticket.version !== expectedVersion) throw new AppError(409, 'VERSION_CONFLICT', 'The ticket changed; reload and try again');
-    const [priorities] = await connection.execute<IdRow[]>('SELECT id, name FROM priorities WHERE id=? AND is_active=TRUE', [priorityId]);
-    if (priorities[0] === undefined) throw new AppError(422, 'INVALID_PRIORITY', 'The priority is unavailable');
-    const [old] = await connection.execute<IdRow[]>('SELECT p.id, p.name FROM tickets t JOIN priorities p ON p.id=t.priority_id WHERE t.id=?', [ticketId]);
-    await connection.execute('UPDATE tickets SET priority_id=?, version=version+1 WHERE id=? AND version=?', [priorityId, ticketId, expectedVersion]);
+    const [priorities] = await connection.execute<PriorityRow[]>(`SELECT id, name, slug, sla_target_hours AS slaTargetHours FROM priorities WHERE id=? AND is_active=TRUE`, [priorityId]);
+    const priority = priorities[0];
+    if (priority === undefined) throw new AppError(422, 'INVALID_PRIORITY', 'The priority is unavailable');
+    const [old] = await connection.execute<Array<IdRow & RowDataPacket & { slaTargetHours: number }>>('SELECT p.id, p.name, t.sla_target_hours AS slaTargetHours FROM tickets t JOIN priorities p ON p.id=t.priority_id WHERE t.id=?', [ticketId]);
+    const effectiveTarget = effectiveSlaTargetHours(
+      ticket.complaintSlaTargetHours,
+      priority.slaTargetHours,
+    );
+    await connection.execute('UPDATE tickets SET priority_id=?, sla_target_hours=?, version=version+1 WHERE id=? AND version=?', [priorityId, effectiveTarget, ticketId, expectedVersion]);
     await connection.execute(
       `INSERT INTO ticket_history (ticket_id,event_type,actor_id,old_value,new_value,reason) VALUES (?,'priority_changed',?,?,?,?)`,
-      [ticketId, actor.id, JSON.stringify({ priority: old[0]?.name }), JSON.stringify({ priority: priorities[0].name }), reason],
+      [ticketId, actor.id, JSON.stringify({ priority: old[0]?.name, slaTargetHours: old[0]?.slaTargetHours }), JSON.stringify({ priority: priority.name, slaTargetHours: effectiveTarget }), reason],
     );
     await writeAudit(connection, { actorId: actor.id, action: 'ticket.priority_changed', entityType: 'ticket', entityId: String(ticketId), context, metadata: { priorityId } });
     await connection.commit();
@@ -856,8 +882,8 @@ export async function ticketMetrics(actor: TicketActor) {
   const [summaries] = await databasePool.execute<SummaryMetricRow[]>(
     `SELECT COUNT(*) AS total,
       SUM(s.slug NOT IN ('resolved','closed','cancelled')) AS open,
-      SUM(s.slug NOT IN ('resolved','closed','cancelled') AND p.sla_target_hours IS NOT NULL
-        AND TIMESTAMPDIFF(HOUR,t.created_at,UTC_TIMESTAMP()) > p.sla_target_hours) AS overdue,
+      SUM(s.slug NOT IN ('resolved','closed','cancelled','pending-user')
+        AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)) AS overdue,
       SUM(s.slug IN ('resolved','closed')) AS resolved,
       ROUND(AVG(CASE WHEN t.resolved_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE,t.created_at,t.resolved_at)/60 END),1) AS averageResolutionHours
      ${common}`, values,

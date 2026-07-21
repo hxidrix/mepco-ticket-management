@@ -59,7 +59,8 @@ function selectFor(resource: MasterResource): string {
       FROM categories cat LEFT JOIN departments d ON d.id = cat.department_id`;
     case 'complaint-types': return `SELECT ct.id, ct.name, ct.slug, ct.description, ct.is_active AS isActive,
       ct.sort_order AS sortOrder, ct.category_id AS parentId, cat.name AS parentName,
-      ct.is_confidential AS isConfidential FROM complaint_types ct JOIN categories cat ON cat.id = ct.category_id`;
+      ct.is_confidential AS isConfidential, ct.sla_target_hours AS slaTargetHours
+      FROM complaint_types ct JOIN categories cat ON cat.id = ct.category_id`;
     case 'priorities': return `SELECT id, name, slug, description, is_active AS isActive, sort_order AS sortOrder,
       color_token AS colorToken, sla_target_hours AS slaTargetHours FROM priorities`;
     case 'statuses': return `SELECT id, name, slug, description, is_active AS isActive, sort_order AS sortOrder,
@@ -99,7 +100,7 @@ function insertStatement(resource: MasterResource, input: Record<string, unknown
     case 'circles': return { sql: `INSERT INTO circles (name, slug, is_active, sort_order) VALUES (?, ?, ?, ?)`, values: [name, slug, flag(input, 'isActive', true), sortOrder] };
     case 'cities': return { sql: `INSERT INTO cities (circle_id, name, slug, is_active, sort_order) VALUES (?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, flag(input, 'isActive', true), sortOrder] };
     case 'categories': return { sql: `INSERT INTO categories (domain, department_id, name, slug, description, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)`, values: [text(input, 'domain'), integer(input, 'departmentId'), name, slug, description, flag(input, 'isActive', true), sortOrder] };
-    case 'complaint-types': return { sql: `INSERT INTO complaint_types (category_id, name, slug, description, is_confidential, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, description, flag(input, 'isConfidential'), flag(input, 'isActive', true), sortOrder] };
+    case 'complaint-types': return { sql: `INSERT INTO complaint_types (category_id, name, slug, description, sla_target_hours, is_confidential, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, description, integer(input, 'slaTargetHours') ?? 120, flag(input, 'isConfidential'), flag(input, 'isActive', true), sortOrder] };
     case 'priorities': return { sql: `INSERT INTO priorities (name, slug, description, color_token, sla_target_hours, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)`, values: [name, slug, description ?? '', text(input, 'colorToken', 'blue'), integer(input, 'slaTargetHours'), flag(input, 'isActive', true), sortOrder] };
     case 'statuses': return { sql: `INSERT INTO ticket_statuses (name, slug, description, is_terminal, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?)`, values: [name, slug, description ?? '', flag(input, 'isTerminal'), flag(input, 'isActive', true), sortOrder] };
   }
@@ -116,7 +117,7 @@ function updateStatement(resource: MasterResource, input: Record<string, unknown
     case 'circles': return { sql: `UPDATE circles SET name=?, slug=?, is_active=?, sort_order=? WHERE id=?`, values: [name, slug, active, sortOrder, id] };
     case 'cities': return { sql: `UPDATE cities SET circle_id=?, name=?, slug=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, active, sortOrder, id] };
     case 'categories': return { sql: `UPDATE categories SET domain=?, department_id=?, name=?, slug=?, description=?, is_active=?, sort_order=? WHERE id=?`, values: [text(input, 'domain'), integer(input, 'departmentId'), name, slug, description, active, sortOrder, id] };
-    case 'complaint-types': return { sql: `UPDATE complaint_types SET category_id=?, name=?, slug=?, description=?, is_confidential=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, description, flag(input, 'isConfidential'), active, sortOrder, id] };
+    case 'complaint-types': return { sql: `UPDATE complaint_types SET category_id=?, name=?, slug=?, description=?, sla_target_hours=?, is_confidential=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, description, integer(input, 'slaTargetHours') ?? 120, flag(input, 'isConfidential'), active, sortOrder, id] };
     case 'priorities': return { sql: `UPDATE priorities SET name=?, slug=?, description=?, color_token=?, sla_target_hours=?, is_active=?, sort_order=? WHERE id=?`, values: [name, slug, description ?? '', text(input, 'colorToken', 'blue'), integer(input, 'slaTargetHours'), active, sortOrder, id] };
     case 'statuses': return { sql: `UPDATE ticket_statuses SET name=?, slug=?, description=?, is_terminal=?, is_active=?, sort_order=? WHERE id=?`, values: [name, slug, description ?? '', flag(input, 'isTerminal'), active, sortOrder, id] };
   }

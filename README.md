@@ -14,6 +14,7 @@ All records and credentials in this repository are fictional. The application ha
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
 - Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications.
 - Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and manager-scoped CSV/PDF exports.
+- Complaint-specific SLA targets from 4 hours to 90 days, with priority urgency caps and configurable master-data values; see [the SLA catalogue](docs/SLA_TARGETS.md).
 - Administrator master data, announcements/audiences, staff routing scopes, users, and immutable audit-log views.
 - Structured Pino logs, request IDs, safe error envelopes, Helmet/CORS, parameterized SQL, transactions, foreign keys, and soft deactivation.
 - OpenAPI 3.1 / Swagger for the complete API surface.

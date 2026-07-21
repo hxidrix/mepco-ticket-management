@@ -1,4 +1,11 @@
-import { categories, circles, departments, roles, ticketStatuses } from './catalog-data.js';
+import {
+  categories,
+  circles,
+  complaintTypeSlaTargetHours,
+  departments,
+  roles,
+  ticketStatuses,
+} from './catalog-data.js';
 
 describe('SRS master-data seed', () => {
   it('contains all five roles and all lifecycle statuses', () => {
@@ -31,5 +38,25 @@ describe('SRS master-data seed', () => {
       const slugs = category.complaintTypes.map(slugify);
       expect(new Set(slugs).size).toBe(slugs.length);
     }
+  });
+
+  it('assigns a configurable SLA target to every complaint type', () => {
+    const complaintTypes = categories.flatMap((category) =>
+      category.complaintTypes.map((complaintType) => ({ category, complaintType })),
+    );
+
+    expect(complaintTypes).toHaveLength(154);
+    for (const { category, complaintType } of complaintTypes) {
+      const target = complaintTypeSlaTargetHours(
+        category.domain,
+        category.name,
+        complaintType,
+      );
+      expect(target).toBeGreaterThanOrEqual(1);
+      expect(target).toBeLessThanOrEqual(10_000);
+    }
+
+    expect(complaintTypeSlaTargetHours('consumer', 'Line Complaints', 'Live Fallen Wire')).toBe(4);
+    expect(complaintTypeSlaTargetHours('consumer', 'Line Complaints', 'LT/HT Line Relocation/Improvement- Long Term')).toBe(2160);
   });
 });

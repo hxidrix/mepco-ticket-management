@@ -108,7 +108,7 @@ export function DashboardPage() {
         <article className={(metrics?.summary.overdue ?? 0) > 0 ? 'overview-metric--risk' : undefined}>
           <div><span>Past SLA</span><small>Needs attention</small></div>
           <strong>{metrics?.summary.overdue ?? '—'}</strong>
-          <p>Open tickets beyond their priority target.</p>
+          <p>Open tickets beyond their complaint-type and priority target.</p>
         </article>
       </section>
 

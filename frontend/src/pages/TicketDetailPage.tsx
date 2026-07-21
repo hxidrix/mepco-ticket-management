@@ -25,6 +25,12 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat('en-PK', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
+function formatSlaTarget(hours: number): string {
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'}`;
+  const days = hours / 24;
+  return `${Number.isInteger(days) ? days : days.toFixed(1)} day${days === 1 ? '' : 's'}`;
+}
+
 function eventLabel(value: string): string { return value.replaceAll('_', ' ').replace(/\b\w/gu, (letter) => letter.toUpperCase()); }
 function formValue(data: FormData, name: string): string {
   const entry = data.get(name);
@@ -170,7 +176,7 @@ export function TicketDetailPage() {
       {user?.role === 'administrator' && <section className="panel ticket-danger-zone"><div className="panel__heading"><div><span>Administrator action</span><h2>Delete ticket</h2></div></div><p>Soft-delete this ticket from operational lists. The audit record is retained.</p><form onSubmit={(event) => void submitDeletion(event)}><label><span>Deletion reason</span><input name="reason" minLength={3} maxLength={500} required placeholder="Explain why this ticket should be deleted" /></label><button className="button button--danger" type="submit" disabled={busy}>Delete ticket</button></form></section>}
       <div className="ticket-detail__grid">
         <div className="ticket-detail__main">
-          <section className="panel ticket-section"><div className="panel__heading"><div><span>Request</span><h2>Issue details</h2></div></div><p className="ticket-description">{ticket.description}</p><dl className="ticket-facts"><div><dt>Category</dt><dd>{ticket.categoryName}</dd></div><div><dt>Complaint type</dt><dd>{ticket.complaintTypeName}</dd></div><div><dt>Department / location</dt><dd>{ticket.departmentName ?? [ticket.circleName, ticket.cityName].filter(Boolean).join(' / ')}</dd></div><div><dt>Assigned to</dt><dd>{ticket.assigneeName ?? 'Awaiting assignment'}</dd></div></dl></section>
+          <section className="panel ticket-section"><div className="panel__heading"><div><span>Request</span><h2>Issue details</h2></div></div><p className="ticket-description">{ticket.description}</p><dl className="ticket-facts"><div><dt>Category</dt><dd>{ticket.categoryName}</dd></div><div><dt>Complaint type</dt><dd>{ticket.complaintTypeName}</dd></div><div><dt>Effective SLA</dt><dd>{formatSlaTarget(ticket.slaTargetHours)}{ticket.isOverdue === 1 ? ' · Overdue' : ''}</dd></div><div><dt>SLA due</dt><dd>{formatDate(ticket.slaDueAt)}</dd></div><div><dt>Department / location</dt><dd>{ticket.departmentName ?? [ticket.circleName, ticket.cityName].filter(Boolean).join(' / ')}</dd></div><div><dt>Assigned to</dt><dd>{ticket.assigneeName ?? 'Awaiting assignment'}</dd></div></dl></section>
           <section className="panel ticket-section"><div className="panel__heading"><div><span>Conversation</span><h2>Ticket updates</h2></div></div>
             {!requesterReadOnly && <form className={requester ? 'ticket-comment-form ticket-comment-form--requester' : 'ticket-comment-form'} onSubmit={(event) => void submitComment(event)}><label><span>Add comment</span><textarea name="body" minLength={1} maxLength={10000} required placeholder="Share an update or ask for more information" /></label>
               {!requester && <label><span>Visibility</span><select name="visibility" defaultValue="public"><option value="public">Public — requester can see</option>{(user?.role === 'technician' || manager) && <option value="internal">Internal — staff only</option>}</select></label>}
