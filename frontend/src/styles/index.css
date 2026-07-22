@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 :root {
+  /* Render the interface at the visual density of Chrome's 90% zoom while the browser stays at 100%. */
+  font-size: 90%;
   color-scheme: light;
   font-family: "Geist Variable", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-synthesis: none;
@@ -103,7 +105,7 @@ body {
   color: var(--text-primary);
   background: var(--app-background);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 
