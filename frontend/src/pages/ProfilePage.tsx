@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
 import { changePasswordRequest, profileRequest, updateProfileRequest } from '../lib/users-api';
@@ -106,9 +107,9 @@ export function ProfilePage() {
         <form className="panel form-grid form-grid--single" onSubmit={(event) => void submitPassword(event)}>
           <div className="panel__heading"><div><span>Security</span><h2>Change password</h2></div></div>
           <p className="panel__copy">Changing your password revokes every active session, including this one.</p>
-          <label><span>Current password</span><input name="currentPassword" type="password" required autoComplete="current-password" /></label>
-          <label><span>New password</span><input name="newPassword" type="password" required minLength={10} autoComplete="new-password" /></label>
-          <label><span>Confirm new password</span><input name="confirmPassword" type="password" required minLength={10} autoComplete="new-password" /></label>
+          <PasswordInput name="currentPassword" label="Current password" autoComplete="current-password" />
+          <PasswordInput name="newPassword" label="New password" autoComplete="new-password" minLength={10} />
+          <PasswordInput name="confirmPassword" label="Confirm new password" autoComplete="new-password" minLength={10} />
           <button className="button button--danger" type="submit" disabled={saving}>Change password</button>
         </form>
       </div>

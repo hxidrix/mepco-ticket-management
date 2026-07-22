@@ -13,13 +13,15 @@ interface AnnouncementRow extends RowDataPacket {
   isActive: number; audiences: string | null; createdAt: Date; updatedAt: Date;
 }
 interface AuditRow extends RowDataPacket {
-  id: number; actorName: string | null; action: string; entityType: string; entityId: string | null;
-  result: string; requestId: string | null; ipAddress: string | null; metadata: unknown; createdAt: Date;
+  id: number; actorId: number | null; actorName: string | null; actorRole: string | null;
+  action: string; entityType: string; entityId: string | null; result: string;
+  requestId: string | null; ipAddress: string | null; beforeData: unknown; afterData: unknown;
+  metadata: unknown; createdAt: Date;
 }
 interface ScopeRow extends RowDataPacket {
   id: number; userId: number; displayName: string; role: string; domain: string; departmentId: number | null;
   departmentName: string | null; categoryId: number | null; categoryName: string | null; circleId: number | null;
-  circleName: string | null; canSelfAssign: number;
+  circleName: string | null;
 }
 
 const announcementSelect = `SELECT a.id,a.title,a.body,u.display_name AS authorName,a.starts_at AS startsAt,
@@ -102,14 +104,20 @@ export async function deactivateAnnouncement(actorId: number, id: number, contex
 
 export async function listAuditLogs(input: { page: number; pageSize: number; search?: string; result?: string }) {
   const conditions = ['1=1']; const values: Array<string | number> = [];
-  if (input.search !== undefined) { conditions.push('(al.action LIKE ? OR al.entity_type LIKE ? OR u.display_name LIKE ?)'); const q=`%${input.search}%`; values.push(q,q,q); }
+  if (input.search !== undefined) {
+    conditions.push(`(al.action LIKE ? OR al.entity_type LIKE ? OR al.entity_id LIKE ? OR u.display_name LIKE ?
+      OR al.request_id LIKE ? OR al.ip_address LIKE ? OR CAST(al.metadata AS CHAR) LIKE ?)`);
+    const q=`%${input.search}%`; values.push(q,q,q,q,q,q,q);
+  }
   if (input.result !== undefined) { conditions.push('al.result=?'); values.push(input.result); }
   const where=conditions.join(' AND ');
   const [counts] = await databasePool.execute<CountRow[]>(`SELECT COUNT(*) AS count FROM audit_logs al LEFT JOIN users u ON u.id=al.actor_id WHERE ${where}`,values);
   const [rows] = await databasePool.execute<AuditRow[]>(
-    `SELECT al.id,u.display_name AS actorName,al.action,al.entity_type AS entityType,al.entity_id AS entityId,
-      al.result,al.request_id AS requestId,al.ip_address AS ipAddress,al.metadata,al.created_at AS createdAt
-     FROM audit_logs al LEFT JOIN users u ON u.id=al.actor_id WHERE ${where}
+    `SELECT al.id,al.actor_id AS actorId,u.display_name AS actorName,r.name AS actorRole,al.action,
+      al.entity_type AS entityType,al.entity_id AS entityId,al.result,al.request_id AS requestId,
+      al.ip_address AS ipAddress,al.before_data AS beforeData,al.after_data AS afterData,
+      al.metadata,al.created_at AS createdAt
+     FROM audit_logs al LEFT JOIN users u ON u.id=al.actor_id LEFT JOIN roles r ON r.id=u.role_id WHERE ${where}
      ORDER BY al.created_at DESC,al.id DESC LIMIT ? OFFSET ?`, [...values,input.pageSize,(input.page-1)*input.pageSize],
   );
   return { items: rows, totalItems: counts[0]?.count ?? 0 };
@@ -119,7 +127,7 @@ export async function listStaffScopes(): Promise<ScopeRow[]> {
   const [rows] = await databasePool.execute<ScopeRow[]>(
     `SELECT ss.id,u.id AS userId,u.display_name AS displayName,r.name AS role,ss.domain,
       ss.department_id AS departmentId,d.name AS departmentName,ss.category_id AS categoryId,c.name AS categoryName,
-      ss.circle_id AS circleId,ci.name AS circleName,ss.can_self_assign AS canSelfAssign
+      ss.circle_id AS circleId,ci.name AS circleName
      FROM staff_scopes ss JOIN users u ON u.id=ss.user_id JOIN roles r ON r.id=u.role_id
      LEFT JOIN departments d ON d.id=ss.department_id LEFT JOIN categories c ON c.id=ss.category_id
      LEFT JOIN circles ci ON ci.id=ss.circle_id ORDER BY u.display_name,ss.domain,ss.id`,
@@ -128,7 +136,7 @@ export async function listStaffScopes(): Promise<ScopeRow[]> {
 
 export async function replaceStaffScopes(
   actorId: number, userId: number,
-  scopes: Array<{ domain: 'consumer' | 'employee'; departmentId?: number; categoryId?: number; circleId?: number; canSelfAssign?: boolean }>,
+  scopes: Array<{ domain: 'consumer' | 'employee'; departmentId?: number; categoryId?: number; circleId?: number }>,
   context: RequestContext,
 ): Promise<void> {
   const connection=await databasePool.getConnection();
@@ -152,8 +160,8 @@ export async function replaceStaffScopes(
         if(categories[0]===undefined||categories[0].domain!==scope.domain)throw new AppError(422,'INVALID_SCOPE','The category does not match the scope domain');
       }
       await connection.execute(
-        `INSERT INTO staff_scopes (user_id,domain,department_id,category_id,circle_id,can_self_assign) VALUES (?,?,?,?,?,?)`,
-        [userId,scope.domain,scope.departmentId ?? null,scope.categoryId ?? null,scope.circleId ?? null,scope.canSelfAssign ?? false],
+        `INSERT INTO staff_scopes (user_id,domain,department_id,category_id,circle_id,can_self_assign) VALUES (?,?,?,?,?,FALSE)`,
+        [userId,scope.domain,scope.departmentId ?? null,scope.categoryId ?? null,scope.circleId ?? null],
       );
     }
     await writeAudit(connection,{ actorId,action:'admin.staff_scopes.replaced',entityType:'user',entityId:String(userId),context,metadata:{ count:scopes.length } });

@@ -210,9 +210,14 @@ async function validateCreation(
 
 async function leastBusyTechnician(
   connection: PoolConnection,
-  departmentId: number | null,
+  input: {
+    domain: TicketDomain;
+    routingDepartmentId: number | null;
+    categoryId: number;
+    circleId: number | null;
+  },
 ): Promise<AutoAssigneeRow | undefined> {
-  if (departmentId === null) return undefined;
+  if (input.routingDepartmentId === null) return undefined;
   const [technicians] = await connection.execute<AutoAssigneeRow[]>(
     `SELECT u.id, u.display_name AS displayName, COUNT(a.id) AS activeAssignments
      FROM users u
@@ -220,10 +225,17 @@ async function leastBusyTechnician(
      JOIN staff_profiles sp ON sp.user_id = u.id AND sp.department_id = ?
      LEFT JOIN assignments a ON a.technician_id = u.id AND a.ended_at IS NULL
      WHERE u.status = 'active' AND u.deleted_at IS NULL
+       AND EXISTS (
+         SELECT 1 FROM staff_scopes scope
+         WHERE scope.user_id = u.id AND scope.domain = ?
+           AND (scope.department_id IS NULL OR scope.department_id = ?)
+           AND (scope.category_id IS NULL OR scope.category_id = ?)
+           AND (scope.circle_id IS NULL OR scope.circle_id = ?)
+       )
      GROUP BY u.id, u.display_name
      ORDER BY activeAssignments ASC, u.id ASC
      LIMIT 1`,
-    [departmentId],
+    [input.routingDepartmentId, input.domain, input.routingDepartmentId, input.categoryId, input.circleId],
   );
   return technicians[0];
 }
@@ -248,7 +260,12 @@ export async function createTicket(
       if (existing[0] !== undefined) { await connection.commit(); return existing[0]; }
     }
     const validated = await validateCreation(connection, domain, input);
-    const assignee = await leastBusyTechnician(connection, validated.routingDepartmentId);
+    const assignee = await leastBusyTechnician(connection, {
+      domain,
+      routingDepartmentId: validated.routingDepartmentId,
+      categoryId: input.categoryId,
+      circleId: validated.circle?.id ?? null,
+    });
     const initialStatusSlug = assignee === undefined ? 'new' : 'assigned';
     const [statuses] = await connection.execute<PriorityRow[]>(
       'SELECT id, name, slug FROM ticket_statuses WHERE slug = ? AND is_active = TRUE',
@@ -448,7 +465,7 @@ export async function listTechnicians(actor: TicketActor, ticketId?: number): Pr
   if (ticketId !== undefined && !(await canAccessTicket(actor, ticketId))) {
     throw new AppError(404, 'TICKET_NOT_FOUND', 'The ticket was not found');
   }
-  const scopeFilter = actor.role === 'administrator' || ticketId === undefined ? '' : `AND EXISTS (
+  const scopeFilter = ticketId === undefined ? '' : `AND EXISTS (
     SELECT 1 FROM tickets target
     JOIN staff_scopes scope ON scope.user_id=u.id AND scope.domain=target.domain
     WHERE target.id=?

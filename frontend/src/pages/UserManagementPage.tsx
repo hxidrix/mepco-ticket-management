@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { PasswordInput } from '../components/PasswordInput';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
 import {
   createStaffRequest,
@@ -116,7 +117,7 @@ export function UserManagementPage() {
           <label><span>Full name</span><input name="displayName" required /></label>
           <label><span>Email</span><input name="email" type="email" /></label>
           <label><span>Phone</span><input name="phone" /></label>
-          <label><span>Temporary password</span><input name="password" type="password" defaultValue="Demo@12345" minLength={10} required /></label>
+          <PasswordInput name="password" label="Temporary password" autoComplete="new-password" defaultValue="Demo@12345" minLength={10} />
           <label className="form-grid__wide"><span>Department</span><select name="departmentId"><option value="">No department</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
           <label><span>Designation</span><input name="designation" required /></label>
           <label><span>Work location</span><input name="workLocation" required /></label>

@@ -18,7 +18,12 @@ describe('administration governance API',()=>{
     const visible=await request(app).get('/api/v1/administration/announcements').set('Authorization',`Bearer ${consumer}`).expect(200);
     expect((visible.body as {data:Array<{id:number}>}).data).toEqual(expect.arrayContaining([expect.objectContaining({id})]));
     const audit=await request(app).get('/api/v1/administration/audit?search=announcement.created').set('Authorization',`Bearer ${admin}`).expect(200);
-    expect((audit.body as {data:Array<{action:string}>}).data.some((item)=>item.action==='admin.announcement.created')).toBe(true);
+    const event=(audit.body as {data:Array<{action:string;actorRole:string|null;entityType:string;entityId:string|null;result:string;requestId:string|null;ipAddress:string|null}>}).data.find((item)=>item.action==='admin.announcement.created');
+    expect(event).toMatchObject({actorRole:'supervisor',entityType:'announcement',entityId:String(id),result:'success'});
+    expect(typeof event?.requestId).toBe('string');
+    expect(typeof event?.ipAddress).toBe('string');
+    await request(app).get(`/api/v1/administration/audit?search=${encodeURIComponent(event?.requestId??'missing')}`).set('Authorization',`Bearer ${admin}`).expect(200)
+      .expect((response)=>{expect((response.body as {data:Array<{id:number}>}).data.length).toBeGreaterThan(0);});
     await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${supervisor}`).expect(200);
     await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${consumer}`).expect(403);
     await request(app).delete(`/api/v1/administration/announcements/${id}`).set('Authorization',`Bearer ${supervisor}`).expect(200);
@@ -30,12 +35,12 @@ describe('administration governance API',()=>{
     const technician=(users.body as {data:Array<{id:number;username:string}>}).data.find((item)=>item.username==='tech.it');
     if(technician===undefined)throw new Error('Technician missing');
     await request(app).put(`/api/v1/administration/scopes/${technician.id}`).set('Authorization',`Bearer ${admin}`)
-      .send({scopes:[{domain:'employee',canSelfAssign:true}]}).expect(200);
+      .send({scopes:[{domain:'employee'}]}).expect(200);
     await request(app).put(`/api/v1/administration/scopes/${technician.id}`).set('Authorization',`Bearer ${admin}`)
       .send({scopes:[{domain:'consumer',departmentId:1}]}).expect(422);
     const scopes=await request(app).get('/api/v1/administration/scopes').set('Authorization',`Bearer ${admin}`).expect(200);
-    expect((scopes.body as {data:Array<{userId:number;domain:string;canSelfAssign:number}>}).data)
-      .toEqual(expect.arrayContaining([expect.objectContaining({userId:technician.id,domain:'employee',canSelfAssign:1})]));
+    expect((scopes.body as {data:Array<{userId:number;domain:string}>}).data)
+      .toEqual(expect.arrayContaining([expect.objectContaining({userId:technician.id,domain:'employee'})]));
     await request(app).get('/api/v1/administration/scopes').set('Authorization',`Bearer ${technicianToken}`).expect(403);
   });
 });

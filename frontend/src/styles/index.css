@@ -3866,6 +3866,256 @@ time,
   color: color-mix(in srgb, var(--brand-blue) 72%, var(--text-primary));
 }
 
+/* Operations administration clarity and audit detail. */
+.scope-form__intro,
+.staff-scope-panel > .panel__copy {
+  margin: 0 0 0.4rem;
+  line-height: 1.65;
+}
+
+.audit-panel__heading {
+  gap: 1rem;
+  align-items: end;
+}
+
+.audit-search-form {
+  display: grid;
+  width: min(100%, 48rem);
+  grid-template-columns: minmax(14rem, 1fr) minmax(8rem, 0.38fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.audit-search-form :is(input, select, .button) {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.65rem;
+  font: inherit;
+}
+
+.audit-search-form :is(input, select) {
+  padding: 0.62rem 0.72rem;
+  color: var(--text-primary);
+  background: var(--control);
+}
+
+.audit-search-form > .button.button--secondary {
+  display: inline-flex;
+  min-width: 7.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.62rem 0.9rem;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--control-hover);
+  box-shadow: inset 0 1px 0 var(--liquid-highlight), var(--liquid-shadow-small);
+  font-size: 0.68rem;
+  font-weight: 680;
+}
+
+.audit-summary {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  padding: 0.8rem 0 0.35rem;
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+}
+
+.audit-summary strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+
+.audit-list {
+  display: grid;
+}
+
+.audit-entry {
+  border-bottom: 1px solid var(--border);
+}
+
+.audit-entry:last-child {
+  border-bottom: 0;
+}
+
+.audit-entry > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.95rem 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.audit-entry > summary::-webkit-details-marker {
+  display: none;
+}
+
+.audit-entry > summary > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.audit-entry > summary code {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-entry > summary span,
+.audit-entry > summary time {
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+}
+
+.audit-result {
+  padding: 0.25rem 0.48rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.53rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.audit-result--success {
+  border-color: color-mix(in srgb, #22a06b 38%, var(--border));
+  color: color-mix(in srgb, #22a06b 76%, var(--text-primary));
+}
+
+.audit-result--failure {
+  border-color: color-mix(in srgb, var(--brand-red) 38%, var(--border));
+  color: color-mix(in srgb, var(--brand-red) 76%, var(--text-primary));
+}
+
+.audit-entry__details {
+  display: grid;
+  gap: 1rem;
+  padding: 0 0 1.2rem;
+}
+
+.audit-entry__details dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.audit-entry__details dl div,
+.audit-json-grid > div {
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.62rem;
+  background: color-mix(in srgb, var(--control) 70%, transparent);
+}
+
+.audit-entry__details dt,
+.audit-json-grid span {
+  color: var(--text-tertiary);
+  font-size: 0.55rem;
+  font-weight: 680;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.audit-entry__details dd {
+  overflow-wrap: anywhere;
+  margin: 0.3rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.63rem;
+}
+
+.audit-json-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.audit-json-grid pre {
+  max-height: 12rem;
+  margin: 0.5rem 0 0;
+  overflow: auto;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+/* Independent, reliable page and sidebar scrolling. */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.workspace-shell {
+  min-height: 100dvh;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.workspace-sidebar,
+.workspace-sidebar.border-glow-target {
+  display: grid;
+  max-height: calc(100dvh - 1.6rem);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.workspace-sidebar nav {
+  min-height: 0;
+  align-content: start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.workspace-sidebar__foot {
+  margin: 0 1rem 1rem;
+}
+
+.workspace-main,
+.workspace-content {
+  min-width: 0;
+}
+
+* {
+  scrollbar-color: color-mix(in srgb, var(--text-tertiary) 55%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 0.58rem;
+  height: 0.58rem;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 @media (max-width: 1180px) {
   .overview-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3877,6 +4127,14 @@ time,
 
   .announcement-management-grid {
     grid-template-columns: 1fr;
+  }
+
+  .audit-panel__heading {
+    display: grid;
+  }
+
+  .audit-search-form {
+    width: 100%;
   }
 }
 
@@ -3919,9 +4177,631 @@ time,
     flex-direction: column;
   }
 
+  .audit-search-form,
+  .audit-entry__details dl,
+  .audit-json-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-entry > summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .audit-entry > summary time {
+    grid-column: 1;
+  }
+
+  .workspace-sidebar,
+  .workspace-sidebar.border-glow-target {
+    max-height: calc(100dvh - 1.3rem);
+  }
+
   .response-ticket-list > a > div:last-child,
   .dashboard-ticket-list > a > div:last-child {
     align-items: flex-start;
     justify-items: start;
   }
+}
+
+/* Operations controls: practical boundary management and readable audit evidence. */
+.scope-builder,
+.staff-scope-panel,
+.audit-panel {
+  margin-bottom: 1.2rem;
+  padding: 1.5rem;
+}
+
+.scope-builder {
+  display: grid;
+  gap: 1rem;
+}
+
+.scope-builder__intro {
+  max-width: 62rem;
+  margin: 0;
+  line-height: 1.65;
+}
+
+.scope-builder label,
+.scope-directory-toolbar label,
+.audit-toolbar label {
+  display: grid;
+  gap: 0.38rem;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 620;
+}
+
+.scope-builder__staff {
+  max-width: 38rem;
+}
+
+.scope-builder__rules {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.scope-rule-editor {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--control) 58%, transparent);
+}
+
+.scope-rule-editor legend {
+  padding: 0 0.38rem;
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+  font-weight: 720;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.scope-rule-editor__heading,
+.scope-builder__actions,
+.scope-person header,
+.audit-pagination {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scope-rule-editor__heading p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.scope-rule-editor__heading button,
+.scope-person header > button,
+.scope-add-rule,
+.audit-pagination button {
+  border: 0;
+  color: var(--brand-blue);
+  background: transparent;
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.scope-rule-editor__heading button:hover,
+.scope-person header > button:hover,
+.scope-add-rule:hover,
+.audit-pagination button:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.scope-rule-editor__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.scope-builder__actions {
+  padding-top: 0.2rem;
+}
+
+.scope-add-rule:disabled,
+.audit-pagination button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.scope-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+
+.scope-metrics > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.72rem;
+  background: color-mix(in srgb, var(--control) 62%, transparent);
+}
+
+.scope-metrics strong {
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 620;
+}
+
+.scope-metrics span {
+  color: var(--text-tertiary);
+  font-size: 0.59rem;
+}
+
+.scope-directory-toolbar {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(10rem, 0.3fr);
+  gap: 0.7rem;
+  margin-bottom: 0.85rem;
+}
+
+.scope-directory {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.scope-person {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.82rem;
+  background: color-mix(in srgb, var(--control) 48%, transparent);
+}
+
+.scope-person__identity {
+  display: flex;
+  min-width: 0;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.scope-person__identity > span {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-primary);
+  background: var(--control);
+  font-size: 0.72rem;
+  font-weight: 720;
+}
+
+.scope-person__identity > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.13rem;
+}
+
+.scope-person__identity strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scope-person__identity small,
+.scope-person__role-note {
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
+.scope-person__role-note {
+  margin: 0.75rem 0;
+}
+
+.scope-person__rules {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.scope-person__rule {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.scope-person__rule strong {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  font-weight: 570;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scope-person__rule small {
+  color: var(--text-tertiary);
+  font-size: 0.54rem;
+}
+
+.scope-domain,
+.audit-result {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.scope-domain {
+  padding: 0.25rem 0.42rem;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-soft) 68%, transparent);
+  font-size: 0.52rem;
+}
+
+.scope-domain--consumer {
+  border-color: color-mix(in srgb, var(--brand-blue) 34%, var(--border));
+  color: color-mix(in srgb, var(--brand-blue) 68%, var(--text-primary));
+}
+
+.scope-person__empty {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px dashed color-mix(in srgb, var(--brand-red) 38%, var(--border));
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--brand-red) 5%, transparent);
+}
+
+.scope-person__empty strong {
+  color: color-mix(in srgb, var(--brand-red) 72%, var(--text-primary));
+  font-size: 0.64rem;
+}
+
+.scope-person__empty span {
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
+.audit-toolbar {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(9rem, 0.24fr) auto;
+  gap: 0.7rem;
+  align-items: end;
+  margin: 1rem 0;
+}
+
+.audit-toolbar .button {
+  min-width: 7.5rem;
+  min-height: 2.65rem;
+}
+
+.audit-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.82rem;
+  background: color-mix(in srgb, var(--control) 34%, transparent);
+}
+
+.audit-table__head,
+.audit-event__trigger {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.55fr) minmax(9rem, 0.95fr) minmax(7rem, 0.7fr) minmax(8.5rem, 0.8fr) 4.5rem 1.5rem;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.audit-table__head {
+  padding: 0.62rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+  font-size: 0.52rem;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.audit-event {
+  border-bottom: 1px solid var(--border);
+}
+
+.audit-event:last-child {
+  border-bottom: 0;
+}
+
+.audit-event__trigger {
+  width: 100%;
+  padding: 0.78rem 0.85rem;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.audit-event__trigger:hover,
+.audit-event.is-expanded > .audit-event__trigger {
+  background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+}
+
+.audit-event__action,
+.audit-event__actor,
+.audit-event__target {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.audit-event__trigger strong,
+.audit-event__trigger time {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.62rem;
+  font-weight: 610;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-event__trigger code,
+.audit-event__trigger small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 0.53rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-event__trigger time {
+  color: var(--text-secondary);
+  font-size: 0.57rem;
+  font-weight: 520;
+}
+
+.audit-event__chevron {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.audit-event__details {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0 0.85rem 0.9rem;
+}
+
+.audit-event__details dl,
+.audit-event__json {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.audit-event__details dl > div,
+.audit-event__json > div {
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.62rem;
+  background: color-mix(in srgb, var(--control) 72%, transparent);
+}
+
+.audit-event__details dt,
+.audit-event__json span {
+  color: var(--text-tertiary);
+  font-size: 0.51rem;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.audit-event__details dd {
+  overflow-wrap: anywhere;
+  margin: 0.28rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.59rem;
+  line-height: 1.45;
+}
+
+.audit-event__json pre {
+  max-height: 12rem;
+  margin: 0.45rem 0 0;
+  overflow: auto;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.audit-result {
+  padding: 0.25rem 0.45rem;
+  color: var(--text-secondary);
+  font-size: 0.5rem;
+  font-weight: 720;
+}
+
+.audit-result--success {
+  border-color: color-mix(in srgb, #22a06b 40%, var(--border));
+  color: color-mix(in srgb, #22a06b 72%, var(--text-primary));
+  background: color-mix(in srgb, #22a06b 7%, transparent);
+}
+
+.audit-result--failure {
+  border-color: color-mix(in srgb, var(--brand-red) 42%, var(--border));
+  color: color-mix(in srgb, var(--brand-red) 74%, var(--text-primary));
+  background: color-mix(in srgb, var(--brand-red) 7%, transparent);
+}
+
+.audit-pagination {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.audit-pagination span {
+  color: var(--text-tertiary);
+  font-size: 0.61rem;
+}
+
+@media (max-width: 1040px) {
+  .scope-directory {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-table__head,
+  .audit-event__trigger {
+    grid-template-columns: minmax(12rem, 1.4fr) minmax(8rem, 0.8fr) minmax(6rem, 0.6fr) minmax(7.5rem, 0.7fr) 4rem 1.5rem;
+    gap: 0.55rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .scope-builder,
+  .staff-scope-panel,
+  .audit-panel {
+    padding: 1rem;
+  }
+
+  .scope-rule-editor__grid,
+  .scope-metrics,
+  .scope-directory-toolbar,
+  .audit-toolbar,
+  .audit-event__details dl,
+  .audit-event__json {
+    grid-template-columns: 1fr;
+  }
+
+  .scope-builder__actions,
+  .scope-person header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .scope-builder__actions .button,
+  .audit-toolbar .button {
+    width: 100%;
+  }
+
+  .scope-person__rule {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .scope-person__rule small {
+    grid-column: 2;
+  }
+
+  .audit-table__head {
+    display: none;
+  }
+
+  .audit-event__trigger {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.6rem;
+  }
+
+  .audit-event__action {
+    grid-column: 1;
+  }
+
+  .audit-event__actor,
+  .audit-event__target,
+  .audit-event__trigger time {
+    grid-column: 1;
+  }
+
+  .audit-event__trigger .audit-result,
+  .audit-event__chevron {
+    grid-column: 2;
+  }
+
+  .audit-event__trigger .audit-result {
+    grid-row: 1;
+  }
+
+  .audit-event__chevron {
+    grid-row: 2;
+  }
+}
+
+/* Consistent application dropdowns instead of the browser's flat default selects. */
+.workspace-shell select {
+  width: 100%;
+  min-height: 2.72rem;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0.66rem 2.45rem 0.66rem 0.78rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.72rem;
+  color: var(--text-primary);
+  background-color: color-mix(in srgb, var(--control) 88%, transparent);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+    linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1rem) calc(50% - 0.08rem),
+    calc(100% - 0.72rem) calc(50% - 0.08rem);
+  background-repeat: no-repeat;
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--liquid-highlight) 58%, transparent);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.workspace-shell select:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--text-secondary) 48%, var(--border-strong));
+  background-color: color-mix(in srgb, var(--control) 96%, transparent);
+}
+
+.workspace-shell select:focus-visible {
+  border-color: var(--brand-blue);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.workspace-shell select:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.workspace-shell select option,
+.workspace-shell select optgroup {
+  color: var(--text-primary);
+  background: var(--app-background);
+}
+
+.scope-directory-toolbar input,
+.scope-directory-toolbar select,
+.audit-toolbar input,
+.audit-toolbar select,
+.scope-builder select {
+  min-height: 2.72rem;
+  border-radius: 0.72rem;
 }

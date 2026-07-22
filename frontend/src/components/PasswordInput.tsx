@@ -3,17 +3,25 @@ import { useId, useState } from 'react';
 interface PasswordInputProps {
   autoComplete: 'current-password' | 'new-password';
   className?: string;
+  defaultValue?: string;
   hint?: string;
+  label?: string;
   minLength?: number;
+  name?: string;
   placeholder?: string;
+  required?: boolean;
 }
 
 export function PasswordInput({
   autoComplete,
   className,
+  defaultValue,
   hint,
+  label = 'Password',
   minLength,
+  name = 'password',
   placeholder,
+  required = true,
 }: PasswordInputProps) {
   const inputId = useId();
   const [visible, setVisible] = useState(false);
@@ -21,13 +29,14 @@ export function PasswordInput({
 
   return (
     <div className={classes}>
-      <label htmlFor={inputId}><span>Password</span></label>
+      <label htmlFor={inputId}><span>{label}</span></label>
       <div className="auth-password-field__control">
         <input
           id={inputId}
-          name="password"
+          name={name}
           type={visible ? 'text' : 'password'}
-          required
+          required={required}
+          defaultValue={defaultValue}
           minLength={minLength}
           autoComplete={autoComplete}
           placeholder={placeholder}
@@ -35,7 +44,7 @@ export function PasswordInput({
         <button
           className="auth-password-field__toggle"
           type="button"
-          aria-label={`${visible ? 'Hide' : 'Show'} password`}
+          aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
           aria-pressed={visible}
           onClick={() => setVisible((current) => !current)}
         >
