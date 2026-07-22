@@ -17,8 +17,10 @@ function formatDate(value: string): string {
 
 export function TicketsPage() {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialStatus = searchParams.get('status') ?? '';
+  const requestedView = searchParams.get('view');
+  const dashboardView = requestedView === 'open' || requestedView === 'overdue' ? requestedView : '';
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [catalog, setCatalog] = useState<MasterCatalog | null>(null);
   const [meta, setMeta] = useState(emptyMeta);
@@ -37,6 +39,7 @@ export function TicketsPage() {
       const result = await ticketsRequest({ params: { page, pageSize: 20,
         ...(filters.search === '' ? {} : { search: filters.search }),
         ...(filters.status === '' ? {} : { status: filters.status }),
+        ...(dashboardView === '' ? {} : { view: dashboardView }),
         ...(filters.priority === '' ? {} : { priority: filters.priority }),
         ...(filters.domain === '' ? {} : { domain: filters.domain }),
         ...(filters.categoryId === '' ? {} : { categoryId: filters.categoryId }),
@@ -46,18 +49,33 @@ export function TicketsPage() {
       } });
       setTickets(result.items); setMeta(result.meta);
     } catch (caught) { setError(getApiErrorMessage(caught)); }
-  }, [filters]);
+  }, [dashboardView, filters]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { void catalogRequest().then(setCatalog).catch((caught: unknown) => setError(getApiErrorMessage(caught))); }, []);
   const canSubmit = user?.role === 'consumer' || user?.role === 'employee';
   const categoryDomain = canSubmit ? user.role : domain;
+  const dashboardViewLabel = dashboardView === 'open'
+    ? 'Showing tickets that are still open'
+    : dashboardView === 'overdue' ? 'Showing open tickets that are past SLA' : null;
+
+  const clearDashboardView = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('view');
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <main className="workspace-page">
       <div className="workspace-page__heading"><div><p>Tickets / {user?.role}</p><h1>{canSubmit ? 'My tickets' : 'Ticket queue'}</h1></div>{canSubmit && <Link className="button button--primary" to="/app/tickets/new">Submit ticket</Link>}</div>
       {error !== null && <p className="page-message is-error">{error}</p>}
       <section className="panel ticket-directory">
+        {dashboardViewLabel !== null && (
+          <div className="ticket-view-filter" role="status">
+            <span>{dashboardViewLabel}</span>
+            <button type="button" onClick={clearDashboardView}>Show all tickets</button>
+          </div>
+        )}
         <form className={`directory-filters ticket-filters${canSubmit ? ' ticket-filters--without-domain' : ''}`} onSubmit={(event) => { event.preventDefault(); setFilters({ search, status, priority, domain: canSubmit ? '' : domain, categoryId, dateFrom, dateTo, sortBy, sortOrder }); }}>
           <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ticket number, subject, or description" /></label>
           <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{catalog?.statuses.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>

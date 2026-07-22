@@ -22,14 +22,6 @@ function formatUpdatedAt(value: string): string {
   return new Intl.DateTimeFormat('en-PK', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-function formatHours(value: number | null): string {
-  if (value === null) return 'Not available';
-  const hours = Number(value);
-  if (!Number.isFinite(hours)) return 'Not available';
-  if (hours < 24) return `${hours.toFixed(hours < 10 ? 1 : 0)} hours`;
-  return `${(hours / 24).toFixed(1)} days`;
-}
-
 export function DashboardPage() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
@@ -60,8 +52,6 @@ export function DashboardPage() {
     return () => { active = false; };
   }, []);
 
-  const statusMaximum = Math.max(1, ...(metrics?.byStatus.map((item) => item.count) ?? [1]));
-
   if (user === null) return null;
   const requester = user.role === 'consumer' || user.role === 'employee';
   const responseTitle = requester ? 'Waiting for your response' : 'Waiting on requester';
@@ -91,24 +81,32 @@ export function DashboardPage() {
 
       <section className="overview-grid overview-metrics" aria-label="Ticket metrics">
         <article>
-          <div><span>Visible tickets</span><small>All in your scope</small></div>
-          <strong>{metrics?.summary.total ?? '—'}</strong>
-          <p>Your complete role-scoped ticket view.</p>
+          <Link className="overview-metric-link" to="/app/tickets" aria-label="View all visible tickets">
+            <div><span>Visible tickets</span><small>All in your scope</small></div>
+            <strong>{metrics?.summary.total ?? '—'}</strong>
+            <p>Your complete role-scoped ticket view.</p>
+          </Link>
         </article>
         <article>
-          <div><span>Open work</span><small>Currently active</small></div>
-          <strong>{metrics?.summary.open ?? '—'}</strong>
-          <p>Tickets still moving through the workflow.</p>
+          <Link className="overview-metric-link" to="/app/tickets?view=open" aria-label="View open tickets">
+            <div><span>Open work</span><small>Currently active</small></div>
+            <strong>{metrics?.summary.open ?? '—'}</strong>
+            <p>Tickets still moving through the workflow.</p>
+          </Link>
         </article>
         <article className={(pendingTotal ?? 0) > 0 ? 'overview-metric--attention' : undefined}>
-          <div><span>Awaiting response</span><small>{requester ? 'Action required' : 'Requester action'}</small></div>
-          <strong>{pendingTotal ?? '—'}</strong>
-          <p>{requester ? 'Tickets that need your reply.' : 'Tickets paused for requester input.'}</p>
+          <Link className="overview-metric-link" to="/app/tickets?status=pending-user" aria-label="View tickets awaiting a response">
+            <div><span>Awaiting response</span><small>{requester ? 'Action required' : 'Requester action'}</small></div>
+            <strong>{pendingTotal ?? '—'}</strong>
+            <p>{requester ? 'Tickets that need your reply.' : 'Tickets paused for requester input.'}</p>
+          </Link>
         </article>
         <article className={(metrics?.summary.overdue ?? 0) > 0 ? 'overview-metric--risk' : undefined}>
-          <div><span>Past SLA</span><small>Needs attention</small></div>
-          <strong>{metrics?.summary.overdue ?? '—'}</strong>
-          <p>Open tickets beyond their complaint-type and priority target.</p>
+          <Link className="overview-metric-link" to="/app/tickets?view=overdue" aria-label="View tickets past SLA">
+            <div><span>Past SLA</span><small>Needs attention</small></div>
+            <strong>{metrics?.summary.overdue ?? '—'}</strong>
+            <p>Open tickets beyond their complaint-type and priority target.</p>
+          </Link>
         </article>
       </section>
 
@@ -164,30 +162,29 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <aside className="panel dashboard-health" aria-labelledby="queue-health-title">
-          <div className="panel__heading"><div><span>At a glance</span><h2 id="queue-health-title">Queue health</h2></div></div>
-          <dl className="dashboard-health__facts">
-            <div><dt>Resolved</dt><dd>{metrics?.summary.resolved ?? '—'}</dd></div>
-            <div><dt>Average resolution</dt><dd>{formatHours(metrics?.summary.averageResolutionHours ?? null)}</dd></div>
-          </dl>
-          <div className="dashboard-status-bars">
-            {metrics?.byStatus.map((item) => (
-              <div key={item.label}>
-                <div><span>{item.label}</span><strong>{item.count}</strong></div>
-                <i><span style={{ width: `${Math.max(5, (item.count / statusMaximum) * 100)}%` }} /></i>
-              </div>
-            ))}
+        <aside className="panel dashboard-announcements" aria-labelledby="announcements-title">
+          <div className="panel__heading">
+            <div><span>From MEPCO</span><h2 id="announcements-title">Announcements</h2></div>
+            {(user.role === 'supervisor' || user.role === 'administrator')
+              ? <Link to="/app/announcements">Manage</Link>
+              : <small>{announcements.length} active</small>}
           </div>
-          {(user.role === 'supervisor' || user.role === 'administrator') && <Link className="dashboard-health__link" to="/app/reports">Open reports and SLA</Link>}
+          {announcements.length > 0 ? (
+            <div className="announcement-feed">
+              {announcements.map((item) => (
+                <article key={item.id}>
+                  <span>Announcement</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                  <small>{item.authorName}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-state">No active announcements right now.</p>
+          )}
         </aside>
       </div>
-
-      {announcements.length > 0 && (
-        <section className="overview-announcements" aria-labelledby="announcements-title">
-          <div className="overview-section-heading"><div><span>From MEPCO</span><h2 id="announcements-title">Announcements</h2></div><small>{announcements.length} active</small></div>
-          <div className="announcement-feed">{announcements.map((item) => <article key={item.id}><span>Announcement</span><strong>{item.title}</strong><p>{item.body}</p><small>{item.authorName}</small></article>)}</div>
-        </section>
-      )}
     </motion.main>
   );
 }

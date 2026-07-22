@@ -8,8 +8,8 @@ async function login(mode:'consumer'|'staff',identifier:string):Promise<string>{
 
 describe('administration governance API',()=>{
   it('publishes role-targeted announcements and records the administrative audit event',async()=>{
-    const admin=await login('staff','admin.demo');const consumer=await login('consumer','10000000000001');
-    const create=await request(app).post('/api/v1/administration/announcements').set('Authorization',`Bearer ${admin}`).send({
+    const admin=await login('staff','admin.demo');const supervisor=await login('staff','supervisor.demo');const consumer=await login('consumer','10000000000001');
+    const create=await request(app).post('/api/v1/administration/announcements').set('Authorization',`Bearer ${supervisor}`).send({
       title:'Fictional service bulletin',body:'A fictional acceptance announcement for consumers.',
       startsAt:new Date(Date.now()-3_600_000).toISOString(),endsAt:new Date(Date.now()+86_400_000).toISOString(),
       isActive:true,audiences:['consumer'],
@@ -19,7 +19,9 @@ describe('administration governance API',()=>{
     expect((visible.body as {data:Array<{id:number}>}).data).toEqual(expect.arrayContaining([expect.objectContaining({id})]));
     const audit=await request(app).get('/api/v1/administration/audit?search=announcement.created').set('Authorization',`Bearer ${admin}`).expect(200);
     expect((audit.body as {data:Array<{action:string}>}).data.some((item)=>item.action==='admin.announcement.created')).toBe(true);
-    await request(app).delete(`/api/v1/administration/announcements/${id}`).set('Authorization',`Bearer ${admin}`).expect(200);
+    await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${supervisor}`).expect(200);
+    await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${consumer}`).expect(403);
+    await request(app).delete(`/api/v1/administration/announcements/${id}`).set('Authorization',`Bearer ${supervisor}`).expect(200);
   });
 
   it('lets only administrators replace technician and supervisor routing scopes',async()=>{

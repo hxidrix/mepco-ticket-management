@@ -65,7 +65,18 @@ vi.mock('../lib/tickets-api', () => ({
 }));
 
 vi.mock('../lib/administration-api', () => ({
-  activeAnnouncementsRequest: vi.fn().mockResolvedValue([]),
+  activeAnnouncementsRequest: vi.fn().mockResolvedValue([{
+    id: 1,
+    title: 'Planned maintenance notice',
+    body: 'Service maintenance is scheduled for tonight.',
+    authorName: 'MEPCO Administrator',
+    startsAt: '2026-07-14T12:00:00.000Z',
+    endsAt: null,
+    isActive: 1,
+    audiences: ['employee'],
+    createdAt: '2026-07-14T12:00:00.000Z',
+    updatedAt: '2026-07-14T12:00:00.000Z',
+  }]),
 }));
 
 vi.mock('../lib/auth-api', () => ({
@@ -78,8 +89,14 @@ describe('dashboard overview', () => {
 
     expect(await screen.findByRole('heading', { name: 'Waiting for your response' })).toBeVisible();
     expect(screen.getAllByText('VPN details required')).toHaveLength(2);
-    expect(screen.getByText('13 hours')).toBeVisible();
     expect(screen.getByRole('link', { name: 'View all awaiting-response tickets' }))
       .toHaveAttribute('href', '/app/tickets?status=pending-user');
+    expect(await screen.findByRole('heading', { name: 'Announcements' })).toBeVisible();
+    expect(screen.getByText('Planned maintenance notice')).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Queue health' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View all visible tickets' })).toHaveAttribute('href', '/app/tickets');
+    expect(screen.getByRole('link', { name: 'View open tickets' })).toHaveAttribute('href', '/app/tickets?view=open');
+    expect(screen.getByRole('link', { name: 'View tickets awaiting a response' })).toHaveAttribute('href', '/app/tickets?status=pending-user');
+    expect(screen.getByRole('link', { name: 'View tickets past SLA' })).toHaveAttribute('href', '/app/tickets?view=overdue');
   });
 });

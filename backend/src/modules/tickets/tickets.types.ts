@@ -34,6 +34,7 @@ export interface TicketListInput {
   pageSize: number;
   search?: string;
   status?: string;
+  view?: 'open' | 'overdue';
   priority?: string;
   domain?: TicketDomain;
   categoryId?: number;

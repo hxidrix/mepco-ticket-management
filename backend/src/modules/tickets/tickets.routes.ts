@@ -57,6 +57,7 @@ ticketsRouter.get(
   query('page').optional().isInt({ min: 1 }).toInt(), query('pageSize').optional().isInt({ min: 1, max: 100 }).toInt(),
   query('search').optional().trim().isLength({ max: 180 }),
   query('status').optional().trim().isLength({ max: 70 }), query('priority').optional().trim().isLength({ max: 50 }),
+  query('view').optional().isIn(['open', 'overdue']),
   query('domain').optional().isIn(['consumer', 'employee']),
   query('categoryId').optional().isInt({ min: 1 }).toInt(), query('departmentId').optional().isInt({ min: 1 }).toInt(),
   query('circleId').optional().isInt({ min: 1 }).toInt(), query('assigneeId').optional().isInt({ min: 1 }).toInt(),
@@ -70,6 +71,7 @@ ticketsRouter.get(
     const input: TicketListInput = { page, pageSize };
     const search = optionalString('search'); if (search !== undefined) input.search = search;
     const status = optionalString('status'); if (status !== undefined) input.status = status;
+    const view = optionalString('view'); if (view !== undefined) input.view = view as NonNullable<TicketListInput['view']>;
     const priority = optionalString('priority'); if (priority !== undefined) input.priority = priority;
     const domain = optionalString('domain'); if (domain !== undefined) input.domain = domain as TicketDomain;
     const categoryId = optionalNumber('categoryId'); if (categoryId !== undefined) input.categoryId = categoryId;

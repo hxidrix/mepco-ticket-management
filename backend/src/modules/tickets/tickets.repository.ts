@@ -350,6 +350,8 @@ export async function listTickets(actor: TicketActor, input: TicketListInput) {
   const values: SqlValue[] = [...scope.values];
   if (input.search !== undefined) { conditions.push('(t.ticket_number LIKE ? OR t.subject LIKE ? OR t.description LIKE ?)'); const q = `%${input.search}%`; values.push(q, q, q); }
   if (input.status !== undefined) { conditions.push('s.slug = ?'); values.push(input.status); }
+  if (input.view === 'open') conditions.push("s.slug NOT IN ('resolved','closed','cancelled')");
+  if (input.view === 'overdue') conditions.push("s.slug NOT IN ('resolved','closed','cancelled','pending-user') AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)");
   if (input.priority !== undefined) { conditions.push('p.slug = ?'); values.push(input.priority); }
   if (input.domain !== undefined) { conditions.push('t.domain = ?'); values.push(input.domain); }
   if (input.categoryId !== undefined) { conditions.push('t.category_id = ?'); values.push(input.categoryId); }

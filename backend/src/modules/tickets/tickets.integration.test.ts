@@ -156,6 +156,27 @@ describe('requester ticket API', () => {
       .set('Authorization', `Bearer ${consumerToken}`).expect(404);
   });
 
+  it('keeps dashboard open and overdue views consistent with ticket metrics', async () => {
+    const administratorToken = await login('staff', 'admin.demo');
+    const metrics = await request(app).get('/api/v1/tickets/reports/metrics')
+      .set('Authorization', `Bearer ${administratorToken}`).expect(200);
+    const summary = (metrics.body as { data: { summary: { open: number | string; overdue: number | string } } }).data.summary;
+
+    const open = await request(app).get('/api/v1/tickets?view=open&pageSize=100')
+      .set('Authorization', `Bearer ${administratorToken}`).expect(200);
+    expect(open.body).toMatchObject({ meta: { totalItems: Number(summary.open) } });
+    expect((open.body as { data: Array<{ statusSlug: string }> }).data.every((item) =>
+      !['resolved', 'closed', 'cancelled'].includes(item.statusSlug))).toBe(true);
+
+    const overdue = await request(app).get('/api/v1/tickets?view=overdue&pageSize=100')
+      .set('Authorization', `Bearer ${administratorToken}`).expect(200);
+    expect(overdue.body).toMatchObject({ meta: { totalItems: Number(summary.overdue) } });
+    expect((overdue.body as { data: Array<{ isOverdue: number }> }).data.every((item) => item.isOverdue === 1)).toBe(true);
+
+    await request(app).get('/api/v1/tickets?view=unsupported')
+      .set('Authorization', `Bearer ${administratorToken}`).expect(422);
+  });
+
   it('applies only allow-listed ticket sorting fields and directions', async () => {
     const consumerToken = await login('consumer', '10000000000001');
     const response = await request(app).get('/api/v1/tickets?pageSize=100&sortBy=ticketNumber&sortOrder=asc')
