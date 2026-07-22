@@ -67,7 +67,7 @@ export function issueTokensForSession(
   const refreshExpiresInSeconds = env.refreshTokenTtlDays * 86_400;
 
   const accessToken = jwt.sign(
-    { type: 'access', role: user.role, displayName: user.displayName },
+    { type: 'access', role: user.role, displayName: user.displayName, status: user.status },
     env.jwtAccessSecret,
     { subject: String(user.id), jwtid: accessJti, expiresIn: accessExpiresInSeconds },
   );
@@ -102,13 +102,14 @@ export function verifyAccessToken(token: string): AuthenticatedUser {
       claims.type !== 'access' ||
       typeof claims.sub !== 'string' ||
       typeof claims.displayName !== 'string' ||
+      !['active', 'suspended'].includes(String(claims.status)) ||
       !isRole(claims.role)
     ) {
       throw new Error('Invalid access claims');
     }
     const id = Number(claims.sub);
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid subject');
-    return { id, role: claims.role, displayName: claims.displayName };
+    return { id, role: claims.role, displayName: claims.displayName, status: claims.status as 'active' | 'suspended' };
   } catch {
     throw new AppError(401, 'INVALID_ACCESS_TOKEN', 'Your session is invalid or has expired');
   }

@@ -5,7 +5,7 @@ import { validateRequest } from '../../middleware/validate-request.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
-import { authenticate, authorizeRoles } from '../auth/auth.middleware.js';
+import { authenticate, authorizeRoles, requireActiveAccount } from '../auth/auth.middleware.js';
 import {
   createMasterItem, getActiveCatalog, listMasterItems, updateMasterItem,
 } from './master-data.repository.js';
@@ -16,6 +16,7 @@ const resources: MasterResource[] = ['departments', 'circles', 'cities', 'catego
 const resourceParam = param('resource').isIn(resources);
 
 masterDataRouter.use(authenticate);
+masterDataRouter.use(requireActiveAccount);
 masterDataRouter.get('/catalog', asyncHandler(async (_request, response) => {
   sendSuccess(response, 200, await getActiveCatalog());
 }));

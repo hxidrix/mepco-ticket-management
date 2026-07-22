@@ -5,7 +5,7 @@ import { validateRequest } from '../../middleware/validate-request.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
-import { authenticate, authorizeRoles } from '../auth/auth.middleware.js';
+import { authenticate, authorizeRoles, requireActiveAccount } from '../auth/auth.middleware.js';
 import type { UserRole } from '../auth/auth.types.js';
 import {
   findUserProfile,
@@ -23,6 +23,7 @@ import type {
 
 export const usersRouter = Router();
 usersRouter.use(authenticate);
+usersRouter.use(requireActiveAccount);
 
 const optionalEmail = body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail();
 const strongPassword = (field: string) => body(field)

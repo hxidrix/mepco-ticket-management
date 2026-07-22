@@ -13,6 +13,7 @@ import { administrationRouter } from './modules/administration/administration.ro
 import { healthRouter } from './modules/health/health.routes.js';
 import { masterDataRouter } from './modules/master-data/master-data.routes.js';
 import { notificationsRouter } from './modules/notifications/notifications.routes.js';
+import { suspensionsRouter } from './modules/suspensions/suspensions.routes.js';
 import { ticketsRouter } from './modules/tickets/tickets.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { openApiDocument } from './openapi/document.js';
@@ -41,6 +42,7 @@ app.get('/api-docs.json', (_request, response) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 app.use('/api/v1/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/suspensions', suspensionsRouter);
 app.use('/api/v1/administration', administrationRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/master-data', masterDataRouter);

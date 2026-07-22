@@ -279,7 +279,7 @@ export async function rotateRefreshSession(
     if (row.expiresAt.getTime() <= Date.now()) {
       throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'The refresh session is invalid or expired');
     }
-    if (row.status !== 'active') {
+    if (row.status === 'inactive') {
       throw new AppError(403, 'ACCOUNT_NOT_ACTIVE', 'This account is not active');
     }
 
@@ -316,7 +316,7 @@ export async function rotateRefreshSession(
     return {
       id: row.id,
       familyId: row.familyId,
-      user: { id: row.userId, role: row.role, displayName: row.displayName },
+      user: { id: row.userId, role: row.role, displayName: row.displayName, status: row.status },
       status: row.status,
       expiresAt: row.expiresAt,
       revokedAt: row.revokedAt,
@@ -421,7 +421,7 @@ export async function registerConsumer(
       context,
     );
     await connection.commit();
-    return { id: result.insertId, role: 'consumer', displayName: input.name };
+    return { id: result.insertId, role: 'consumer', displayName: input.name, status: 'active' };
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -476,7 +476,7 @@ export async function registerEmployee(
       context,
     );
     await connection.commit();
-    return { id: result.insertId, role: 'employee', displayName: input.name };
+    return { id: result.insertId, role: 'employee', displayName: input.name, status: 'active' };
   } catch (error) {
     await connection.rollback();
     throw error;

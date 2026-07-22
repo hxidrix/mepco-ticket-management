@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = await loginRequest(mode, identifier, password);
     setApiAccessToken(payload.accessToken);
     setUser(payload.user);
+    return payload.user;
   }, []);
 
   const logout = useCallback(async () => {

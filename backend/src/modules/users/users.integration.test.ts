@@ -84,9 +84,24 @@ describe('user profile and account administration API', () => {
         departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
       })
       .expect(200);
-    await request(app)
+    const suspendedLogin = await request(app)
       .post('/api/v1/auth/login')
       .send({ mode: 'staff', identifier: 'tech.milestone4', password: 'Demo@12345' })
+      .expect(200);
+    const suspendedToken = token(suspendedLogin);
+    expect(suspendedLogin.body).toMatchObject({
+      data: { user: { status: 'suspended', role: 'technician' } },
+    });
+    await request(app)
+      .get('/api/v1/suspensions/me')
+      .set('Authorization', `Bearer ${suspendedToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ data: { account: { statusReason: 'Fictional acceptance check' } } });
+      });
+    await request(app)
+      .get('/api/v1/users/me/profile')
+      .set('Authorization', `Bearer ${suspendedToken}`)
       .expect(403);
 
     await request(app)

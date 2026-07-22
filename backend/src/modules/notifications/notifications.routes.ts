@@ -4,11 +4,12 @@ import { param, query } from 'express-validator';
 import { validateRequest } from '../../middleware/validate-request.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
-import { authenticate } from '../auth/auth.middleware.js';
+import { authenticate, requireActiveAccount } from '../auth/auth.middleware.js';
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from './notifications.repository.js';
 
 export const notificationsRouter = Router();
 notificationsRouter.use(authenticate);
+notificationsRouter.use(requireActiveAccount);
 
 notificationsRouter.get(
   '/', query('page').optional().isInt({ min: 1 }).toInt(),

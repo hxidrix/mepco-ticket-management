@@ -60,7 +60,7 @@ export function AuthPage() {
     [circleId, options],
   );
 
-  if (user !== null) return <Navigate to="/app" replace />;
+  if (user !== null) return <Navigate to={user.status === 'suspended' ? '/suspension' : '/app'} replace />;
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -69,7 +69,11 @@ export function AuthPage() {
     setIsSubmitting(true);
     const data = new FormData(event.currentTarget);
     try {
-      await login(loginMode, fieldValue(data, 'identifier'), fieldValue(data, 'password'));
+      const authenticatedUser = await login(loginMode, fieldValue(data, 'identifier'), fieldValue(data, 'password'));
+      if (authenticatedUser.status === 'suspended') {
+        void navigate('/suspension', { replace: true });
+        return;
+      }
       const from = (location.state as { from?: string } | null)?.from ?? '/app';
       void navigate(from, { replace: true });
     } catch (caught) {

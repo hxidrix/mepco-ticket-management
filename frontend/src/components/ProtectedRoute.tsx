@@ -7,5 +7,6 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
   if (user === null) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (user.status === 'suspended') return <Navigate to="/suspension" replace />;
   return children;
 }

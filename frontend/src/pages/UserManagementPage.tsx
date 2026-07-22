@@ -4,6 +4,11 @@ import type { FormEvent } from 'react';
 import { PasswordInput } from '../components/PasswordInput';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
 import {
+  reviewSuspensionRequestAdmin,
+  suspensionRequestsAdminRequest,
+} from '../lib/suspension-api';
+import type { SuspensionRequest, SuspensionRequestStatus } from '../lib/suspension-api';
+import {
   createStaffRequest,
   deleteUserRequest,
   resetPasswordRequest,
@@ -30,6 +35,9 @@ export function UserManagementPage() {
   const [filters, setFilters] = useState({ search: '', role: '', status: '' });
   const [showCreate, setShowCreate] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [suspensionRequests, setSuspensionRequests] = useState<SuspensionRequest[]>([]);
+  const [requestStatus, setRequestStatus] = useState('');
+  const [busyRequestId, setBusyRequestId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -45,7 +53,16 @@ export function UserManagementPage() {
     } catch (caught) { setError(getApiErrorMessage(caught)); }
   }, [filters]);
 
+  const loadSuspensionRequests = useCallback(async () => {
+    try {
+      setSuspensionRequests(await suspensionRequestsAdminRequest(requestStatus));
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    }
+  }, [requestStatus]);
+
   useEffect(() => { void loadUsers(); }, [loadUsers]);
+  useEffect(() => { void loadSuspensionRequests(); }, [loadSuspensionRequests]);
   useEffect(() => {
     void registrationOptionsRequest().then(setOptions).catch((caught: unknown) => {
       setError(getApiErrorMessage(caught));
@@ -102,6 +119,24 @@ export function UserManagementPage() {
     finally { setBusyId(null); }
   };
 
+  const reviewRequest = async (event: FormEvent<HTMLFormElement>, request: SuspensionRequest) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setBusyRequestId(request.id); setError(null); setMessage(null);
+    try {
+      await reviewSuspensionRequestAdmin(request.id, {
+        status: formValue(data, 'status') as Exclude<SuspensionRequestStatus, 'submitted'>,
+        response: formValue(data, 'response'),
+      });
+      setMessage(`Request #${request.id} was updated.`);
+      await Promise.all([loadSuspensionRequests(), loadUsers(meta.page)]);
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    } finally {
+      setBusyRequestId(null);
+    }
+  };
+
   return (
     <main className="workspace-page">
       <div className="workspace-page__heading">
@@ -124,6 +159,23 @@ export function UserManagementPage() {
           <button className="button button--primary form-grid__wide" type="submit" disabled={busyId === 0}>Create account</button>
         </form>
       )}
+      <section className="panel suspension-review-panel">
+        <div className="panel__heading"><div><span>Account support queue</span><h2>Suspension appeals and requests</h2></div><small>{suspensionRequests.length} shown</small></div>
+        <div className="suspension-review-toolbar"><label><span>Request status</span><select value={requestStatus} onChange={(event) => setRequestStatus(event.target.value)}><option value="">All requests</option><option value="submitted">Submitted</option><option value="under-review">Under review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="resolved">Resolved</option></select></label></div>
+        {suspensionRequests.length === 0 ? <p className="empty-state">No suspension requests match this filter.</p> : <div className="suspension-review-list">{suspensionRequests.map((request) => (
+          <article key={request.id}>
+            <header><div><span>{request.requestType}</span><strong>{request.displayName} · Request #{request.id}</strong><small>{request.role} · {new Intl.DateTimeFormat('en-PK', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(request.createdAt))}</small></div><span className={`suspension-request-status suspension-request-status--${request.status}`}>{request.status.replace('-', ' ')}</span></header>
+            <dl><div><dt>Suspension reason</dt><dd>{request.suspensionReason ?? 'No reason recorded'}</dd></div><div><dt>Preferred reply</dt><dd>{request.contactPreference}</dd></div></dl>
+            <p>{request.message}</p>
+            {request.adminResponse !== null && <blockquote><span>Latest response</span><p>{request.adminResponse}</p></blockquote>}
+            <form onSubmit={(event) => void reviewRequest(event, request)}>
+              <label><span>Decision</span><select name="status" defaultValue={request.status === 'submitted' ? 'under-review' : request.status}>{request.requestType === 'appeal' && <option value="approved">Approve and reactivate</option>}<option value="under-review">Under review</option><option value="rejected">Reject</option><option value="resolved">Resolve support request</option></select></label>
+              <label><span>Response to account holder</span><textarea name="response" minLength={3} maxLength={4000} required defaultValue={request.adminResponse ?? ''} placeholder="Explain the decision or ask for more information." /></label>
+              <button className="button button--secondary" type="submit" disabled={busyRequestId === request.id}>{busyRequestId === request.id ? 'Saving…' : 'Save response'}</button>
+            </form>
+          </article>
+        ))}</div>}
+      </section>
       <section className="panel user-directory">
         <form className="directory-filters" onSubmit={(event) => {
           event.preventDefault(); setFilters({ search, role, status });

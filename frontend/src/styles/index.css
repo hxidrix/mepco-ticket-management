@@ -4807,3 +4807,365 @@ body {
   min-height: 2.72rem;
   border-radius: 0.72rem;
 }
+
+/* Restricted suspended-account portal and administrator appeal queue. */
+.suspension-page {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 1rem;
+  color: var(--text-primary);
+  background: var(--app-background);
+}
+
+.suspension-header,
+.suspension-layout {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 94rem);
+  margin-inline: auto;
+}
+
+.suspension-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.4rem 1.25rem;
+}
+
+.suspension-header > div {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.suspension-header > div > button {
+  min-height: 2.45rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--brand-red) 38%, var(--border));
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--brand-red) 76%, var(--text-primary));
+  background: color-mix(in srgb, var(--brand-red) 8%, transparent);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.suspension-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.72fr);
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+.suspension-layout > .panel {
+  margin: 0;
+  padding: 1.5rem;
+}
+
+.suspension-summary {
+  display: grid;
+  align-content: start;
+}
+
+.suspension-state {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2.4rem;
+}
+
+.suspension-state span,
+.suspension-eyebrow {
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.suspension-state strong,
+.suspension-request-status {
+  width: fit-content;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--brand-red) 42%, var(--border));
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--brand-red) 78%, var(--text-primary));
+  background: color-mix(in srgb, var(--brand-red) 8%, transparent);
+  font-size: 0.55rem;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.suspension-eyebrow {
+  margin: 0 0 0.6rem;
+}
+
+.suspension-summary h1 {
+  max-width: 42rem;
+  margin: 0;
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
+  font-weight: 570;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.suspension-lead {
+  max-width: 48rem;
+  margin: 1rem 0 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.72;
+}
+
+.suspension-summary dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.suspension-summary dl > div,
+.suspension-review-list dl > div {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.72rem;
+  background: color-mix(in srgb, var(--control) 68%, transparent);
+}
+
+.suspension-summary dt,
+.suspension-review-list dt {
+  color: var(--text-tertiary);
+  font-size: 0.53rem;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.suspension-summary dd,
+.suspension-review-list dd {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.64rem;
+  line-height: 1.55;
+}
+
+.suspension-security-note {
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 0.61rem;
+}
+
+.suspension-request form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.suspension-request label,
+.suspension-review-toolbar label,
+.suspension-review-list form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 620;
+}
+
+.suspension-request :is(select, textarea),
+.suspension-review-panel :is(select, textarea) {
+  width: 100%;
+  min-height: 2.7rem;
+  padding: 0.66rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.72rem;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--control) 86%, transparent);
+  font: inherit;
+}
+
+.suspension-request select,
+.suspension-review-panel select {
+  cursor: pointer;
+}
+
+.suspension-request__message,
+.suspension-request form > .button {
+  grid-column: 1 / -1;
+}
+
+.suspension-request textarea {
+  min-height: 10rem;
+  resize: vertical;
+}
+
+.suspension-history {
+  grid-column: 1 / -1;
+}
+
+.suspension-history__list,
+.suspension-review-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.suspension-history__list > article,
+.suspension-review-list > article {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.82rem;
+  background: color-mix(in srgb, var(--control) 52%, transparent);
+}
+
+.suspension-history__list header,
+.suspension-review-list header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.suspension-history__list header > div,
+.suspension-review-list header > div {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.suspension-history__list header > div > span,
+.suspension-review-list header > div > span {
+  color: var(--text-tertiary);
+  font-size: 0.53rem;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.suspension-history__list header strong,
+.suspension-review-list header strong {
+  color: var(--text-primary);
+  font-size: 0.72rem;
+}
+
+.suspension-history__list > article > p,
+.suspension-review-list > article > p,
+.suspension-history__list blockquote p,
+.suspension-review-list blockquote p {
+  margin: 0.75rem 0 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.suspension-history__list small,
+.suspension-review-list small {
+  color: var(--text-tertiary);
+  font-size: 0.55rem;
+}
+
+.suspension-history__list blockquote,
+.suspension-review-list blockquote {
+  margin: 0.85rem 0 0;
+  padding: 0.8rem;
+  border: 0;
+  border-left: 3px solid color-mix(in srgb, var(--brand-blue) 56%, var(--border));
+  border-radius: 0 0.68rem 0.68rem 0;
+  background: color-mix(in srgb, var(--brand-blue) 6%, transparent);
+}
+
+.suspension-history__list blockquote > span,
+.suspension-review-list blockquote > span {
+  color: var(--brand-blue);
+  font-size: 0.54rem;
+  font-weight: 720;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.suspension-request-status--submitted,
+.suspension-request-status--under-review {
+  border-color: color-mix(in srgb, var(--brand-yellow) 42%, var(--border));
+  color: color-mix(in srgb, var(--brand-yellow) 78%, var(--text-primary));
+  background: color-mix(in srgb, var(--brand-yellow) 8%, transparent);
+}
+
+.suspension-request-status--approved,
+.suspension-request-status--resolved {
+  border-color: color-mix(in srgb, #22a06b 42%, var(--border));
+  color: color-mix(in srgb, #22a06b 76%, var(--text-primary));
+  background: color-mix(in srgb, #22a06b 8%, transparent);
+}
+
+.suspension-review-panel {
+  margin-bottom: 1.2rem;
+  padding: 1.5rem;
+}
+
+.suspension-review-toolbar {
+  width: min(100%, 18rem);
+  margin: 1rem 0;
+}
+
+.suspension-review-list dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0.75rem 0 0;
+}
+
+.suspension-review-list form {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.35fr) minmax(16rem, 1fr) auto;
+  gap: 0.65rem;
+  align-items: end;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.suspension-review-list textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+@media (max-width: 900px) {
+  .suspension-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .suspension-history {
+    grid-column: 1;
+  }
+
+  .suspension-summary dl,
+  .suspension-review-list form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .suspension-header,
+  .suspension-history__list header,
+  .suspension-review-list header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .suspension-request form,
+  .suspension-review-list dl {
+    grid-template-columns: 1fr;
+  }
+
+  .suspension-request__message,
+  .suspension-request form > .button {
+    grid-column: 1;
+  }
+}

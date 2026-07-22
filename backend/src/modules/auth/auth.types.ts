@@ -5,9 +5,13 @@ export interface AuthenticatedUser {
   id: number;
   role: UserRole;
   displayName: string;
+  status: 'active' | 'suspended';
 }
 
-export interface LoginCandidate extends AuthenticatedUser {
+export interface LoginCandidate {
+  id: number;
+  role: UserRole;
+  displayName: string;
   passwordHash: string;
   status: 'active' | 'suspended' | 'inactive';
   lockedUntil: Date | null;
@@ -46,7 +50,7 @@ export interface RefreshSessionRecord {
   id: string;
   familyId: string;
   user: AuthenticatedUser;
-  status: 'active' | 'suspended' | 'inactive';
+  status: 'active' | 'suspended';
   expiresAt: Date;
   revokedAt: Date | null;
 }
@@ -58,4 +62,3 @@ export interface NewRefreshSession {
   tokenJtiHash: string;
   expiresAt: Date;
 }
-

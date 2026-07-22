@@ -22,13 +22,13 @@ describe('role authorization middleware', () => {
     'technician',
     'supervisor',
   ] as const)('forbids the %s role from an administrator route', async (role) => {
-    const token = issueTokens({ id: 1, role, displayName: 'Test User' }).accessToken;
+    const token = issueTokens({ id: 1, role, displayName: 'Test User', status: 'active' }).accessToken;
     await request(testApp).get('/admin').set('Authorization', `Bearer ${token}`).expect(403);
   });
 
   it('allows the administrator role', async () => {
     const role: UserRole = 'administrator';
-    const token = issueTokens({ id: 1, role, displayName: 'Test Admin' }).accessToken;
+    const token = issueTokens({ id: 1, role, displayName: 'Test Admin', status: 'active' }).accessToken;
     await request(testApp).get('/admin').set('Authorization', `Bearer ${token}`).expect(200);
   });
 });

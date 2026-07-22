@@ -57,14 +57,13 @@ export async function login(
     await recordLoginFailure(candidate, identifier, mode, context);
     throw new AppError(429, 'ACCOUNT_TEMPORARILY_LOCKED', 'Too many login attempts; try again later');
   }
-  if (candidate.status === 'suspended') {
-    throw new AppError(403, 'ACCOUNT_SUSPENDED', 'This account has been suspended');
-  }
   if (candidate.status !== 'active') {
-    throw new AppError(403, 'ACCOUNT_NOT_ACTIVE', 'This account is not active');
+    if (candidate.status !== 'suspended') {
+      throw new AppError(403, 'ACCOUNT_NOT_ACTIVE', 'This account is not active');
+    }
   }
 
-  const user = { id: candidate.id, role: candidate.role, displayName: candidate.displayName };
+  const user = { id: candidate.id, role: candidate.role, displayName: candidate.displayName, status: candidate.status };
   const tokens = issueTokens(user);
   await recordLoginSuccess(user, toNewSession(user.id, tokens.refreshSession), context);
   return { user, tokens };
@@ -120,4 +119,3 @@ export async function createEmployeeAccount(
 ) {
   return registerEmployee(input, await hash(input.password, 12), context);
 }
-

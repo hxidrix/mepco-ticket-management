@@ -42,16 +42,18 @@ describe('authentication API', () => {
     expect(setCookie).not.toContain('Secure');
   });
 
-  it('rejects a suspended account', async () => {
+  it('authenticates a suspended account into a restricted session', async () => {
     const response = await request(app)
       .post('/api/v1/auth/login')
       .send({ mode: 'consumer', identifier: '10000000000099', password: 'Demo@12345' })
-      .expect(403);
+      .expect(200);
 
     expect(response.body).toMatchObject({
-      success: false,
-      error: { code: 'ACCOUNT_SUSPENDED' },
+      success: true,
+      data: { user: { role: 'consumer', status: 'suspended' } },
     });
+    expect(accessToken(response)).toBeTypeOf('string');
+    expect(responseCookie(response)).toContain('mepco_refresh=');
   });
 
   it('rotates refresh tokens and revokes the family when an old token is reused', async () => {

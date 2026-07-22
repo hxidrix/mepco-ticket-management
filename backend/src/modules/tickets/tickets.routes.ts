@@ -8,7 +8,7 @@ import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { AppError } from '../../shared/app-error.js';
 import { requestContext } from '../../shared/request-context.js';
-import { authenticate, authorizeRoles } from '../auth/auth.middleware.js';
+import { authenticate, authorizeRoles, requireActiveAccount } from '../auth/auth.middleware.js';
 import {
   assignTicket,
   addTicketAttachment,
@@ -31,6 +31,7 @@ import type { TicketClosureReviewInput, TicketCreateInput, TicketDomain, TicketL
 export const ticketsRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { files: 1, fileSize: env.maxUploadBytes } });
 ticketsRouter.use(authenticate);
+ticketsRouter.use(requireActiveAccount);
 
 ticketsRouter.post(
   '/', authorizeRoles('consumer', 'employee'),

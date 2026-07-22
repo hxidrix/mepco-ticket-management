@@ -16,6 +16,7 @@ import { NewTicketPage } from './pages/NewTicketPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ReportsPage } from './pages/ReportsPage';
+import { SuspendedAccountPage } from './pages/SuspendedAccountPage';
 import { TicketDetailPage } from './pages/TicketDetailPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
@@ -29,6 +30,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<Navigate to="/login" replace />} />
+      <Route path="/suspension" element={<SuspendedAccountPage />} />
       <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="tickets" element={<TicketsPage />} />

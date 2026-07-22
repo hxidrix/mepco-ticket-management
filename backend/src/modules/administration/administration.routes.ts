@@ -5,11 +5,11 @@ import { validateRequest } from '../../middleware/validate-request.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
-import { authenticate, authorizeRoles } from '../auth/auth.middleware.js';
+import { authenticate, authorizeRoles, requireActiveAccount } from '../auth/auth.middleware.js';
 import type { UserRole } from '../auth/auth.types.js';
 import { activeAnnouncements, deactivateAnnouncement, listAnnouncements, listAuditLogs, listStaffScopes, replaceStaffScopes, saveAnnouncement } from './administration.repository.js';
 
-export const administrationRouter=Router(); administrationRouter.use(authenticate);
+export const administrationRouter=Router(); administrationRouter.use(authenticate); administrationRouter.use(requireActiveAccount);
 administrationRouter.get('/announcements',asyncHandler(async(request,response)=>sendSuccess(response,200,await activeAnnouncements(request.auth!.role))));
 const announcementRules=[body('title').trim().isLength({min:3,max:180}),body('body').trim().isLength({min:3,max:10000}),body('startsAt').isISO8601(),body('endsAt').optional({values:'falsy'}).isISO8601(),body('isActive').isBoolean().toBoolean(),body('audiences').isArray({min:1,max:5}),body('audiences.*').isIn(['consumer','employee','technician','supervisor','administrator'])];
 administrationRouter.get('/announcements/all',authorizeRoles('supervisor','administrator'),asyncHandler(async(_request,response)=>sendSuccess(response,200,await listAnnouncements())));

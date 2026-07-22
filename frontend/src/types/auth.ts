@@ -5,6 +5,7 @@ export interface AuthUser {
   id: number;
   role: UserRole;
   displayName: string;
+  status: 'active' | 'suspended';
 }
 
 export interface AuthPayload {
@@ -21,4 +22,3 @@ export interface RegistrationOptions {
     cities: Array<{ id: number; name: string }>;
   }>;
 }
-
