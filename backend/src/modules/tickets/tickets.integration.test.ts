@@ -136,7 +136,7 @@ describe('requester ticket API', () => {
   });
 
   it('rejects a category from the other requester domain', async () => {
-    const employeeToken = await login('employee', 'EMP-DEMO-001');
+    const employeeToken = await login('employee', '00000001');
     const data = await catalog(employeeToken);
     const category = data.categories.find((item) => item.domain === 'consumer');
     const type = category?.complaintTypes[0];
@@ -150,7 +150,7 @@ describe('requester ticket API', () => {
   });
 
   it('prevents one requester from opening another requester’s ticket', async () => {
-    const employeeToken = await login('employee', 'EMP-DEMO-001');
+    const employeeToken = await login('employee', '00000001');
     const employeeList = await request(app).get('/api/v1/tickets?pageSize=1')
       .set('Authorization', `Bearer ${employeeToken}`).expect(200);
     const ticketId = (employeeList.body as { data: Array<{ id: number }> }).data[0]?.id;
@@ -192,7 +192,7 @@ describe('requester ticket API', () => {
   });
 
   it('allows only an administrator to soft-delete a ticket', async () => {
-    const employeeToken = await login('employee', 'EMP-DEMO-001');
+    const employeeToken = await login('employee', '00000001');
     const cancelled = await request(app).get('/api/v1/tickets?status=cancelled&pageSize=1')
       .set('Authorization', `Bearer ${employeeToken}`).expect(200);
     const item = (cancelled.body as { data: Array<{ id: number; version: number }> }).data[0];

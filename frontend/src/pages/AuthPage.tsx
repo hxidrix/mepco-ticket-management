@@ -15,6 +15,16 @@ import {
   registerEmployeeRequest,
   registrationOptionsRequest,
 } from '../lib/auth-api';
+import {
+  CONSUMER_REFERENCE_LENGTH,
+  CNIC_LENGTH,
+  CNIC_PATTERN,
+  EMPLOYEE_ID_LENGTH,
+  PHONE_NUMBER_LENGTH,
+  PHONE_NUMBER_PATTERN,
+  normalizeEmployeeId,
+  normalizeLoginIdentifier,
+} from '../lib/identity-format';
 import type { LoginMode, RegistrationOptions } from '../types/auth';
 
 type AuthView = 'login' | 'register';
@@ -22,7 +32,7 @@ type RegistrationMode = 'consumer' | 'employee';
 
 const loginLabels: Record<LoginMode, { label: string; identifier: string; placeholder: string }> = {
   consumer: { label: 'Consumer', identifier: 'MEPCO Reference Number', placeholder: '10000000000001' },
-  employee: { label: 'Employee', identifier: 'Employee ID', placeholder: 'EMP-DEMO-001' },
+  employee: { label: 'Employee', identifier: 'Employee ID', placeholder: '00000001' },
   staff: { label: 'Staff', identifier: 'Username', placeholder: 'tech.it' },
 };
 
@@ -78,7 +88,11 @@ export function AuthPage() {
     setIsSubmitting(true);
     const data = new FormData(event.currentTarget);
     try {
-      const authenticatedUser = await login(loginMode, fieldValue(data, 'identifier'), fieldValue(data, 'password'));
+      const authenticatedUser = await login(
+        loginMode,
+        normalizeLoginIdentifier(loginMode, fieldValue(data, 'identifier')),
+        fieldValue(data, 'password'),
+      );
       if (authenticatedUser.status === 'suspended') {
         void navigate('/suspension', { replace: true });
         return;
@@ -105,6 +119,7 @@ export function AuthPage() {
           name: fieldValue(data, 'name'),
           email: fieldValue(data, 'email') || undefined,
           phone: fieldValue(data, 'phone'),
+          cnic: fieldValue(data, 'cnic'),
           password: fieldValue(data, 'password'),
           address: fieldValue(data, 'address'),
           circleId: Number(fieldValue(data, 'circleId')),
@@ -115,10 +130,11 @@ export function AuthPage() {
         setLoginMode('consumer');
       } else {
         await registerEmployeeRequest({
-          employeeId: fieldValue(data, 'employeeId'),
+          employeeId: normalizeEmployeeId(fieldValue(data, 'employeeId')),
           name: fieldValue(data, 'name'),
           email: fieldValue(data, 'email'),
           phone: fieldValue(data, 'phone'),
+          cnic: fieldValue(data, 'cnic'),
           password: fieldValue(data, 'password'),
           departmentId: Number(fieldValue(data, 'departmentId')),
           designation: fieldValue(data, 'designation'),
@@ -246,6 +262,20 @@ export function AuthPage() {
                     required
                     autoComplete="username"
                     placeholder={loginLabels[loginMode].placeholder}
+                    inputMode={loginMode === 'staff' ? 'text' : 'numeric'}
+                    pattern={loginMode === 'consumer' ? '[0-9]{14}' : loginMode === 'employee' ? '[0-9]{1,8}' : undefined}
+                    minLength={loginMode === 'consumer' ? CONSUMER_REFERENCE_LENGTH : undefined}
+                    maxLength={loginMode === 'consumer' ? CONSUMER_REFERENCE_LENGTH : loginMode === 'employee' ? EMPLOYEE_ID_LENGTH : 80}
+                    title={loginMode === 'consumer'
+                      ? 'Enter exactly 14 digits'
+                      : loginMode === 'employee'
+                        ? 'Enter up to 8 digits; leading zeroes are added automatically'
+                        : undefined}
+                    onBlur={loginMode === 'employee'
+                      ? (event) => {
+                          event.currentTarget.value = normalizeEmployeeId(event.currentTarget.value);
+                        }
+                      : undefined}
                   />
                 </label>
                 <PasswordInput autoComplete="current-password" placeholder="Enter your password" />
@@ -273,10 +303,49 @@ export function AuthPage() {
               >
                 {registrationMode === 'consumer' ? (
                   <>
-                    <label><span>MEPCO Reference Number</span><input name="referenceNumber" required /></label>
+                    <label>
+                      <span>MEPCO Reference Number <small>14 digits</small></span>
+                      <input
+                        name="referenceNumber"
+                        required
+                        inputMode="numeric"
+                        pattern="[0-9]{14}"
+                        minLength={CONSUMER_REFERENCE_LENGTH}
+                        maxLength={CONSUMER_REFERENCE_LENGTH}
+                        placeholder="10000000000001"
+                        title="Enter exactly 14 digits"
+                      />
+                    </label>
                     <label><span>Full name</span><input name="name" required autoComplete="name" /></label>
-                    <label><span>Phone</span><input name="phone" required autoComplete="tel" /></label>
+                    <label>
+                      <span>Phone <small>11 digits, starts with 03</small></span>
+                      <input
+                        name="phone"
+                        required
+                        autoComplete="tel"
+                        inputMode="tel"
+                        pattern={PHONE_NUMBER_PATTERN}
+                        minLength={PHONE_NUMBER_LENGTH}
+                        maxLength={PHONE_NUMBER_LENGTH}
+                        placeholder="03001234567"
+                        title="Enter exactly 11 digits beginning with 03"
+                      />
+                    </label>
                     <label><span>Email <small>optional</small></span><input name="email" type="email" autoComplete="email" /></label>
+                    <label>
+                      <span>CNIC <small>13 digits</small></span>
+                      <input
+                        name="cnic"
+                        required
+                        autoComplete="off"
+                        inputMode="numeric"
+                        pattern={CNIC_PATTERN}
+                        minLength={CNIC_LENGTH}
+                        maxLength={CNIC_LENGTH}
+                        placeholder="3520212345671"
+                        title="Enter exactly 13 digits without dashes"
+                      />
+                    </label>
                     <label className="auth-form__wide"><span>Address</span><input name="address" required /></label>
                     <label>
                       <span>Circle</span>
@@ -312,10 +381,51 @@ export function AuthPage() {
                   </>
                 ) : (
                   <>
-                    <label><span>Employee ID</span><input name="employeeId" required /></label>
+                    <label>
+                      <span>Employee ID <small>up to 8 digits</small></span>
+                      <input
+                        name="employeeId"
+                        required
+                        inputMode="numeric"
+                        pattern="[0-9]{1,8}"
+                        maxLength={EMPLOYEE_ID_LENGTH}
+                        placeholder="00000001"
+                        title="Enter up to 8 digits; leading zeroes are added automatically"
+                        onBlur={(event) => {
+                          event.currentTarget.value = normalizeEmployeeId(event.currentTarget.value);
+                        }}
+                      />
+                    </label>
                     <label><span>Full name</span><input name="name" required autoComplete="name" /></label>
                     <label><span>Work email</span><input name="email" type="email" required /></label>
-                    <label><span>Phone</span><input name="phone" required /></label>
+                    <label>
+                      <span>Phone <small>11 digits, starts with 03</small></span>
+                      <input
+                        name="phone"
+                        required
+                        autoComplete="tel"
+                        inputMode="tel"
+                        pattern={PHONE_NUMBER_PATTERN}
+                        minLength={PHONE_NUMBER_LENGTH}
+                        maxLength={PHONE_NUMBER_LENGTH}
+                        placeholder="03001234567"
+                        title="Enter exactly 11 digits beginning with 03"
+                      />
+                    </label>
+                    <label>
+                      <span>CNIC <small>13 digits</small></span>
+                      <input
+                        name="cnic"
+                        required
+                        autoComplete="off"
+                        inputMode="numeric"
+                        pattern={CNIC_PATTERN}
+                        minLength={CNIC_LENGTH}
+                        maxLength={CNIC_LENGTH}
+                        placeholder="3520212345671"
+                        title="Enter exactly 13 digits without dashes"
+                      />
+                    </label>
                     <label className="auth-form__wide">
                       <span>Department</span>
                       <select name="departmentId" required>

@@ -429,10 +429,17 @@ export async function registerConsumer(
     if (duplicateRows[0] !== undefined) {
       throw new AppError(409, 'IDENTITY_ALREADY_REGISTERED', 'This Reference Number is already registered');
     }
+    const [cnicRows] = await connection.execute<IdRow[]>(
+      'SELECT id FROM users WHERE cnic = ? LIMIT 1',
+      [input.cnic],
+    );
+    if (cnicRows[0] !== undefined) {
+      throw new AppError(409, 'CNIC_ALREADY_REGISTERED', 'This CNIC is already registered');
+    }
     const [result] = await connection.execute<ResultSetHeader>(
-      `INSERT INTO users (role_id, display_name, email, phone, password_hash, status)
-       VALUES (?, ?, ?, ?, ?, 'active')`,
-      [roleId, input.name, input.email ?? null, input.phone, passwordHash],
+      `INSERT INTO users (role_id, display_name, email, phone, cnic, password_hash, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
+      [roleId, input.name, input.email ?? null, input.phone, input.cnic, passwordHash],
     );
     await connection.execute(
       `INSERT INTO consumer_profiles
@@ -494,10 +501,17 @@ export async function registerEmployee(
     if (duplicateRows[0] !== undefined) {
       throw new AppError(409, 'IDENTITY_ALREADY_REGISTERED', 'This Employee ID is already registered');
     }
+    const [cnicRows] = await connection.execute<IdRow[]>(
+      'SELECT id FROM users WHERE cnic = ? LIMIT 1',
+      [input.cnic],
+    );
+    if (cnicRows[0] !== undefined) {
+      throw new AppError(409, 'CNIC_ALREADY_REGISTERED', 'This CNIC is already registered');
+    }
     const [result] = await connection.execute<ResultSetHeader>(
-      `INSERT INTO users (role_id, display_name, email, phone, password_hash, status)
-       VALUES (?, ?, ?, ?, ?, 'active')`,
-      [roleId, input.name, input.email, input.phone, passwordHash],
+      `INSERT INTO users (role_id, display_name, email, phone, cnic, password_hash, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
+      [roleId, input.name, input.email, input.phone, input.cnic, passwordHash],
     );
     await connection.execute(
       `INSERT INTO employee_profiles

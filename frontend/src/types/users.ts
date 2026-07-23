@@ -10,6 +10,7 @@ export interface UserProfile {
   username: string | null;
   email: string | null;
   phone: string | null;
+  cnic: string | null;
   status: UserStatus;
   statusReason: string | null;
   lastLoginAt: string | null;

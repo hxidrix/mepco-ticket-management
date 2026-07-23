@@ -28,6 +28,7 @@ export interface ConsumerRegistrationInput {
   name: string;
   email?: string;
   phone: string;
+  cnic: string;
   password: string;
   address: string;
   circleId: number;
@@ -41,6 +42,7 @@ export interface EmployeeRegistrationInput {
   name: string;
   email: string;
   phone: string;
+  cnic: string;
   password: string;
   departmentId: number;
   designation: string;

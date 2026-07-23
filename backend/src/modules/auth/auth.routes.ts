@@ -9,6 +9,12 @@ import { AppError } from '../../shared/app-error.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
+import {
+  isConsumerReferenceNumber,
+  isCnic,
+  isEmployeeIdInput,
+  isPhoneNumber,
+} from '../../shared/identity-format.js';
 import { authenticate } from './auth.middleware.js';
 import { getRegistrationOptions } from './auth.repository.js';
 import {
@@ -71,10 +77,20 @@ authRouter.get(
 authRouter.post(
   '/register/consumer',
   authenticationLimiter,
-  body('referenceNumber').trim().isLength({ min: 8, max: 32 }).withMessage('Reference Number is required'),
+  body('referenceNumber')
+    .trim()
+    .custom(isConsumerReferenceNumber)
+    .withMessage('MEPCO Reference Number must contain exactly 14 digits'),
   body('name').trim().isLength({ min: 2, max: 140 }).withMessage('Name is required'),
   body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
-  body('phone').trim().isLength({ min: 7, max: 30 }).withMessage('A valid phone number is required'),
+  body('phone')
+    .trim()
+    .custom(isPhoneNumber)
+    .withMessage('Phone number must contain exactly 11 digits and begin with 03'),
+  body('cnic')
+    .trim()
+    .custom(isCnic)
+    .withMessage('CNIC must contain exactly 13 digits'),
   passwordValidation,
   body('address').trim().isLength({ min: 5, max: 500 }).withMessage('Address is required'),
   body('circleId').isInt({ min: 1 }).toInt(),
@@ -94,10 +110,20 @@ authRouter.post(
 authRouter.post(
   '/register/employee',
   authenticationLimiter,
-  body('employeeId').trim().isLength({ min: 3, max: 40 }).withMessage('Employee ID is required'),
+  body('employeeId')
+    .trim()
+    .custom(isEmployeeIdInput)
+    .withMessage('Employee ID must contain 1 to 8 digits'),
   body('name').trim().isLength({ min: 2, max: 140 }).withMessage('Name is required'),
   body('email').isEmail().normalizeEmail(),
-  body('phone').trim().isLength({ min: 7, max: 30 }).withMessage('A valid phone number is required'),
+  body('phone')
+    .trim()
+    .custom(isPhoneNumber)
+    .withMessage('Phone number must contain exactly 11 digits and begin with 03'),
+  body('cnic')
+    .trim()
+    .custom(isCnic)
+    .withMessage('CNIC must contain exactly 13 digits'),
   passwordValidation,
   body('departmentId').isInt({ min: 1 }).toInt(),
   body('designation').trim().isLength({ min: 2, max: 140 }),
@@ -116,7 +142,20 @@ authRouter.post(
   '/login',
   authenticationLimiter,
   body('mode').isIn(['consumer', 'employee', 'staff']),
-  body('identifier').trim().isLength({ min: 3, max: 80 }),
+  body('identifier')
+    .trim()
+    .custom((value: string, { req }) => {
+      const requestBody: unknown = req.body;
+      const mode = typeof requestBody === 'object'
+        && requestBody !== null
+        && 'mode' in requestBody
+        ? (requestBody as { mode?: unknown }).mode
+        : undefined;
+      if (mode === 'consumer') return isConsumerReferenceNumber(value);
+      if (mode === 'employee') return isEmployeeIdInput(value);
+      return mode === 'staff' && value.length >= 3 && value.length <= 80;
+    })
+    .withMessage('Enter a valid identifier for the selected login type'),
   body('password').isString().isLength({ min: 1, max: 128 }),
   validateRequest,
   asyncHandler(async (request, response) => {

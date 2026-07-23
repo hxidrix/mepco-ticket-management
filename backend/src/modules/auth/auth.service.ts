@@ -2,6 +2,10 @@ import { compare, hash } from 'bcryptjs';
 
 import { AppError } from '../../shared/app-error.js';
 import {
+  normalizeEmployeeId,
+  normalizeLoginIdentifier,
+} from '../../shared/identity-format.js';
+import {
   findLoginCandidate,
   recordLoginFailure,
   recordLoginSuccess,
@@ -46,15 +50,16 @@ export async function login(
   password: string,
   context: RequestContext,
 ) {
-  const candidate = await findLoginCandidate(mode, identifier);
+  const normalizedIdentifier = normalizeLoginIdentifier(mode, identifier);
+  const candidate = await findLoginCandidate(mode, normalizedIdentifier);
   const passwordMatches = await compare(password, candidate?.passwordHash ?? dummyPasswordHash);
 
   if (candidate === null || !passwordMatches) {
-    await recordLoginFailure(candidate, identifier, mode, context);
+    await recordLoginFailure(candidate, normalizedIdentifier, mode, context);
     throw new AppError(401, 'INVALID_CREDENTIALS', 'The identifier or password is incorrect');
   }
   if (candidate.lockedUntil !== null && candidate.lockedUntil.getTime() > Date.now()) {
-    await recordLoginFailure(candidate, identifier, mode, context);
+    await recordLoginFailure(candidate, normalizedIdentifier, mode, context);
     throw new AppError(429, 'ACCOUNT_TEMPORARILY_LOCKED', 'Too many login attempts; try again later');
   }
   if (candidate.status !== 'active') {
@@ -117,5 +122,9 @@ export async function createEmployeeAccount(
   input: EmployeeRegistrationInput,
   context: RequestContext,
 ) {
-  return registerEmployee(input, await hash(input.password, 12), context);
+  return registerEmployee(
+    { ...input, employeeId: normalizeEmployeeId(input.employeeId) },
+    await hash(input.password, 12),
+    context,
+  );
 }

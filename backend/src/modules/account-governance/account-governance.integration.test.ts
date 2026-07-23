@@ -23,10 +23,12 @@ async function registerConsumer(label: string): Promise<{ id: number; identifier
   if (circle === undefined || division === undefined || subdivision === undefined) throw new Error('Registration location options are missing');
   const suffix = `${Date.now()}${Math.floor(Math.random() * 10_000)}`.slice(-12);
   const identifier = `31${suffix}`;
+  const cnic = `4${suffix}`;
   await request(app).post('/api/v1/auth/register/consumer').send({
     referenceNumber: identifier,
     name: `Governance ${label} Consumer`,
-    phone: '0300-5550101',
+    phone: '03005550101',
+    cnic,
     password: 'Governance@123',
     address: 'Fictional governance acceptance address',
     circleId: circle.id,

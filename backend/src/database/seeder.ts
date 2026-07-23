@@ -37,7 +37,7 @@ interface DemoUserIds {
 
 export const developmentCredentials = Object.freeze({
   consumer: { identifier: '10000000000001', password: 'Demo@12345' },
-  employee: { identifier: 'EMP-DEMO-001', password: 'Demo@12345' },
+  employee: { identifier: '00000001', password: 'Demo@12345' },
   technician: { identifier: 'tech.it', password: 'Demo@12345' },
   supervisor: { identifier: 'supervisor.demo', password: 'Demo@12345' },
   administrator: { identifier: 'admin.demo', password: 'Demo@12345' },
@@ -225,7 +225,7 @@ async function upsertStaffUser(
      ON DUPLICATE KEY UPDATE
        id = LAST_INSERT_ID(id), role_id = VALUES(role_id), display_name = VALUES(display_name),
        password_hash = VALUES(password_hash), status = 'active', deleted_at = NULL`,
-    [roleId, displayName, username, `${username}@example.test`, '0300-0000000', passwordHash],
+    [roleId, displayName, username, `${username}@example.test`, '03000000000', passwordHash],
   );
   const userId = result.insertId;
   const departmentId =
@@ -284,7 +284,7 @@ async function upsertConsumer(
         roleId,
         displayName,
         `${referenceNumber}@consumer.example.test`,
-        '0300-1111111',
+        '03001111111',
         passwordHash,
         status,
         status === 'suspended' ? 'Fictional suspended-account acceptance scenario' : null,
@@ -353,7 +353,7 @@ async function upsertEmployee(
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO users (role_id, display_name, email, phone, password_hash, status)
        VALUES (?, ?, ?, ?, ?, 'active')`,
-      [roleId, displayName, 'employee.demo@example.test', '0300-2222222', passwordHash],
+      [roleId, displayName, 'employee.demo@example.test', '03002222222', passwordHash],
     );
     userId = result.insertId;
     await connection.execute(
@@ -452,6 +452,20 @@ async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
     "UPDATE users SET status = 'inactive', status_reason = 'Fictional inactive-account scenario' WHERE id = ?",
     [inactiveTechnician],
   );
+  const fictionalCnics: Array<[number, string]> = [
+    [consumer, '3520200000001'],
+    [suspendedConsumer, '3520200000002'],
+    [employee, '3520200000003'],
+    [technicianIt, '3520200000004'],
+    [technicianOps, '3520200000005'],
+    [technicianCsd, '3520200000006'],
+    [supervisor, '3520200000007'],
+    [administrator, '3520200000008'],
+    [inactiveTechnician, '3520200000009'],
+  ];
+  for (const [userId, cnic] of fictionalCnics) {
+    await connection.execute('UPDATE users SET cnic = ? WHERE id = ?', [cnic, userId]);
+  }
 
   const itDepartmentId = await idBy(
     connection,

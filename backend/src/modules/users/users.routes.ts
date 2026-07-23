@@ -5,6 +5,7 @@ import { validateRequest } from '../../middleware/validate-request.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
+import { isCnic, isPhoneNumber } from '../../shared/identity-format.js';
 import { authenticate, authorizeRoles, requireActiveAccount } from '../auth/auth.middleware.js';
 import type { UserRole } from '../auth/auth.types.js';
 import {
@@ -26,6 +27,11 @@ usersRouter.use(authenticate);
 usersRouter.use(requireActiveAccount);
 
 const optionalEmail = body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail();
+const optionalPhone = body('phone')
+  .optional({ values: 'falsy' })
+  .trim()
+  .custom(isPhoneNumber)
+  .withMessage('Phone number must contain exactly 11 digits and begin with 03');
 const strongPassword = (field: string) => body(field)
   .isString().isLength({ min: 10, max: 128 })
   .matches(/[a-z]/u).matches(/[A-Z]/u).matches(/[0-9]/u).matches(/[^A-Za-z0-9]/u)
@@ -39,7 +45,8 @@ usersRouter.get('/me/profile', asyncHandler(async (request, response) => {
 usersRouter.put(
   '/me/profile',
   body('displayName').trim().isLength({ min: 2, max: 140 }), optionalEmail,
-  body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 30 }),
+  optionalPhone,
+  body('cnic').trim().custom(isCnic).withMessage('CNIC must contain exactly 13 digits'),
   body('address').optional().trim().isLength({ min: 5, max: 500 }),
   body('circleId').optional().isInt({ min: 1 }).toInt(),
   body('divisionId').optional().isInt({ min: 1 }).toInt(),
@@ -97,7 +104,8 @@ usersRouter.post(
   body('role').isIn(['technician', 'supervisor', 'administrator']),
   body('username').trim().isLength({ min: 3, max: 80 }).matches(/^[a-zA-Z0-9._-]+$/u),
   body('displayName').trim().isLength({ min: 2, max: 140 }), optionalEmail,
-  body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 30 }), strongPassword('password'),
+  optionalPhone, strongPassword('password'),
+  body('cnic').trim().custom(isCnic).withMessage('CNIC must contain exactly 13 digits'),
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('designation').trim().isLength({ min: 2, max: 140 }),
   body('workLocation').trim().isLength({ min: 2, max: 255 }), validateRequest,
@@ -111,7 +119,9 @@ usersRouter.put(
   '/admin/:id',
   param('id').isInt({ min: 1 }).toInt(),
   body('displayName').trim().isLength({ min: 2, max: 140 }), optionalEmail,
-  body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 30 }),
+  optionalPhone,
+  body('cnic').optional({ values: 'falsy' }).trim().custom(isCnic)
+    .withMessage('CNIC must contain exactly 13 digits'),
   body('status').isIn(['active', 'suspended', 'inactive']),
   body('statusReason').custom((value: unknown, { req }) => {
     const requestBody = req.body as { status?: unknown };

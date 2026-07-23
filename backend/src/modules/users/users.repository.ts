@@ -2,6 +2,7 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
+import { normalizeOptionalPhoneNumber } from '../../shared/identity-format.js';
 import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext, UserRole } from '../auth/auth.types.js';
 import type {
@@ -19,6 +20,7 @@ interface ProfileRow extends RowDataPacket {
   username: string | null;
   email: string | null;
   phone: string | null;
+  cnic: string | null;
   status: UserStatus;
   statusReason: string | null;
   lastLoginAt: Date | null;
@@ -51,6 +53,7 @@ function mapProfile(row: ProfileRow): UserProfile {
     username: row.username,
     email: row.email,
     phone: row.phone,
+    cnic: row.cnic,
     status: row.status,
     statusReason: row.statusReason,
     lastLoginAt: row.lastLoginAt,
@@ -81,7 +84,7 @@ function mapProfile(row: ProfileRow): UserProfile {
 }
 
 const profileSelect = `
-  SELECT u.id, r.name AS role, u.display_name AS displayName, u.username, u.email, u.phone,
+  SELECT u.id, r.name AS role, u.display_name AS displayName, u.username, u.email, u.phone, u.cnic,
          u.status, u.status_reason AS statusReason, u.last_login_at AS lastLoginAt,
          u.created_at AS createdAt, cp.reference_number AS referenceNumber, cp.address,
          cp.circle_id AS circleId, c.name AS circleName,
@@ -111,6 +114,22 @@ async function activeDepartment(connection: PoolConnection, id: number | null): 
   if (rows[0] === undefined) throw new AppError(422, 'INVALID_DEPARTMENT', 'The department is unavailable');
 }
 
+async function ensureCnicAvailable(
+  connection: PoolConnection,
+  cnic: string,
+  excludedUserId?: number,
+): Promise<void> {
+  const [rows] = await connection.execute<IdRow[]>(
+    `SELECT id FROM users WHERE cnic = ?
+     ${excludedUserId === undefined ? '' : 'AND id <> ?'}
+     LIMIT 1`,
+    excludedUserId === undefined ? [cnic] : [cnic, excludedUserId],
+  );
+  if (rows[0] !== undefined) {
+    throw new AppError(409, 'CNIC_ALREADY_REGISTERED', 'This CNIC is already registered');
+  }
+}
+
 export async function findUserProfile(userId: number): Promise<UserProfile | null> {
   const [rows] = await databasePool.execute<ProfileRow[]>(
     `${profileSelect} WHERE u.id = ? AND u.deleted_at IS NULL LIMIT 1`,
@@ -128,9 +147,10 @@ export async function updateUserProfile(
   const connection = await databasePool.getConnection();
   try {
     await connection.beginTransaction();
+    await ensureCnicAvailable(connection, input.cnic, userId);
     await connection.execute(
-      'UPDATE users SET display_name = ?, email = ?, phone = ? WHERE id = ? AND deleted_at IS NULL',
-      [input.displayName, input.email ?? null, input.phone ?? null, userId],
+      'UPDATE users SET display_name = ?, email = ?, phone = ?, cnic = ? WHERE id = ? AND deleted_at IS NULL',
+      [input.displayName, input.email ?? null, normalizeOptionalPhoneNumber(input.phone), input.cnic, userId],
     );
     if (role === 'consumer') {
       if (input.circleId === undefined || input.divisionId === undefined
@@ -233,9 +253,9 @@ export async function listUsers(input: {
   const params: Array<string | number> = [];
   if (input.search !== undefined) {
     conditions.push(`(u.display_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?
-      OR cp.reference_number LIKE ? OR ep.employee_id LIKE ?)`);
+      OR u.cnic LIKE ? OR cp.reference_number LIKE ? OR ep.employee_id LIKE ?)`);
     const search = `%${input.search}%`;
-    params.push(search, search, search, search, search);
+    params.push(search, search, search, search, search, search);
   }
   if (input.role !== undefined) { conditions.push('r.name = ?'); params.push(input.role); }
   if (input.status !== undefined) { conditions.push('u.status = ?'); params.push(input.status); }
@@ -273,11 +293,13 @@ export async function createStaffUser(
       'SELECT id FROM users WHERE username = ? LIMIT 1', [input.username],
     );
     if (existing[0] !== undefined) throw new AppError(409, 'USERNAME_EXISTS', 'This username is already in use');
+    await ensureCnicAvailable(connection, input.cnic);
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO users
-         (role_id, display_name, username, email, phone, password_hash, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
-      [roleId, input.displayName, input.username, input.email ?? null, input.phone ?? null, passwordHash],
+         (role_id, display_name, username, email, phone, cnic, password_hash, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
+      [roleId, input.displayName, input.username, input.email ?? null,
+        normalizeOptionalPhoneNumber(input.phone), input.cnic, passwordHash],
     );
     await connection.execute(
       `INSERT INTO staff_profiles (user_id, department_id, designation, work_location)
@@ -335,11 +357,12 @@ export async function updateUserAsAdmin(
       roleId = roles[0]?.id ?? null;
     }
     await activeDepartment(connection, input.departmentId ?? null);
+    if (input.cnic !== undefined) await ensureCnicAvailable(connection, input.cnic, targetId);
     await connection.execute(
-      `UPDATE users SET display_name = ?, email = ?, phone = ?, status = ?, status_reason = ?,
-         role_id = COALESCE(?, role_id) WHERE id = ?`,
-      [input.displayName, input.email ?? null, input.phone ?? null, input.status,
-        input.statusReason ?? null, roleId, targetId],
+      `UPDATE users SET display_name = ?, email = ?, phone = ?, cnic = COALESCE(?, cnic),
+         status = ?, status_reason = ?, role_id = COALESCE(?, role_id) WHERE id = ?`,
+      [input.displayName, input.email ?? null, normalizeOptionalPhoneNumber(input.phone),
+        input.cnic ?? null, input.status, input.statusReason ?? null, roleId, targetId],
     );
     if (['technician', 'supervisor', 'administrator'].includes(currentRole)) {
       await connection.execute(

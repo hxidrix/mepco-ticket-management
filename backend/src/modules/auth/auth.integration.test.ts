@@ -23,7 +23,7 @@ function accessToken(response: SupertestResponse): string {
 describe('authentication API', () => {
   it.each([
     ['consumer', '10000000000001'],
-    ['employee', 'EMP-DEMO-001'],
+    ['employee', '00000001'],
     ['staff', 'tech.it'],
     ['staff', 'supervisor.demo'],
     ['staff', 'admin.demo'],
@@ -95,7 +95,7 @@ describe('authentication API', () => {
   it('protects authenticated endpoints with a short-lived access token', async () => {
     const loginResponse = await request(app)
       .post('/api/v1/auth/login')
-      .send({ mode: 'employee', identifier: 'EMP-DEMO-001', password: 'Demo@12345' })
+      .send({ mode: 'employee', identifier: '1', password: 'Demo@12345' })
       .expect(200);
     const token = accessToken(loginResponse);
 
@@ -129,7 +129,8 @@ describe('authentication API', () => {
       .send({
         referenceNumber: `200000${suffix}`,
         name: 'Fictional New Consumer',
-        phone: '0300-1234567',
+        phone: '03001234567',
+        cnic: '3520290000001',
         password: 'NewDemo@123',
         address: 'Fictional Registration Address',
         circleId: circle.id,
@@ -141,15 +142,127 @@ describe('authentication API', () => {
     await request(app)
       .post('/api/v1/auth/register/employee')
       .send({
-        employeeId: `EMP-${suffix}`,
+        employeeId: suffix,
         name: 'Fictional New Employee',
         email: `employee-${suffix}@example.test`,
-        phone: '0300-7654321',
+        phone: '03007654321',
+        cnic: '3520290000002',
         password: 'NewDemo@123',
         departmentId: department.id,
         designation: 'Demo Officer',
         workLocation: 'Fictional Office',
       })
       .expect(201);
+  });
+
+  it('rejects malformed reference numbers and employee IDs', async () => {
+    const optionsResponse = await request(app).get('/api/v1/auth/registration-options').expect(200);
+    const options = optionsResponse.body as {
+      data?: {
+        circles?: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
+        departments?: Array<{ id: number }>;
+      };
+    };
+    const circle = options.data?.circles?.[0];
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
+    const department = options.data?.departments?.[0];
+    if (circle === undefined || division === undefined || subdivision === undefined || department === undefined) {
+      throw new Error('Registration options were not seeded');
+    }
+
+    await request(app)
+      .post('/api/v1/auth/register/consumer')
+      .send({
+        referenceNumber: '1234567890123',
+        name: 'Invalid Reference Consumer',
+        phone: '03001234567',
+        cnic: '3520290000003',
+        password: 'NewDemo@123',
+        address: 'Fictional Registration Address',
+        circleId: circle.id,
+        divisionId: division.id,
+        subdivisionId: subdivision.id,
+      })
+      .expect(422);
+
+    await request(app)
+      .post('/api/v1/auth/register/employee')
+      .send({
+        employeeId: 'EMP-123',
+        name: 'Invalid Employee',
+        email: 'invalid-employee@example.test',
+        phone: '03007654321',
+        cnic: '3520290000004',
+        password: 'NewDemo@123',
+        departmentId: department.id,
+        designation: 'Demo Officer',
+        workLocation: 'Fictional Office',
+      })
+      .expect(422);
+  });
+
+  it('rejects phone numbers that are not 11 digits beginning with 03', async () => {
+    const optionsResponse = await request(app).get('/api/v1/auth/registration-options').expect(200);
+    const options = optionsResponse.body as {
+      data?: {
+        circles?: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
+      };
+    };
+    const circle = options.data?.circles?.[0];
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
+    if (circle === undefined || division === undefined || subdivision === undefined) {
+      throw new Error('Registration options were not seeded');
+    }
+
+    await request(app)
+      .post('/api/v1/auth/register/consumer')
+      .send({
+        referenceNumber: '90000000000001',
+        name: 'Invalid Phone Consumer',
+        phone: '0300-1234567',
+        cnic: '3520290000005',
+        password: 'NewDemo@123',
+        address: 'Fictional Registration Address',
+        circleId: circle.id,
+        divisionId: division.id,
+        subdivisionId: subdivision.id,
+      })
+      .expect(422);
+  });
+
+  it('rejects malformed and duplicate CNIC values', async () => {
+    const optionsResponse = await request(app).get('/api/v1/auth/registration-options').expect(200);
+    const options = optionsResponse.body as {
+      data?: {
+        circles?: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
+      };
+    };
+    const circle = options.data?.circles?.[0];
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
+    if (circle === undefined || division === undefined || subdivision === undefined) {
+      throw new Error('Registration options were not seeded');
+    }
+    const baseInput = {
+      name: 'CNIC Validation Consumer',
+      phone: '03001234567',
+      password: 'NewDemo@123',
+      address: 'Fictional Registration Address',
+      circleId: circle.id,
+      divisionId: division.id,
+      subdivisionId: subdivision.id,
+    };
+
+    await request(app)
+      .post('/api/v1/auth/register/consumer')
+      .send({ ...baseInput, referenceNumber: '90000000000002', cnic: '352021234567' })
+      .expect(422);
+
+    await request(app)
+      .post('/api/v1/auth/register/consumer')
+      .send({ ...baseInput, referenceNumber: '90000000000003', cnic: '3520200000001' })
+      .expect(409);
   });
 });

@@ -10,6 +10,7 @@ export interface UserProfile {
   username: string | null;
   email: string | null;
   phone: string | null;
+  cnic: string | null;
   status: UserStatus;
   statusReason: string | null;
   lastLoginAt: Date | null;
@@ -34,6 +35,7 @@ export interface ProfileUpdateInput {
   displayName: string;
   email?: string;
   phone?: string;
+  cnic: string;
   address?: string;
   circleId?: number;
   divisionId?: number;
@@ -50,6 +52,7 @@ export interface StaffCreateInput {
   displayName: string;
   email?: string;
   phone?: string;
+  cnic: string;
   password: string;
   departmentId?: number;
   designation: string;
@@ -60,6 +63,7 @@ export interface AdminUserUpdateInput {
   displayName: string;
   email?: string;
   phone?: string;
+  cnic?: string;
   status: UserStatus;
   statusReason?: string;
   role?: StaffRole;

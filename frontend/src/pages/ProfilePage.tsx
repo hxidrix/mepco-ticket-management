@@ -4,6 +4,12 @@ import type { FormEvent } from 'react';
 import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
+import {
+  CNIC_LENGTH,
+  CNIC_PATTERN,
+  PHONE_NUMBER_LENGTH,
+  PHONE_NUMBER_PATTERN,
+} from '../lib/identity-format';
 import { changePasswordRequest, profileRequest, updateProfileRequest } from '../lib/users-api';
 import type { RegistrationOptions } from '../types/auth';
 import type { UserProfile } from '../types/users';
@@ -54,7 +60,8 @@ export function ProfilePage() {
     const data = new FormData(event.currentTarget);
     try {
       const common = {
-        displayName: value(data, 'displayName'), email: value(data, 'email'), phone: value(data, 'phone'),
+        displayName: value(data, 'displayName'), email: value(data, 'email'),
+        phone: value(data, 'phone'), cnic: value(data, 'cnic'),
       };
       const input = profile?.role === 'consumer'
         ? { ...common, address: value(data, 'address'), circleId: Number(value(data, 'circleId')),
@@ -93,7 +100,35 @@ export function ProfilePage() {
           <div className="panel__heading"><div><span>Personal details</span><h2>Profile information</h2></div><small>{profile.role}</small></div>
           <label><span>Full name</span><input name="displayName" defaultValue={profile.displayName} required /></label>
           <label><span>Email</span><input name="email" type="email" defaultValue={profile.email ?? ''} /></label>
-          <label><span>Phone</span><input name="phone" defaultValue={profile.phone ?? ''} /></label>
+          <label>
+            <span>Phone <small>11 digits, starts with 03</small></span>
+            <input
+              name="phone"
+              defaultValue={profile.phone ?? ''}
+              autoComplete="tel"
+              inputMode="tel"
+              pattern={PHONE_NUMBER_PATTERN}
+              minLength={PHONE_NUMBER_LENGTH}
+              maxLength={PHONE_NUMBER_LENGTH}
+              placeholder="03001234567"
+              title="Enter exactly 11 digits beginning with 03"
+            />
+          </label>
+          <label>
+            <span>CNIC <small>13 digits</small></span>
+            <input
+              name="cnic"
+              required
+              defaultValue={profile.cnic ?? ''}
+              autoComplete="off"
+              inputMode="numeric"
+              pattern={CNIC_PATTERN}
+              minLength={CNIC_LENGTH}
+              maxLength={CNIC_LENGTH}
+              placeholder="3520212345671"
+              title="Enter exactly 13 digits without dashes"
+            />
+          </label>
           {isConsumer ? (
             <>
               <label><span>Reference number</span><input value={profile.referenceNumber} disabled /></label>

@@ -76,7 +76,7 @@ describe('ticket collaboration and notifications API', () => {
     const download = await request(app).get(`/api/v1/tickets/attachments/${attachmentId}/download`)
       .set('Authorization', `Bearer ${consumer}`).expect(200);
     expect(download.headers['content-disposition']).toContain('evidence.txt');
-    const employee = await login('employee', 'EMP-DEMO-001');
+    const employee = await login('employee', '00000001');
     await request(app).get(`/api/v1/tickets/attachments/${attachmentId}/download`)
       .set('Authorization', `Bearer ${employee}`).expect(404);
     await request(app).post(`/api/v1/tickets/${ticketId}/attachments`)

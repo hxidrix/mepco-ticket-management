@@ -7,6 +7,7 @@ All records and credentials in this repository are fictional. The application ha
 ## Delivered capabilities
 
 - Consumer, employee, technician, supervisor, and administrator roles with backend-enforced RBAC.
+- Database-enforced identity formats: consumer reference numbers are exactly 14 digits, employee codes are normalized to exactly 8 digits with leading zeroes, phone numbers contain exactly 11 digits beginning with `03`, and every role supports a unique 13-digit CNIC in its profile. See [the identifier format catalogue](docs/IDENTIFIER_FORMATS.md).
 - Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
 - Role-specific profiles and accountable suspension governance: technicians can submit ticket-linked requester suspension cases, supervisors/administrators record structured decisions, managers can directly suspend with full details, sessions are revoked, and the restricted portal shows the account holder the recorded reason and evidence. Supervisors and administrators manage and reply to account-holder appeals/support requests from the Account governance page.
 - Complete reference catalog: 14 departments, 11 circles, 55 divisions, 169 sub-divisions, 18 categories, 154 complaint types, priorities, statuses, and protected fallback values. See [the operational location hierarchy](docs/LOCATION_HIERARCHY.md).
@@ -40,7 +41,7 @@ Every active account uses the development-only password `Demo@12345`.
 | Login mode | Role | Identifier |
 | --- | --- | --- |
 | Consumer | Consumer | `10000000000001` |
-| Employee | Employee | `EMP-DEMO-001` |
+| Employee | Employee | `00000001` |
 | Staff | Technician | `tech.it` |
 | Staff | Technician | `tech.ops` |
 | Staff | Supervisor | `supervisor.demo` |

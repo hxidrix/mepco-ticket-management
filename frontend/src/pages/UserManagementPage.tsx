@@ -11,6 +11,12 @@ import {
   updateUserRequest,
   usersRequest,
 } from '../lib/users-api';
+import {
+  CNIC_LENGTH,
+  CNIC_PATTERN,
+  PHONE_NUMBER_LENGTH,
+  PHONE_NUMBER_PATTERN,
+} from '../lib/identity-format';
 import type { RegistrationOptions, UserRole } from '../types/auth';
 import type { PaginationMeta, UserProfile } from '../types/users';
 
@@ -67,6 +73,7 @@ export function UserManagementPage() {
         displayName: formValue(data, 'displayName'),
         email: formValue(data, 'email'),
         phone: formValue(data, 'phone'),
+        cnic: formValue(data, 'cnic'),
         password: formValue(data, 'password'),
         departmentId: Number(formValue(data, 'departmentId')) || undefined,
         designation: formValue(data, 'designation'),
@@ -90,6 +97,7 @@ export function UserManagementPage() {
         displayName: profile.displayName,
         email: profile.email ?? '',
         phone: profile.phone ?? '',
+        cnic: profile.cnic ?? undefined,
         status: 'active',
         statusReason: '',
         ...(['technician', 'supervisor', 'administrator'].includes(profile.role) ? {
@@ -121,6 +129,7 @@ export function UserManagementPage() {
         displayName: profile.displayName,
         email: profile.email ?? '',
         phone: profile.phone ?? '',
+        cnic: profile.cnic ?? undefined,
         status: 'suspended',
         statusReason: reason.trim(),
         role: profile.role,
@@ -179,7 +188,33 @@ export function UserManagementPage() {
           <label><span>Username</span><input name="username" required /></label>
           <label><span>Full name</span><input name="displayName" required /></label>
           <label><span>Email</span><input name="email" type="email" /></label>
-          <label><span>Phone</span><input name="phone" /></label>
+          <label>
+            <span>Phone <small>11 digits, starts with 03</small></span>
+            <input
+              name="phone"
+              autoComplete="tel"
+              inputMode="tel"
+              pattern={PHONE_NUMBER_PATTERN}
+              minLength={PHONE_NUMBER_LENGTH}
+              maxLength={PHONE_NUMBER_LENGTH}
+              placeholder="03001234567"
+              title="Enter exactly 11 digits beginning with 03"
+            />
+          </label>
+          <label>
+            <span>CNIC <small>13 digits</small></span>
+            <input
+              name="cnic"
+              required
+              autoComplete="off"
+              inputMode="numeric"
+              pattern={CNIC_PATTERN}
+              minLength={CNIC_LENGTH}
+              maxLength={CNIC_LENGTH}
+              placeholder="3520212345671"
+              title="Enter exactly 13 digits without dashes"
+            />
+          </label>
           <PasswordInput name="password" label="Temporary password" autoComplete="new-password" defaultValue="Demo@12345" minLength={10} />
           <label className="form-grid__wide"><span>Department</span><select name="departmentId"><option value="">No department</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
           <label><span>Designation</span><input name="designation" required /></label>
@@ -193,7 +228,7 @@ export function UserManagementPage() {
           event.preventDefault();
           setFilters({ search, role, status });
         }}>
-          <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, username, email, reference or employee ID" /></label>
+          <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, username, email, CNIC, reference or employee ID" /></label>
           <label><span>Role</span><select value={role} onChange={(event) => setRole(event.target.value)}><option value="">All roles</option>{(['consumer', 'employee', 'technician', 'supervisor', 'administrator'] as UserRole[]).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="inactive">Inactive</option></select></label>
           <button className="button button--secondary" type="submit">Apply filters</button>

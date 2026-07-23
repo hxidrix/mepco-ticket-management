@@ -26,7 +26,7 @@ describe('user profile and account administration API', () => {
       .expect(200);
     const profile = (before.body as { data: { profile: {
       circleId: number; divisionId: number; subdivisionId: number;
-      displayName: string; address: string;
+      displayName: string; address: string; cnic: string;
     } } }).data.profile;
 
     const response = await request(app)
@@ -35,7 +35,8 @@ describe('user profile and account administration API', () => {
       .send({
         displayName: profile.displayName,
         email: 'consumer.profile@example.test',
-        phone: '0300-1111111',
+        phone: '03001111111',
+        cnic: profile.cnic,
         address: profile.address,
         circleId: profile.circleId,
         divisionId: profile.divisionId,
@@ -65,7 +66,8 @@ describe('user profile and account administration API', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
         role: 'technician', username: 'tech.milestone4', displayName: 'Milestone Four Technician',
-        email: 'm4-tech@example.test', phone: '0300-4444444', password: 'Demo@12345',
+        email: 'm4-tech@example.test', phone: '03004444444', password: 'Demo@12345',
+        cnic: '3520290000010',
         departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
       })
       .expect(201);
@@ -81,7 +83,8 @@ describe('user profile and account administration API', () => {
       .put(`/api/v1/users/admin/${profile.id}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({
-        displayName: 'Milestone Four Technician', email: 'm4-tech@example.test', phone: '0300-4444444',
+        displayName: 'Milestone Four Technician', email: 'm4-tech@example.test', phone: '03004444444',
+        cnic: '3520290000010',
         status: 'suspended', statusReason: 'Fictional acceptance check', role: 'technician',
         departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
       })
@@ -130,7 +133,7 @@ describe('user profile and account administration API', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     const profile = (me.body as { data: { profile: {
-      id: number; displayName: string; email: string; phone: string;
+      id: number; displayName: string; email: string; phone: string; cnic: string;
       departmentId: number; designation: string; workLocation: string;
     } } }).data.profile;
 
