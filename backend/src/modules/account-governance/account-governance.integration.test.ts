@@ -16,10 +16,11 @@ async function login(mode: 'consumer' | 'employee' | 'staff', identifier: string
 
 async function registerConsumer(label: string): Promise<{ id: number; identifier: string; accessToken: string }> {
   const optionsResponse = await request(app).get('/api/v1/auth/registration-options').expect(200);
-  const options = optionsResponse.body as { data: { circles: Array<{ id: number; cities: Array<{ id: number }> }> } };
+  const options = optionsResponse.body as { data: { circles: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }> } };
   const circle = options.data.circles[0];
-  const city = circle?.cities[0];
-  if (circle === undefined || city === undefined) throw new Error('Registration location options are missing');
+  const division = circle?.divisions[0];
+  const subdivision = division?.subdivisions[0];
+  if (circle === undefined || division === undefined || subdivision === undefined) throw new Error('Registration location options are missing');
   const suffix = `${Date.now()}${Math.floor(Math.random() * 10_000)}`.slice(-12);
   const identifier = `31${suffix}`;
   await request(app).post('/api/v1/auth/register/consumer').send({
@@ -29,7 +30,8 @@ async function registerConsumer(label: string): Promise<{ id: number; identifier
     password: 'Governance@123',
     address: 'Fictional governance acceptance address',
     circleId: circle.id,
-    cityId: city.id,
+    divisionId: division.id,
+    subdivisionId: subdivision.id,
   }).expect(201);
   const response = await request(app).post('/api/v1/auth/login')
     .send({ mode: 'consumer', identifier, password: 'Governance@123' }).expect(200);
@@ -45,13 +47,14 @@ async function createTicketAssignedToTechnician(
     .set('Authorization', `Bearer ${consumerToken}`).expect(200);
   const catalog = catalogResponse.body as { data: {
     categories: Array<{ id: number; domain: string; complaintTypes: Array<{ id: number }> }>;
-    circles: Array<{ id: number; cities: Array<{ id: number }> }>;
+    circles: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
   } };
   const category = catalog.data.categories.find((item) => item.domain === 'consumer' && item.complaintTypes.length > 0);
   const complaintType = category?.complaintTypes[0];
   const circle = catalog.data.circles[0];
-  const city = circle?.cities[0];
-  if (category === undefined || complaintType === undefined || circle === undefined || city === undefined) {
+  const division = circle?.divisions[0];
+  const subdivision = division?.subdivisions[0];
+  if (category === undefined || complaintType === undefined || circle === undefined || division === undefined || subdivision === undefined) {
     throw new Error('Ticket catalog is incomplete');
   }
   const created = await request(app).post('/api/v1/tickets')
@@ -61,7 +64,8 @@ async function createTicketAssignedToTechnician(
       categoryId: category.id,
       complaintTypeId: complaintType.id,
       circleId: circle.id,
-      cityId: city.id,
+      divisionId: division.id,
+      subdivisionId: subdivision.id,
       locationDetails: 'Fictional governance test location',
     }).expect(201);
   const ticketId = (created.body as { data: { ticket: { id: number } } }).data.ticket.id;

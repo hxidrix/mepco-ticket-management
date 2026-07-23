@@ -9,13 +9,13 @@ All records and credentials in this repository are fictional. The application ha
 - Consumer, employee, technician, supervisor, and administrator roles with backend-enforced RBAC.
 - Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
 - Role-specific profiles and accountable suspension governance: technicians can submit ticket-linked requester suspension cases, supervisors/administrators record structured decisions, managers can directly suspend with full details, sessions are revoked, and the restricted portal shows the account holder the recorded reason and evidence. Supervisors and administrators manage and reply to account-holder appeals/support requests from the Account governance page.
-- Complete SRS reference catalog: 14 departments, 11 circles, 52 cities, 18 categories, 154 complaint types, priorities, statuses, and protected `Other` values.
+- Complete reference catalog: 14 departments, 11 circles, 55 divisions, 169 sub-divisions, 18 categories, 154 complaint types, priorities, statuses, and protected fallback values. See [the operational location hierarchy](docs/LOCATION_HIERARCHY.md).
 - Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
 - Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications.
 - Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and manager-scoped CSV/PDF exports.
 - Complaint-specific SLA targets from 4 hours to 90 days, with priority urgency caps and configurable master-data values; see [the SLA catalogue](docs/SLA_TARGETS.md).
-- Administrator master data, announcements/audiences, staff routing scopes, users, and immutable audit-log views.
+- Administrator master data, announcements/audiences, Circle → Division → Sub-division staff routing scopes, users, and immutable audit-log views.
 - Structured Pino logs, request IDs, safe error envelopes, Helmet/CORS, parameterized SQL, transactions, foreign keys, and soft deactivation.
 - OpenAPI 3.1 / Swagger for the complete API surface.
 

@@ -21,13 +21,15 @@ describe('master-data API', () => {
     const response = await request(app).get('/api/v1/master-data/catalog')
       .set('Authorization', `Bearer ${token}`).expect(200);
     const catalog = (response.body as { data: {
-      departments: unknown[]; circles: Array<{ cities: unknown[] }>;
+      departments: unknown[]; circles: Array<{ divisions: Array<{ subdivisions: unknown[] }> }>;
       categories: Array<{ complaintTypes: Array<{ name: string }> }>;
       priorities: unknown[]; statuses: unknown[];
     } }).data;
     expect(catalog.departments.length).toBe(14);
     expect(catalog.circles.length).toBe(11);
-    expect(catalog.circles.reduce((count, circle) => count + circle.cities.length, 0)).toBe(52);
+    expect(catalog.circles.reduce((count, circle) => count + circle.divisions.length, 0)).toBe(55);
+    expect(catalog.circles.reduce((count, circle) => count
+      + circle.divisions.reduce((total, division) => total + division.subdivisions.length, 0), 0)).toBe(169);
     expect(catalog.categories.length).toBe(18);
     expect(catalog.categories.reduce((count, category) => count + category.complaintTypes.length, 0)).toBe(154);
     expect(catalog.categories.every((category) => category.complaintTypes.some((item) => item.name === 'Other'))).toBe(true);
@@ -43,19 +45,23 @@ describe('master-data API', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Fictional Acceptance Circle', sortOrder: 99, isActive: true }).expect(201);
     const circleId = (createdCircle.body as { data: { id: number } }).data.id;
-    const createdCity = await request(app).post('/api/v1/master-data/admin/cities')
+    const createdDivision = await request(app).post('/api/v1/master-data/admin/divisions')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Fictional Acceptance City', parentId: circleId, sortOrder: 1, isActive: true }).expect(201);
-    const cityId = (createdCity.body as { data: { id: number } }).data.id;
+      .send({ name: 'Fictional Acceptance Division', parentId: circleId, sortOrder: 1, isActive: true }).expect(201);
+    const divisionId = (createdDivision.body as { data: { id: number } }).data.id;
+    const createdSubdivision = await request(app).post('/api/v1/master-data/admin/subdivisions')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'Fictional Acceptance Sub-division', parentId: divisionId, sortOrder: 1, isActive: true }).expect(201);
+    const subdivisionId = (createdSubdivision.body as { data: { id: number } }).data.id;
 
-    await request(app).put(`/api/v1/master-data/admin/cities/${cityId}`)
+    await request(app).put(`/api/v1/master-data/admin/subdivisions/${subdivisionId}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'Fictional Acceptance City Updated', parentId: circleId, sortOrder: 2, isActive: false })
+      .send({ name: 'Fictional Acceptance Sub-division Updated', parentId: divisionId, sortOrder: 2, isActive: false })
       .expect(200);
-    const list = await request(app).get('/api/v1/master-data/admin/cities?includeInactive=true')
+    const list = await request(app).get('/api/v1/master-data/admin/subdivisions?includeInactive=true')
       .set('Authorization', `Bearer ${adminToken}`).expect(200);
     expect((list.body as { data: Array<{ id: number; isActive: number }> }).data)
-      .toContainEqual(expect.objectContaining({ id: cityId, isActive: 0 }));
+      .toContainEqual(expect.objectContaining({ id: subdivisionId, isActive: 0 }));
   });
 
   it('prevents deactivation of a required Other option', async () => {

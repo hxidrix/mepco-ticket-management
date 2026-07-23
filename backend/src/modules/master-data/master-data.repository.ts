@@ -6,7 +6,7 @@ import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext } from '../auth/auth.types.js';
 
 export type MasterResource =
-  | 'departments' | 'circles' | 'cities' | 'categories' | 'complaint-types'
+  | 'departments' | 'circles' | 'divisions' | 'subdivisions' | 'categories' | 'complaint-types'
   | 'priorities' | 'statuses';
 
 type SqlValue = string | number | boolean | null;
@@ -52,8 +52,15 @@ function selectFor(resource: MasterResource): string {
   switch (resource) {
     case 'departments': return `SELECT id, name, slug, description, is_active AS isActive, sort_order AS sortOrder FROM departments`;
     case 'circles': return `SELECT id, name, slug, NULL AS description, is_active AS isActive, sort_order AS sortOrder FROM circles`;
-    case 'cities': return `SELECT city.id, city.name, city.slug, NULL AS description, city.is_active AS isActive,
-      city.sort_order AS sortOrder, city.circle_id AS parentId, c.name AS parentName FROM cities city JOIN circles c ON c.id = city.circle_id`;
+    case 'divisions': return `SELECT division.id, division.name, division.slug, NULL AS description,
+      division.is_active AS isActive, division.sort_order AS sortOrder,
+      division.circle_id AS parentId, c.name AS parentName
+      FROM divisions division JOIN circles c ON c.id = division.circle_id`;
+    case 'subdivisions': return `SELECT subdivision.id, subdivision.name, subdivision.slug,
+      NULL AS description, subdivision.is_active AS isActive,
+      subdivision.sort_order AS sortOrder, subdivision.division_id AS parentId,
+      division.name AS parentName
+      FROM subdivisions subdivision JOIN divisions division ON division.id = subdivision.division_id`;
     case 'categories': return `SELECT cat.id, cat.name, cat.slug, cat.description, cat.is_active AS isActive,
       cat.sort_order AS sortOrder, cat.domain, cat.department_id AS departmentId, d.name AS parentName
       FROM categories cat LEFT JOIN departments d ON d.id = cat.department_id`;
@@ -69,8 +76,10 @@ function selectFor(resource: MasterResource): string {
 }
 
 export async function listMasterItems(resource: MasterResource, includeInactive: boolean): Promise<MasterRow[]> {
-  const activeColumn = resource === 'cities'
-    ? 'city.is_active'
+  const activeColumn = resource === 'divisions'
+    ? 'division.is_active'
+    : resource === 'subdivisions'
+      ? 'subdivision.is_active'
     : resource === 'categories'
       ? 'cat.is_active'
       : resource === 'complaint-types'
@@ -98,7 +107,8 @@ function insertStatement(resource: MasterResource, input: Record<string, unknown
   switch (resource) {
     case 'departments': return { sql: `INSERT INTO departments (name, slug, description, is_active, sort_order) VALUES (?, ?, ?, ?, ?)`, values: [name, slug, description, flag(input, 'isActive', true), sortOrder] };
     case 'circles': return { sql: `INSERT INTO circles (name, slug, is_active, sort_order) VALUES (?, ?, ?, ?)`, values: [name, slug, flag(input, 'isActive', true), sortOrder] };
-    case 'cities': return { sql: `INSERT INTO cities (circle_id, name, slug, is_active, sort_order) VALUES (?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, flag(input, 'isActive', true), sortOrder] };
+    case 'divisions': return { sql: `INSERT INTO divisions (circle_id, name, slug, is_active, sort_order) VALUES (?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, flag(input, 'isActive', true), sortOrder] };
+    case 'subdivisions': return { sql: `INSERT INTO subdivisions (division_id, name, slug, is_active, sort_order) VALUES (?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, flag(input, 'isActive', true), sortOrder] };
     case 'categories': return { sql: `INSERT INTO categories (domain, department_id, name, slug, description, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)`, values: [text(input, 'domain'), integer(input, 'departmentId'), name, slug, description, flag(input, 'isActive', true), sortOrder] };
     case 'complaint-types': return { sql: `INSERT INTO complaint_types (category_id, name, slug, description, sla_target_hours, is_confidential, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, values: [integer(input, 'parentId'), name, slug, description, integer(input, 'slaTargetHours') ?? 120, flag(input, 'isConfidential'), flag(input, 'isActive', true), sortOrder] };
     case 'priorities': return { sql: `INSERT INTO priorities (name, slug, description, color_token, sla_target_hours, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)`, values: [name, slug, description ?? '', text(input, 'colorToken', 'blue'), integer(input, 'slaTargetHours'), flag(input, 'isActive', true), sortOrder] };
@@ -115,7 +125,8 @@ function updateStatement(resource: MasterResource, input: Record<string, unknown
   switch (resource) {
     case 'departments': return { sql: `UPDATE departments SET name=?, slug=?, description=?, is_active=?, sort_order=? WHERE id=?`, values: [name, slug, description, active, sortOrder, id] };
     case 'circles': return { sql: `UPDATE circles SET name=?, slug=?, is_active=?, sort_order=? WHERE id=?`, values: [name, slug, active, sortOrder, id] };
-    case 'cities': return { sql: `UPDATE cities SET circle_id=?, name=?, slug=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, active, sortOrder, id] };
+    case 'divisions': return { sql: `UPDATE divisions SET circle_id=?, name=?, slug=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, active, sortOrder, id] };
+    case 'subdivisions': return { sql: `UPDATE subdivisions SET division_id=?, name=?, slug=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, active, sortOrder, id] };
     case 'categories': return { sql: `UPDATE categories SET domain=?, department_id=?, name=?, slug=?, description=?, is_active=?, sort_order=? WHERE id=?`, values: [text(input, 'domain'), integer(input, 'departmentId'), name, slug, description, active, sortOrder, id] };
     case 'complaint-types': return { sql: `UPDATE complaint_types SET category_id=?, name=?, slug=?, description=?, sla_target_hours=?, is_confidential=?, is_active=?, sort_order=? WHERE id=?`, values: [integer(input, 'parentId'), name, slug, description, integer(input, 'slaTargetHours') ?? 120, flag(input, 'isConfidential'), active, sortOrder, id] };
     case 'priorities': return { sql: `UPDATE priorities SET name=?, slug=?, description=?, color_token=?, sla_target_hours=?, is_active=?, sort_order=? WHERE id=?`, values: [name, slug, description ?? '', text(input, 'colorToken', 'blue'), integer(input, 'slaTargetHours'), active, sortOrder, id] };
@@ -125,7 +136,8 @@ function updateStatement(resource: MasterResource, input: Record<string, unknown
 
 async function validateInput(connection: PoolConnection, resource: MasterResource, input: Record<string, unknown>): Promise<void> {
   if (text(input, 'name').length < 2) throw new AppError(422, 'NAME_REQUIRED', 'A name is required');
-  if (resource === 'cities') await ensureParent(connection, 'circles', integer(input, 'parentId'));
+  if (resource === 'divisions') await ensureParent(connection, 'circles', integer(input, 'parentId'));
+  if (resource === 'subdivisions') await ensureParent(connection, 'divisions', integer(input, 'parentId'));
   if (resource === 'complaint-types') await ensureParent(connection, 'categories', integer(input, 'parentId'));
   if (resource === 'categories') {
     if (!['consumer', 'employee'].includes(text(input, 'domain'))) throw new AppError(422, 'INVALID_DOMAIN', 'Domain must be consumer or employee');
@@ -164,7 +176,8 @@ export async function updateMasterItem(resource: MasterResource, id: number, inp
     const table = resource === 'complaint-types' ? 'complaint_types' : resource === 'statuses' ? 'ticket_statuses' : resource;
     const [existing] = await connection.execute<IdRow[]>(`SELECT id, name, slug FROM ${table} WHERE id = ? FOR UPDATE`, [id]);
     if (existing[0] === undefined) throw new AppError(404, 'MASTER_DATA_NOT_FOUND', 'The item was not found');
-    if ((existing[0].name === 'Other' || existing[0].slug === 'other') && !flag(input, 'isActive', true)) {
+    if (['other', 'other-division', 'other-sub-division'].includes(existing[0].slug ?? '')
+        && !flag(input, 'isActive', true)) {
       throw new AppError(409, 'OTHER_OPTION_REQUIRED', 'The Other option must remain active');
     }
     await validateInput(connection, resource, input);
@@ -179,14 +192,21 @@ export async function updateMasterItem(resource: MasterResource, id: number, inp
 }
 
 export async function getActiveCatalog() {
-  const [departments, circles, cities, categories, complaintTypes, priorities, statuses] = await Promise.all([
-    listMasterItems('departments', false), listMasterItems('circles', false), listMasterItems('cities', false),
+  const [departments, circles, divisions, subdivisions, categories, complaintTypes, priorities, statuses] = await Promise.all([
+    listMasterItems('departments', false), listMasterItems('circles', false),
+    listMasterItems('divisions', false), listMasterItems('subdivisions', false),
     listMasterItems('categories', false), listMasterItems('complaint-types', false),
     listMasterItems('priorities', false), listMasterItems('statuses', false),
   ]);
   return {
     departments,
-    circles: circles.map((circle) => ({ ...circle, cities: cities.filter((city) => city.parentId === circle.id) })),
+    circles: circles.map((circle) => ({
+      ...circle,
+      divisions: divisions.filter((division) => division.parentId === circle.id).map((division) => ({
+        ...division,
+        subdivisions: subdivisions.filter((subdivision) => subdivision.parentId === division.id),
+      })),
+    })),
     categories: categories.map((category) => ({ ...category, complaintTypes: complaintTypes.filter((type) => type.parentId === category.id) })),
     priorities,
     statuses,

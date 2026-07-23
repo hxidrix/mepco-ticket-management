@@ -78,7 +78,8 @@ authRouter.post(
   passwordValidation,
   body('address').trim().isLength({ min: 5, max: 500 }).withMessage('Address is required'),
   body('circleId').isInt({ min: 1 }).toInt(),
-  body('cityId').isInt({ min: 1 }).toInt(),
+  body('divisionId').isInt({ min: 1 }).toInt(),
+  body('subdivisionId').isInt({ min: 1 }).toInt(),
   body('serviceAddress').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
   validateRequest,
   asyncHandler(async (request, response) => {

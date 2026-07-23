@@ -31,7 +31,8 @@ export interface ConsumerRegistrationInput {
   password: string;
   address: string;
   circleId: number;
-  cityId: number;
+  divisionId: number;
+  subdivisionId: number;
   serviceAddress?: string;
 }
 

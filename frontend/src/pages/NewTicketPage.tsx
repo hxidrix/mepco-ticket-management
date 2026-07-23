@@ -19,6 +19,8 @@ export function NewTicketPage() {
   const [categoryId, setCategoryId] = useState('');
   const [complaintTypeId, setComplaintTypeId] = useState('');
   const [circleId, setCircleId] = useState('');
+  const [divisionId, setDivisionId] = useState('');
+  const [subdivisionId, setSubdivisionId] = useState('');
   const [priorityId, setPriorityId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,7 +32,11 @@ export function NewTicketPage() {
       const firstCategory = next.categories.find((category) => category.domain === domain);
       setCategoryId(String(firstCategory?.id ?? ''));
       setComplaintTypeId(String(firstCategory?.complaintTypes[0]?.id ?? ''));
-      setCircleId(String(next.circles[0]?.id ?? ''));
+      const firstCircle = next.circles[0];
+      const firstDivision = firstCircle?.divisions[0];
+      setCircleId(String(firstCircle?.id ?? ''));
+      setDivisionId(String(firstDivision?.id ?? ''));
+      setSubdivisionId(String(firstDivision?.subdivisions[0]?.id ?? ''));
       setPriorityId(String(next.priorities.find((priority) => priority.slug === 'medium')?.id ?? next.priorities[0]?.id ?? ''));
     }).catch((caught: unknown) => setError(getApiErrorMessage(caught)));
   }, [domain]);
@@ -39,7 +45,8 @@ export function NewTicketPage() {
   const selectedCategory = categories.find((category) => String(category.id) === categoryId);
   const complaintTypes = selectedCategory?.complaintTypes ?? [];
   const selectedType = complaintTypes.find((type) => String(type.id) === complaintTypeId);
-  const cities = catalog?.circles.find((circle) => String(circle.id) === circleId)?.cities ?? [];
+  const divisions = catalog?.circles.find((circle) => String(circle.id) === circleId)?.divisions ?? [];
+  const subdivisions = divisions.find((division) => String(division.id) === divisionId)?.subdivisions ?? [];
 
   if (domain === null) return <Navigate to="/app/tickets" replace />;
 
@@ -52,7 +59,11 @@ export function NewTicketPage() {
         categoryId: Number(value(data, 'categoryId')), complaintTypeId: Number(value(data, 'complaintTypeId')),
         locationDetails: value(data, 'locationDetails'),
         otherCategory: value(data, 'otherCategory'), otherComplaintType: value(data, 'otherComplaintType'),
-        ...(domain === 'consumer' ? { circleId: Number(value(data, 'circleId')), cityId: Number(value(data, 'cityId')) }
+        ...(domain === 'consumer' ? {
+          circleId: Number(value(data, 'circleId')),
+          divisionId: Number(value(data, 'divisionId')),
+          subdivisionId: Number(value(data, 'subdivisionId')),
+        }
           : { departmentId: Number(value(data, 'departmentId')), priorityId: Number(value(data, 'priorityId')) }),
         idempotencyKey: crypto.randomUUID(),
       });
@@ -72,7 +83,23 @@ export function NewTicketPage() {
         <label><span>Complaint type</span><select name="complaintTypeId" value={complaintTypeId} required onChange={(event) => setComplaintTypeId(event.target.value)}>{complaintTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></label>
         {selectedCategory?.name === 'Other' && <label className="form-grid__wide"><span>Describe the other category</span><input name="otherCategory" required /></label>}
         {selectedType?.name === 'Other' && <label className="form-grid__wide"><span>Describe the other complaint type</span><input name="otherComplaintType" required /></label>}
-        {domain === 'consumer' ? <><label><span>Circle</span><select name="circleId" value={circleId} onChange={(event) => setCircleId(event.target.value)} required>{catalog?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label><label><span>City</span><select name="cityId" required>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label></> : <label className="form-grid__wide"><span>Department</span><input name="departmentName" value={selectedCategory?.parentName ?? 'Select a departmental category'} disabled /><input name="departmentId" type="hidden" value={selectedCategory?.departmentId ?? ''} /></label>}
+        {domain === 'consumer' ? <>
+          <label><span>Circle</span><select name="circleId" value={circleId} onChange={(event) => {
+            const nextCircleId = event.target.value;
+            const nextDivisions = catalog?.circles.find((circle) => String(circle.id) === nextCircleId)?.divisions ?? [];
+            const nextDivision = nextDivisions[0];
+            setCircleId(nextCircleId);
+            setDivisionId(String(nextDivision?.id ?? ''));
+            setSubdivisionId(String(nextDivision?.subdivisions[0]?.id ?? ''));
+          }} required>{catalog?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>
+          <label><span>Division</span><select name="divisionId" value={divisionId} onChange={(event) => {
+            const nextDivisionId = event.target.value;
+            const nextSubdivision = divisions.find((division) => String(division.id) === nextDivisionId)?.subdivisions[0];
+            setDivisionId(nextDivisionId);
+            setSubdivisionId(String(nextSubdivision?.id ?? ''));
+          }} required>{divisions.map((division) => <option key={division.id} value={division.id}>{division.name}</option>)}</select></label>
+          <label><span>Sub-division</span><select name="subdivisionId" value={subdivisionId} onChange={(event) => setSubdivisionId(event.target.value)} required>{subdivisions.map((subdivision) => <option key={subdivision.id} value={subdivision.id}>{subdivision.name}</option>)}</select></label>
+        </> : <label className="form-grid__wide"><span>Department</span><input name="departmentName" value={selectedCategory?.parentName ?? 'Select a departmental category'} disabled /><input name="departmentId" type="hidden" value={selectedCategory?.departmentId ?? ''} /></label>}
         {domain === 'consumer'
           ? <div className="ticket-form__auto-priority"><strong>Priority is assigned automatically</strong><p>We use the selected issue type and your description to identify routine, important, urgent, and safety-critical complaints. Support staff can review it later.</p></div>
           : <label><span>Priority</span><select name="priorityId" required value={priorityId} onChange={(event) => setPriorityId(event.target.value)}>{catalog?.priorities.map((priority) => <option key={priority.id} value={priority.id}>{priority.name}</option>)}</select></label>}

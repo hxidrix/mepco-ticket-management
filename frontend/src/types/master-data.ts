@@ -1,5 +1,5 @@
 export type MasterResource =
-  | 'departments' | 'circles' | 'cities' | 'categories' | 'complaint-types'
+  | 'departments' | 'circles' | 'divisions' | 'subdivisions' | 'categories' | 'complaint-types'
   | 'priorities' | 'statuses';
 
 export interface MasterItem {
@@ -21,7 +21,9 @@ export interface MasterItem {
 
 export interface MasterCatalog {
   departments: MasterItem[];
-  circles: Array<MasterItem & { cities: MasterItem[] }>;
+  circles: Array<MasterItem & {
+    divisions: Array<MasterItem & { subdivisions: MasterItem[] }>;
+  }>;
   categories: Array<MasterItem & { complaintTypes: MasterItem[] }>;
   priorities: MasterItem[];
   statuses: MasterItem[];

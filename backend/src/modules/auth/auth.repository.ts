@@ -46,13 +46,23 @@ interface DepartmentOptionRow extends RowDataPacket {
 interface LocationOptionRow extends RowDataPacket {
   circleId: number;
   circleName: string;
-  cityId: number;
-  cityName: string;
+  divisionId: number;
+  divisionName: string;
+  subdivisionId: number;
+  subdivisionName: string;
 }
 
 export interface RegistrationOptions {
   departments: Array<{ id: number; name: string }>;
-  circles: Array<{ id: number; name: string; cities: Array<{ id: number; name: string }> }>;
+  circles: Array<{
+    id: number;
+    name: string;
+    divisions: Array<{
+      id: number;
+      name: string;
+      subdivisions: Array<{ id: number; name: string }>;
+    }>;
+  }>;
 }
 
 async function writeAudit(
@@ -89,20 +99,35 @@ export async function getRegistrationOptions(): Promise<RegistrationOptions> {
      ORDER BY sort_order, name`,
   );
   const [locations] = await databasePool.query<LocationOptionRow[]>(
-    `SELECT c.id AS circleId, c.name AS circleName, city.id AS cityId, city.name AS cityName
+    `SELECT c.id AS circleId, c.name AS circleName,
+       d.id AS divisionId, d.name AS divisionName,
+       sd.id AS subdivisionId, sd.name AS subdivisionName
      FROM circles c
-     JOIN cities city ON city.circle_id = c.id AND city.is_active = TRUE
+     JOIN divisions d ON d.circle_id = c.id AND d.is_active = TRUE
+     JOIN subdivisions sd ON sd.division_id = d.id AND sd.is_active = TRUE
      WHERE c.is_active = TRUE
-     ORDER BY c.sort_order, c.name, city.sort_order, city.name`,
+     ORDER BY c.sort_order, c.name, d.sort_order, d.name, sd.sort_order, sd.name`,
   );
   const circleMap = new Map<number, RegistrationOptions['circles'][number]>();
   for (const location of locations) {
     let circle = circleMap.get(location.circleId);
     if (circle === undefined) {
-      circle = { id: location.circleId, name: location.circleName, cities: [] };
+      circle = { id: location.circleId, name: location.circleName, divisions: [] };
       circleMap.set(location.circleId, circle);
     }
-    circle.cities.push({ id: location.cityId, name: location.cityName });
+    let division = circle.divisions.find((item) => item.id === location.divisionId);
+    if (division === undefined) {
+      division = {
+        id: location.divisionId,
+        name: location.divisionName,
+        subdivisions: [],
+      };
+      circle.divisions.push(division);
+    }
+    division.subdivisions.push({
+      id: location.subdivisionId,
+      name: location.subdivisionName,
+    });
   }
   return {
     departments: departments.map((department) => ({ id: department.id, name: department.name })),
@@ -379,13 +404,24 @@ export async function registerConsumer(
     const [roleRows] = await connection.execute<IdRow[]>("SELECT id FROM roles WHERE name = 'consumer'");
     const roleId = roleRows[0]?.id;
     if (roleId === undefined) throw new Error('Consumer role is not configured');
-    const [cityRows] = await connection.execute<IdRow[]>(
-      'SELECT id FROM cities WHERE id = ? AND circle_id = ? AND is_active = TRUE',
-      [input.cityId, input.circleId],
+    const [locationRows] = await connection.execute<IdRow[]>(
+      `SELECT sd.id
+       FROM subdivisions sd
+       JOIN divisions d ON d.id = sd.division_id
+       JOIN circles c ON c.id = d.circle_id
+       WHERE c.id = ? AND d.id = ? AND sd.id = ?
+         AND c.is_active = TRUE AND d.is_active = TRUE AND sd.is_active = TRUE`,
+      [input.circleId, input.divisionId, input.subdivisionId],
     );
-    if (cityRows[0] === undefined) {
-      throw new AppError(422, 'INVALID_LOCATION', 'The selected circle and city do not match');
+    if (locationRows[0] === undefined) {
+      throw new AppError(422, 'INVALID_LOCATION', 'The selected circle, division and sub-division do not match');
     }
+    const [legacyCities] = await connection.execute<IdRow[]>(
+      `SELECT id FROM cities WHERE circle_id = ? ORDER BY is_active DESC, sort_order, id LIMIT 1`,
+      [input.circleId],
+    );
+    const legacyCityId = legacyCities[0]?.id;
+    if (legacyCityId === undefined) throw new Error('Legacy location placeholder is not configured');
     const [duplicateRows] = await connection.execute<IdRow[]>(
       'SELECT user_id AS id FROM consumer_profiles WHERE reference_number = ?',
       [input.referenceNumber],
@@ -400,14 +436,17 @@ export async function registerConsumer(
     );
     await connection.execute(
       `INSERT INTO consumer_profiles
-         (user_id, reference_number, address, circle_id, city_id, service_address)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+         (user_id, reference_number, address, circle_id, division_id, subdivision_id, city_id,
+          service_address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         result.insertId,
         input.referenceNumber,
         input.address,
         input.circleId,
-        input.cityId,
+        input.divisionId,
+        input.subdivisionId,
+        legacyCityId,
         input.serviceAddress ?? null,
       ],
     );

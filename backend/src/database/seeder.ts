@@ -99,14 +99,35 @@ async function upsertMasterData(connection: PoolConnection): Promise<void> {
       [circle.name, slugify(circle.name), circleIndex + 1],
     );
     const circleId = await idBy(connection, 'circles', 'slug', slugify(circle.name));
+    await connection.execute(
+      `INSERT INTO cities (circle_id, name, slug, is_active, sort_order)
+       VALUES (?, 'Other', 'other', FALSE, 9999)
+       ON DUPLICATE KEY UPDATE is_active = FALSE`,
+      [circleId],
+    );
 
-    for (const [cityIndex, city] of circle.cities.entries()) {
+    for (const [divisionIndex, division] of circle.divisions.entries()) {
       await connection.execute(
-        `INSERT INTO cities (circle_id, name, slug, is_active, sort_order)
+        `INSERT INTO divisions (circle_id, name, slug, is_active, sort_order)
          VALUES (?, ?, ?, TRUE, ?)
          ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = TRUE, sort_order = VALUES(sort_order)`,
-        [circleId, city, slugify(city), cityIndex + 1],
+        [circleId, division.name, slugify(division.name), divisionIndex + 1],
       );
+      const [divisionRows] = await connection.execute<IdRow[]>(
+        'SELECT id FROM divisions WHERE circle_id = ? AND slug = ? LIMIT 1',
+        [circleId, slugify(division.name)],
+      );
+      const divisionId = divisionRows[0]?.id;
+      if (divisionId === undefined) throw new Error(`Missing division: ${division.name}`);
+      for (const [subdivisionIndex, subdivision] of division.subdivisions.entries()) {
+        await connection.execute(
+          `INSERT INTO subdivisions (division_id, name, slug, is_active, sort_order)
+           VALUES (?, ?, ?, TRUE, ?)
+           ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = TRUE,
+             sort_order = VALUES(sort_order)`,
+          [divisionId, subdivision, slugify(subdivision), subdivisionIndex + 1],
+        );
+      }
     }
   }
 
@@ -234,12 +255,24 @@ async function upsertConsumer(
   );
   const roleId = await idBy(connection, 'roles', 'name', 'consumer');
   const circleId = await idBy(connection, 'circles', 'name', 'Multan Circle');
-  const [cityRows] = await connection.execute<IdRow[]>(
-    'SELECT id FROM cities WHERE circle_id = ? AND name = ? LIMIT 1',
-    [circleId, 'Multan'],
+  const [divisionRows] = await connection.execute<IdRow[]>(
+    'SELECT id FROM divisions WHERE circle_id = ? AND name = ? LIMIT 1',
+    [circleId, 'Multan Cantt Division'],
   );
-  const cityId = cityRows[0]?.id;
-  if (cityId === undefined) throw new Error('Seed city Multan was not found');
+  const divisionId = divisionRows[0]?.id;
+  if (divisionId === undefined) throw new Error('Seed division Multan Cantt Division was not found');
+  const [subdivisionRows] = await connection.execute<IdRow[]>(
+    'SELECT id FROM subdivisions WHERE division_id = ? AND name = ? LIMIT 1',
+    [divisionId, 'Cantt'],
+  );
+  const subdivisionId = subdivisionRows[0]?.id;
+  if (subdivisionId === undefined) throw new Error('Seed sub-division Cantt was not found');
+  const [legacyCityRows] = await connection.execute<IdRow[]>(
+    `SELECT id FROM cities WHERE circle_id = ? AND slug = 'other' LIMIT 1`,
+    [circleId],
+  );
+  const legacyCityId = legacyCityRows[0]?.id;
+  if (legacyCityId === undefined) throw new Error('Seed legacy location placeholder was not found');
   let userId = existing[0]?.id;
 
   if (userId === undefined) {
@@ -260,14 +293,17 @@ async function upsertConsumer(
     userId = result.insertId;
     await connection.execute(
       `INSERT INTO consumer_profiles
-         (user_id, reference_number, address, circle_id, city_id, service_address)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+         (user_id, reference_number, address, circle_id, division_id, subdivision_id, city_id,
+          service_address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         referenceNumber,
         'Fictional Consumer Address, Multan',
         circleId,
-        cityId,
+        divisionId,
+        subdivisionId,
+        legacyCityId,
         'Fictional Service Location, Multan',
       ],
     );
@@ -283,6 +319,12 @@ async function upsertConsumer(
         status === 'suspended' ? 'Fictional suspended-account acceptance scenario' : null,
         userId,
       ],
+    );
+    await connection.execute(
+      `UPDATE consumer_profiles
+       SET circle_id = ?, division_id = ?, subdivision_id = ?
+       WHERE user_id = ?`,
+      [circleId, divisionId, subdivisionId, userId],
     );
   }
   return userId;
@@ -520,25 +562,33 @@ async function ensureTicket(
       ? null
       : await idBy(connection, 'departments', 'name', seed.departmentName);
   const circleId = seed.domain === 'consumer' ? await idBy(connection, 'circles', 'name', 'Multan Circle') : null;
-  let cityId: number | null = null;
+  let divisionId: number | null = null;
+  let subdivisionId: number | null = null;
   if (circleId !== null) {
-    const [cityRows] = await connection.execute<IdRow[]>(
-      'SELECT id FROM cities WHERE circle_id = ? AND name = ? LIMIT 1',
-      [circleId, 'Multan'],
+    const [divisionRows] = await connection.execute<IdRow[]>(
+      'SELECT id FROM divisions WHERE circle_id = ? AND name = ? LIMIT 1',
+      [circleId, 'Multan Cantt Division'],
     );
-    cityId = cityRows[0]?.id ?? null;
+    divisionId = divisionRows[0]?.id ?? null;
+    if (divisionId !== null) {
+      const [subdivisionRows] = await connection.execute<IdRow[]>(
+        'SELECT id FROM subdivisions WHERE division_id = ? AND name = ? LIMIT 1',
+        [divisionId, 'Cantt'],
+      );
+      subdivisionId = subdivisionRows[0]?.id ?? null;
+    }
   }
   const createdAt = new Date(Date.now() - seed.ageDays * 86_400_000);
 
   const [ticketResult] = await connection.execute<ResultSetHeader>(
     `INSERT INTO tickets (
        ticket_number, requester_id, domain, subject, description, category_id, complaint_type_id,
-       department_id, circle_id, city_id, location_details, priority_id,
+       department_id, circle_id, division_id, subdivision_id, location_details, priority_id,
        complaint_sla_target_hours, sla_target_hours, status_id,
        current_assignee_id, resolution_summary, category_name_snapshot,
        complaint_type_name_snapshot, department_name_snapshot, circle_name_snapshot,
-       city_name_snapshot, resolved_at, closed_at, created_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       division_name_snapshot, subdivision_name_snapshot, resolved_at, closed_at, created_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       seed.ticketNumber,
       seed.requesterId,
@@ -549,7 +599,8 @@ async function ensureTicket(
       complaintTypeId,
       departmentId,
       circleId,
-      cityId,
+      divisionId,
+      subdivisionId,
       seed.domain === 'consumer' ? 'Fictional service location, Multan' : 'Fictional demo office',
       priorityId,
       complaintSlaTargetHours,
@@ -561,7 +612,8 @@ async function ensureTicket(
       seed.complaintTypeName,
       seed.departmentName ?? null,
       seed.domain === 'consumer' ? 'Multan Circle' : null,
-      seed.domain === 'consumer' ? 'Multan' : null,
+      seed.domain === 'consumer' ? 'Multan Cantt Division' : null,
+      seed.domain === 'consumer' ? 'Cantt' : null,
       ['resolved', 'closed'].includes(seed.statusSlug) ? createdAt : null,
       seed.statusSlug === 'closed' ? createdAt : null,
       createdAt,

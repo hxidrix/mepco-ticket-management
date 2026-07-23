@@ -25,7 +25,8 @@ describe('user profile and account administration API', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
     const profile = (before.body as { data: { profile: {
-      circleId: number; cityId: number; displayName: string; address: string;
+      circleId: number; divisionId: number; subdivisionId: number;
+      displayName: string; address: string;
     } } }).data.profile;
 
     const response = await request(app)
@@ -37,7 +38,8 @@ describe('user profile and account administration API', () => {
         phone: '0300-1111111',
         address: profile.address,
         circleId: profile.circleId,
-        cityId: profile.cityId,
+        divisionId: profile.divisionId,
+        subdivisionId: profile.subdivisionId,
         serviceAddress: 'Fictional updated service address',
       })
       .expect(200);

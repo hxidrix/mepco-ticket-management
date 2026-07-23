@@ -111,14 +111,15 @@ describe('authentication API', () => {
     const optionsResponse = await request(app).get('/api/v1/auth/registration-options').expect(200);
     const options = optionsResponse.body as {
       data?: {
-        circles?: Array<{ id: number; cities: Array<{ id: number }> }>;
+        circles?: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
         departments?: Array<{ id: number }>;
       };
     };
     const circle = options.data?.circles?.[0];
-    const city = circle?.cities[0];
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
     const department = options.data?.departments?.[0];
-    if (circle === undefined || city === undefined || department === undefined) {
+    if (circle === undefined || division === undefined || subdivision === undefined || department === undefined) {
       throw new Error('Registration options were not seeded');
     }
 
@@ -132,7 +133,8 @@ describe('authentication API', () => {
         password: 'NewDemo@123',
         address: 'Fictional Registration Address',
         circleId: circle.id,
-        cityId: city.id,
+        divisionId: division.id,
+        subdivisionId: subdivision.id,
       })
       .expect(201);
 

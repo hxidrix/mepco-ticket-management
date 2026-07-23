@@ -34,13 +34,22 @@ describe('administration governance API',()=>{
     const users=await request(app).get('/api/v1/users/admin?role=technician&pageSize=100').set('Authorization',`Bearer ${admin}`).expect(200);
     const technician=(users.body as {data:Array<{id:number;username:string}>}).data.find((item)=>item.username==='tech.it');
     if(technician===undefined)throw new Error('Technician missing');
+    const catalog=await request(app).get('/api/v1/master-data/catalog').set('Authorization',`Bearer ${admin}`).expect(200);
+    const circle=(catalog.body as {data:{circles:Array<{id:number;divisions:Array<{id:number;subdivisions:Array<{id:number}>}>}>}}).data.circles[0];
+    const division=circle?.divisions[0];const subdivision=division?.subdivisions[0];
+    if(circle===undefined||division===undefined||subdivision===undefined)throw new Error('Operational hierarchy missing');
     await request(app).put(`/api/v1/administration/scopes/${technician.id}`).set('Authorization',`Bearer ${admin}`)
-      .send({scopes:[{domain:'employee'}]}).expect(200);
+      .send({scopes:[{domain:'employee'},{domain:'consumer',circleId:circle.id,divisionId:division.id,subdivisionId:subdivision.id}]}).expect(200);
     await request(app).put(`/api/v1/administration/scopes/${technician.id}`).set('Authorization',`Bearer ${admin}`)
       .send({scopes:[{domain:'consumer',departmentId:1}]}).expect(422);
+    await request(app).put(`/api/v1/administration/scopes/${technician.id}`).set('Authorization',`Bearer ${admin}`)
+      .send({scopes:[{domain:'consumer',divisionId:division.id}]}).expect(422);
     const scopes=await request(app).get('/api/v1/administration/scopes').set('Authorization',`Bearer ${admin}`).expect(200);
-    expect((scopes.body as {data:Array<{userId:number;domain:string}>}).data)
-      .toEqual(expect.arrayContaining([expect.objectContaining({userId:technician.id,domain:'employee'})]));
+    expect((scopes.body as {data:Array<{userId:number;domain:string;circleId:number|null;divisionId:number|null;subdivisionId:number|null}>}).data)
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({userId:technician.id,domain:'employee'}),
+        expect.objectContaining({userId:technician.id,domain:'consumer',circleId:circle.id,divisionId:division.id,subdivisionId:subdivision.id}),
+      ]));
     await request(app).get('/api/v1/administration/scopes').set('Authorization',`Bearer ${technicianToken}`).expect(403);
   });
 });

@@ -28,7 +28,8 @@ interface TicketRow extends RowDataPacket {
   id: number; ticketNumber: string; domain: TicketDomain; subject: string; description: string;
   categoryId: number; categoryName: string; complaintTypeId: number; complaintTypeName: string;
   departmentId: number | null; departmentName: string | null; circleId: number | null;
-  circleName: string | null; cityId: number | null; cityName: string | null;
+  circleName: string | null; divisionId: number | null; divisionName: string | null;
+  subdivisionId: number | null; subdivisionName: string | null;
   otherCategory: string | null; otherComplaintType: string | null; locationDetails: string | null;
   priorityId: number; priorityName: string; prioritySlug: string; priorityColor: string;
   complaintSlaTargetHours: number; slaTargetHours: number; slaDueAt: Date; isOverdue: number;
@@ -43,7 +44,8 @@ interface TicketReviewRow extends RowDataPacket {
 }
 interface WorkflowRow extends RowDataPacket {
   id: number; requesterId: number; domain: TicketDomain; departmentId: number | null;
-  categoryId: number; circleId: number | null; assigneeId: number | null;
+  categoryId: number; circleId: number | null; divisionId: number | null;
+  subdivisionId: number | null; assigneeId: number | null;
   statusId: number; statusSlug: string; version: number; complaintSlaTargetHours: number;
   resolvedAt: Date | null; closedAt: Date | null;
 }
@@ -75,7 +77,9 @@ const ticketSelect = `
     t.complaint_type_id AS complaintTypeId, t.complaint_type_name_snapshot AS complaintTypeName,
     t.department_id AS departmentId, t.department_name_snapshot AS departmentName,
     t.circle_id AS circleId, t.circle_name_snapshot AS circleName,
-    t.city_id AS cityId, t.city_name_snapshot AS cityName, t.other_category AS otherCategory,
+    t.division_id AS divisionId, t.division_name_snapshot AS divisionName,
+    t.subdivision_id AS subdivisionId, t.subdivision_name_snapshot AS subdivisionName,
+    t.other_category AS otherCategory,
     t.other_complaint_type AS otherComplaintType, t.location_details AS locationDetails,
     p.id AS priorityId, p.name AS priorityName, p.slug AS prioritySlug, p.color_token AS priorityColor,
     t.complaint_sla_target_hours AS complaintSlaTargetHours,
@@ -106,7 +110,9 @@ function scopeCondition(actor: TicketActor): { sql: string; values: SqlValue[] }
     sql: `EXISTS (SELECT 1 FROM staff_scopes scope WHERE scope.user_id = ? AND scope.domain = t.domain
       AND (scope.department_id IS NULL OR scope.department_id = t.department_id)
       AND (scope.category_id IS NULL OR scope.category_id = t.category_id)
-      AND (scope.circle_id IS NULL OR scope.circle_id = t.circle_id))`,
+      AND (scope.circle_id IS NULL OR scope.circle_id = t.circle_id)
+      AND (scope.division_id IS NULL OR scope.division_id = t.division_id)
+      AND (scope.subdivision_id IS NULL OR scope.subdivision_id = t.subdivision_id))`,
     values: [actor.id],
   };
 }
@@ -143,16 +149,28 @@ async function validateCreation(
   let routingDepartmentId = category.departmentId;
   let routingDepartmentName = category.departmentName;
   let circle: IdRow | undefined;
-  let city: IdRow | undefined;
+  let division: IdRow | undefined;
+  let subdivision: IdRow | undefined;
   if (domain === 'consumer') {
-    if (input.circleId === undefined || input.cityId === undefined) {
-      throw new AppError(422, 'LOCATION_REQUIRED', 'Circle and city are required for consumer tickets');
+    if (input.circleId === undefined || input.divisionId === undefined
+        || input.subdivisionId === undefined) {
+      throw new AppError(422, 'LOCATION_REQUIRED', 'Circle, division and sub-division are required for consumer tickets');
     }
     const [circles] = await connection.execute<IdRow[]>('SELECT id, name FROM circles WHERE id = ? AND is_active = TRUE', [input.circleId]);
     [circle] = circles;
-    const [cities] = await connection.execute<IdRow[]>('SELECT id, name FROM cities WHERE id = ? AND circle_id = ? AND is_active = TRUE', [input.cityId, input.circleId]);
-    [city] = cities;
-    if (circle === undefined || city === undefined) throw new AppError(422, 'INVALID_LOCATION', 'The circle and city selection is invalid');
+    const [divisions] = await connection.execute<IdRow[]>(
+      'SELECT id, name FROM divisions WHERE id = ? AND circle_id = ? AND is_active = TRUE',
+      [input.divisionId, input.circleId],
+    );
+    [division] = divisions;
+    const [subdivisions] = await connection.execute<IdRow[]>(
+      'SELECT id, name FROM subdivisions WHERE id = ? AND division_id = ? AND is_active = TRUE',
+      [input.subdivisionId, input.divisionId],
+    );
+    [subdivision] = subdivisions;
+    if (circle === undefined || division === undefined || subdivision === undefined) {
+      throw new AppError(422, 'INVALID_LOCATION', 'The circle, division and sub-division selection is invalid');
+    }
     routingDepartmentName = consumerRoutingDepartment(category.name);
     const [routingDepartments] = await connection.execute<IdRow[]>(
       'SELECT id, name FROM departments WHERE name = ? AND is_active = TRUE',
@@ -204,7 +222,7 @@ async function validateCreation(
   );
   return {
     category, complaintType, departmentId, departmentName, routingDepartmentId,
-    routingDepartmentName, circle, city, priority, slaTargetHours,
+    routingDepartmentName, circle, division, subdivision, priority, slaTargetHours,
   };
 }
 
@@ -215,6 +233,8 @@ async function leastBusyTechnician(
     routingDepartmentId: number | null;
     categoryId: number;
     circleId: number | null;
+    divisionId: number | null;
+    subdivisionId: number | null;
   },
 ): Promise<AutoAssigneeRow | undefined> {
   if (input.routingDepartmentId === null) return undefined;
@@ -231,11 +251,14 @@ async function leastBusyTechnician(
            AND (scope.department_id IS NULL OR scope.department_id = ?)
            AND (scope.category_id IS NULL OR scope.category_id = ?)
            AND (scope.circle_id IS NULL OR scope.circle_id = ?)
+           AND (scope.division_id IS NULL OR scope.division_id = ?)
+           AND (scope.subdivision_id IS NULL OR scope.subdivision_id = ?)
        )
      GROUP BY u.id, u.display_name
      ORDER BY activeAssignments ASC, u.id ASC
      LIMIT 1`,
-    [input.routingDepartmentId, input.domain, input.routingDepartmentId, input.categoryId, input.circleId],
+    [input.routingDepartmentId, input.domain, input.routingDepartmentId, input.categoryId,
+      input.circleId, input.divisionId, input.subdivisionId],
   );
   return technicians[0];
 }
@@ -265,6 +288,8 @@ export async function createTicket(
       routingDepartmentId: validated.routingDepartmentId,
       categoryId: input.categoryId,
       circleId: validated.circle?.id ?? null,
+      divisionId: validated.division?.id ?? null,
+      subdivisionId: validated.subdivision?.id ?? null,
     });
     const initialStatusSlug = assignee === undefined ? 'new' : 'assigned';
     const [statuses] = await connection.execute<PriorityRow[]>(
@@ -280,20 +305,22 @@ export async function createTicket(
         [result] = await connection.execute<ResultSetHeader>(
           `INSERT INTO tickets
            (ticket_number, idempotency_key, requester_id, domain, subject, description,
-            category_id, complaint_type_id, department_id, circle_id, city_id, other_category,
+            category_id, complaint_type_id, department_id, circle_id, division_id,
+            subdivision_id, other_category,
             other_complaint_type, location_details, priority_id, status_id, current_assignee_id,
             complaint_sla_target_hours, sla_target_hours,
             category_name_snapshot, complaint_type_name_snapshot, department_name_snapshot,
-            circle_name_snapshot, city_name_snapshot)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            circle_name_snapshot, division_name_snapshot, subdivision_name_snapshot)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [number, input.idempotencyKey ?? null, actor.id, domain, input.subject, input.description,
             input.categoryId, input.complaintTypeId, validated.departmentId, validated.circle?.id ?? null,
-            validated.city?.id ?? null, input.otherCategory ?? null, input.otherComplaintType ?? null,
+            validated.division?.id ?? null, validated.subdivision?.id ?? null,
+            input.otherCategory ?? null, input.otherComplaintType ?? null,
             input.locationDetails ?? null, validated.priority.id, statusId, assignee?.id ?? null,
             validated.complaintType.slaTargetHours, validated.slaTargetHours,
             validated.category.name,
             validated.complaintType.name, validated.departmentName, validated.circle?.name ?? null,
-            validated.city?.name ?? null],
+            validated.division?.name ?? null, validated.subdivision?.name ?? null],
         );
         break;
       } catch (error) {
@@ -374,6 +401,8 @@ export async function listTickets(actor: TicketActor, input: TicketListInput) {
   if (input.categoryId !== undefined) { conditions.push('t.category_id = ?'); values.push(input.categoryId); }
   if (input.departmentId !== undefined) { conditions.push('t.department_id = ?'); values.push(input.departmentId); }
   if (input.circleId !== undefined) { conditions.push('t.circle_id = ?'); values.push(input.circleId); }
+  if (input.divisionId !== undefined) { conditions.push('t.division_id = ?'); values.push(input.divisionId); }
+  if (input.subdivisionId !== undefined) { conditions.push('t.subdivision_id = ?'); values.push(input.subdivisionId); }
   if (input.assigneeId !== undefined) { conditions.push('t.current_assignee_id = ?'); values.push(input.assigneeId); }
   if (input.dateFrom !== undefined) { conditions.push('t.created_at >= ?'); values.push(input.dateFrom); }
   if (input.dateTo !== undefined) { conditions.push('t.created_at < DATE_ADD(?, INTERVAL 1 DAY)'); values.push(input.dateTo); }
@@ -446,7 +475,8 @@ export async function getTicketDetail(actor: TicketActor, ticketId: number) {
 async function workflowTicket(connection: PoolConnection, ticketId: number): Promise<WorkflowRow> {
   const [rows] = await connection.execute<WorkflowRow[]>(
     `SELECT t.id, t.requester_id AS requesterId, t.domain, t.department_id AS departmentId,
-      t.category_id AS categoryId, t.circle_id AS circleId, t.current_assignee_id AS assigneeId,
+      t.category_id AS categoryId, t.circle_id AS circleId, t.division_id AS divisionId,
+      t.subdivision_id AS subdivisionId, t.current_assignee_id AS assigneeId,
       t.status_id AS statusId, s.slug AS statusSlug, t.version,
       t.complaint_sla_target_hours AS complaintSlaTargetHours,
       t.resolved_at AS resolvedAt, t.closed_at AS closedAt
@@ -471,7 +501,9 @@ export async function listTechnicians(actor: TicketActor, ticketId?: number): Pr
     WHERE target.id=?
       AND (scope.department_id IS NULL OR scope.department_id=target.department_id)
       AND (scope.category_id IS NULL OR scope.category_id=target.category_id)
-      AND (scope.circle_id IS NULL OR scope.circle_id=target.circle_id))`;
+      AND (scope.circle_id IS NULL OR scope.circle_id=target.circle_id)
+      AND (scope.division_id IS NULL OR scope.division_id=target.division_id)
+      AND (scope.subdivision_id IS NULL OR scope.subdivision_id=target.subdivision_id))`;
   const [rows] = await databasePool.execute<TechnicianRow[]>(
     `SELECT u.id, u.display_name AS displayName, d.name AS departmentName,
       COUNT(a.id) AS activeAssignments
@@ -935,9 +967,12 @@ function csvCell(value: string | number | null): string {
 
 export async function exportTicketsCsv(actor: TicketActor, input: Omit<TicketListInput, 'page' | 'pageSize'>): Promise<string> {
   const result = await listTickets(actor, { ...input, page: 1, pageSize: 10_000 });
-  const header = ['Ticket number', 'Domain', 'Subject', 'Category', 'Complaint type', 'Priority', 'Status', 'Requester', 'Assignee', 'Created at', 'Updated at'];
+  const header = ['Ticket number', 'Domain', 'Subject', 'Category', 'Complaint type', 'Circle',
+    'Division', 'Sub-division', 'Priority', 'Status', 'Requester', 'Assignee', 'Created at',
+    'Updated at'];
   const rows = result.items.map((ticket) => [ticket.ticketNumber, ticket.domain, ticket.subject, ticket.categoryName,
-    ticket.complaintTypeName, ticket.priorityName, ticket.statusName, ticket.requesterName, ticket.assigneeName,
+    ticket.complaintTypeName, ticket.circleName, ticket.divisionName, ticket.subdivisionName,
+    ticket.priorityName, ticket.statusName, ticket.requesterName, ticket.assigneeName,
     ticket.createdAt.toISOString(), ticket.updatedAt.toISOString()].map(csvCell).join(','));
   return `\uFEFF${header.map(csvCell).join(',')}\r\n${rows.join('\r\n')}\r\n`;
 }
@@ -947,6 +982,9 @@ function pdfFilterSummary(input: Omit<TicketListInput, 'page' | 'pageSize'>): st
     input.domain === undefined ? undefined : `Domain: ${input.domain}`,
     input.status === undefined ? undefined : `Status: ${input.status}`,
     input.priority === undefined ? undefined : `Priority: ${input.priority}`,
+    input.circleId === undefined ? undefined : `Circle ID: ${input.circleId}`,
+    input.divisionId === undefined ? undefined : `Division ID: ${input.divisionId}`,
+    input.subdivisionId === undefined ? undefined : `Sub-division ID: ${input.subdivisionId}`,
     input.dateFrom === undefined ? undefined : `From: ${input.dateFrom}`,
     input.dateTo === undefined ? undefined : `To: ${input.dateTo}`,
   ].filter((value): value is string => value !== undefined);
@@ -963,14 +1001,15 @@ export async function exportTicketsPdf(
   document.on('data', (chunk: Buffer) => chunks.push(chunk));
 
   const columns = [
-    { label: 'Ticket', key: 'ticketNumber', width: 88 },
-    { label: 'Domain', key: 'domain', width: 55 },
-    { label: 'Subject', key: 'subject', width: 155 },
-    { label: 'Category', key: 'categoryName', width: 110 },
-    { label: 'Priority', key: 'priorityName', width: 58 },
-    { label: 'Status', key: 'statusName', width: 72 },
-    { label: 'Assigned to', key: 'assigneeName', width: 112 },
-    { label: 'Created', key: 'createdAt', width: 84 },
+    { label: 'Ticket', key: 'ticketNumber', width: 80 },
+    { label: 'Domain', key: 'domain', width: 45 },
+    { label: 'Subject', key: 'subject', width: 120 },
+    { label: 'Category', key: 'categoryName', width: 90 },
+    { label: 'Operational location', key: 'location', width: 130 },
+    { label: 'Priority', key: 'priorityName', width: 52 },
+    { label: 'Status', key: 'statusName', width: 65 },
+    { label: 'Assigned to', key: 'assigneeName', width: 95 },
+    { label: 'Created', key: 'createdAt', width: 75 },
   ] as const;
   const left = document.page.margins.left;
   const rowHeight = 34;
@@ -1014,6 +1053,8 @@ export async function exportTicketsPdf(
       domain: ticket.domain,
       subject: ticket.subject,
       categoryName: ticket.categoryName,
+      location: [ticket.circleName, ticket.divisionName, ticket.subdivisionName]
+        .filter((value): value is string => value !== null).join(' / ') || 'N/A',
       priorityName: ticket.priorityName,
       statusName: ticket.statusName,
       assigneeName: ticket.assigneeName ?? 'Unassigned',

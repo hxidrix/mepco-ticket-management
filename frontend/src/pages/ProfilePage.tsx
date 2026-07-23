@@ -18,6 +18,8 @@ export function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [options, setOptions] = useState<RegistrationOptions | null>(null);
   const [circleId, setCircleId] = useState('');
+  const [divisionId, setDivisionId] = useState('');
+  const [subdivisionId, setSubdivisionId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -30,14 +32,20 @@ export function ProfilePage() {
         setProfile(nextProfile);
         setOptions(nextOptions);
         setCircleId(String(nextProfile.circleId ?? nextOptions.circles[0]?.id ?? ''));
+        setDivisionId(String(nextProfile.divisionId ?? nextOptions.circles[0]?.divisions[0]?.id ?? ''));
+        setSubdivisionId(String(nextProfile.subdivisionId ?? nextOptions.circles[0]?.divisions[0]?.subdivisions[0]?.id ?? ''));
       })
       .catch((caught: unknown) => { if (active) setError(getApiErrorMessage(caught)); });
     return () => { active = false; };
   }, []);
 
-  const cities = useMemo(
-    () => options?.circles.find((circle) => String(circle.id) === circleId)?.cities ?? [],
+  const divisions = useMemo(
+    () => options?.circles.find((circle) => String(circle.id) === circleId)?.divisions ?? [],
     [circleId, options],
+  );
+  const subdivisions = useMemo(
+    () => divisions.find((division) => String(division.id) === divisionId)?.subdivisions ?? [],
+    [divisionId, divisions],
   );
 
   const submitProfile = async (event: FormEvent<HTMLFormElement>) => {
@@ -50,7 +58,8 @@ export function ProfilePage() {
       };
       const input = profile?.role === 'consumer'
         ? { ...common, address: value(data, 'address'), circleId: Number(value(data, 'circleId')),
-            cityId: Number(value(data, 'cityId')) }
+            divisionId: Number(value(data, 'divisionId')),
+            subdivisionId: Number(value(data, 'subdivisionId')) }
         : { ...common, departmentId: Number(value(data, 'departmentId')) || undefined,
             designation: value(data, 'designation'), workLocation: value(data, 'workLocation') };
       const updated = await updateProfileRequest(input);
@@ -89,8 +98,21 @@ export function ProfilePage() {
             <>
               <label><span>Reference number</span><input value={profile.referenceNumber} disabled /></label>
               <label className="form-grid__wide"><span>Address</span><input name="address" defaultValue={profile.address} required /></label>
-              <label><span>Circle</span><select name="circleId" value={circleId} onChange={(event) => setCircleId(event.target.value)}>{options?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>
-              <label><span>City</span><select name="cityId" defaultValue={profile.cityId}>{cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}</select></label>
+              <label><span>Circle</span><select name="circleId" value={circleId} onChange={(event) => {
+                const nextCircleId = event.target.value;
+                const nextDivisions = options?.circles.find((circle) => String(circle.id) === nextCircleId)?.divisions ?? [];
+                const nextDivision = nextDivisions[0];
+                setCircleId(nextCircleId);
+                setDivisionId(String(nextDivision?.id ?? ''));
+                setSubdivisionId(String(nextDivision?.subdivisions[0]?.id ?? ''));
+              }}>{options?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>
+              <label><span>Division</span><select name="divisionId" value={divisionId} onChange={(event) => {
+                const nextDivisionId = event.target.value;
+                const nextSubdivision = divisions.find((division) => String(division.id) === nextDivisionId)?.subdivisions[0];
+                setDivisionId(nextDivisionId);
+                setSubdivisionId(String(nextSubdivision?.id ?? ''));
+              }}>{divisions.map((division) => <option key={division.id} value={division.id}>{division.name}</option>)}</select></label>
+              <label><span>Sub-division</span><select name="subdivisionId" value={subdivisionId} onChange={(event) => setSubdivisionId(event.target.value)}>{subdivisions.map((subdivision) => <option key={subdivision.id} value={subdivision.id}>{subdivision.name}</option>)}</select></label>
             </>
           ) : (
             <>

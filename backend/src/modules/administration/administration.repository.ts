@@ -21,7 +21,8 @@ interface AuditRow extends RowDataPacket {
 interface ScopeRow extends RowDataPacket {
   id: number; userId: number; displayName: string; role: string; domain: string; departmentId: number | null;
   departmentName: string | null; categoryId: number | null; categoryName: string | null; circleId: number | null;
-  circleName: string | null;
+  circleName: string | null; divisionId: number | null; divisionName: string | null;
+  subdivisionId: number | null; subdivisionName: string | null;
 }
 
 const announcementSelect = `SELECT a.id,a.title,a.body,u.display_name AS authorName,a.starts_at AS startsAt,
@@ -127,16 +128,28 @@ export async function listStaffScopes(): Promise<ScopeRow[]> {
   const [rows] = await databasePool.execute<ScopeRow[]>(
     `SELECT ss.id,u.id AS userId,u.display_name AS displayName,r.name AS role,ss.domain,
       ss.department_id AS departmentId,d.name AS departmentName,ss.category_id AS categoryId,c.name AS categoryName,
-      ss.circle_id AS circleId,ci.name AS circleName
+      ss.circle_id AS circleId,ci.name AS circleName,
+      ss.division_id AS divisionId,division.name AS divisionName,
+      ss.subdivision_id AS subdivisionId,subdivision.name AS subdivisionName
      FROM staff_scopes ss JOIN users u ON u.id=ss.user_id JOIN roles r ON r.id=u.role_id
      LEFT JOIN departments d ON d.id=ss.department_id LEFT JOIN categories c ON c.id=ss.category_id
-     LEFT JOIN circles ci ON ci.id=ss.circle_id ORDER BY u.display_name,ss.domain,ss.id`,
+     LEFT JOIN circles ci ON ci.id=ss.circle_id
+     LEFT JOIN divisions division ON division.id=ss.division_id
+     LEFT JOIN subdivisions subdivision ON subdivision.id=ss.subdivision_id
+     ORDER BY u.display_name,ss.domain,ss.id`,
   ); return rows;
 }
 
 export async function replaceStaffScopes(
   actorId: number, userId: number,
-  scopes: Array<{ domain: 'consumer' | 'employee'; departmentId?: number; categoryId?: number; circleId?: number }>,
+  scopes: Array<{
+    domain: 'consumer' | 'employee';
+    departmentId?: number;
+    categoryId?: number;
+    circleId?: number;
+    divisionId?: number;
+    subdivisionId?: number;
+  }>,
   context: RequestContext,
 ): Promise<void> {
   const connection=await databasePool.getConnection();
@@ -146,7 +159,11 @@ export async function replaceStaffScopes(
     await connection.execute('DELETE FROM staff_scopes WHERE user_id=?',[userId]);
     for (const scope of scopes) {
       if (scope.domain === 'consumer' && scope.departmentId !== undefined) throw new AppError(422,'INVALID_SCOPE','Consumer scopes cannot target an employee department');
-      if (scope.domain === 'employee' && scope.circleId !== undefined) throw new AppError(422,'INVALID_SCOPE','Employee scopes cannot target a consumer circle');
+      if (scope.domain === 'employee'
+          && (scope.circleId !== undefined || scope.divisionId !== undefined
+            || scope.subdivisionId !== undefined)) {
+        throw new AppError(422,'INVALID_SCOPE','Employee scopes cannot target a consumer operational location');
+      }
       if (scope.departmentId !== undefined) {
         const [departments]=await connection.execute<IdRow[]>('SELECT id FROM departments WHERE id=? AND is_active=TRUE',[scope.departmentId]);
         if(departments[0]===undefined)throw new AppError(422,'INVALID_SCOPE','The selected department is unavailable');
@@ -155,13 +172,37 @@ export async function replaceStaffScopes(
         const [circles]=await connection.execute<IdRow[]>('SELECT id FROM circles WHERE id=? AND is_active=TRUE',[scope.circleId]);
         if(circles[0]===undefined)throw new AppError(422,'INVALID_SCOPE','The selected circle is unavailable');
       }
+      if (scope.divisionId !== undefined) {
+        if (scope.circleId === undefined) {
+          throw new AppError(422,'INVALID_SCOPE','Select a circle before selecting a division');
+        }
+        const [divisions]=await connection.execute<IdRow[]>(
+          'SELECT id FROM divisions WHERE id=? AND circle_id=? AND is_active=TRUE',
+          [scope.divisionId,scope.circleId],
+        );
+        if(divisions[0]===undefined)throw new AppError(422,'INVALID_SCOPE','The selected division does not belong to the circle');
+      }
+      if (scope.subdivisionId !== undefined) {
+        if (scope.divisionId === undefined) {
+          throw new AppError(422,'INVALID_SCOPE','Select a division before selecting a sub-division');
+        }
+        const [subdivisions]=await connection.execute<IdRow[]>(
+          'SELECT id FROM subdivisions WHERE id=? AND division_id=? AND is_active=TRUE',
+          [scope.subdivisionId,scope.divisionId],
+        );
+        if(subdivisions[0]===undefined)throw new AppError(422,'INVALID_SCOPE','The selected sub-division does not belong to the division');
+      }
       if (scope.categoryId !== undefined) {
         const [categories]=await connection.execute<CategoryReferenceRow[]>('SELECT id,domain FROM categories WHERE id=? AND is_active=TRUE',[scope.categoryId]);
         if(categories[0]===undefined||categories[0].domain!==scope.domain)throw new AppError(422,'INVALID_SCOPE','The category does not match the scope domain');
       }
       await connection.execute(
-        `INSERT INTO staff_scopes (user_id,domain,department_id,category_id,circle_id,can_self_assign) VALUES (?,?,?,?,?,FALSE)`,
-        [userId,scope.domain,scope.departmentId ?? null,scope.categoryId ?? null,scope.circleId ?? null],
+        `INSERT INTO staff_scopes
+           (user_id,domain,department_id,category_id,circle_id,division_id,subdivision_id,
+            can_self_assign)
+         VALUES (?,?,?,?,?,?,?,FALSE)`,
+        [userId,scope.domain,scope.departmentId ?? null,scope.categoryId ?? null,
+          scope.circleId ?? null,scope.divisionId ?? null,scope.subdivisionId ?? null],
       );
     }
     await writeAudit(connection,{ actorId,action:'admin.staff_scopes.replaced',entityType:'user',entityId:String(userId),context,metadata:{ count:scopes.length } });

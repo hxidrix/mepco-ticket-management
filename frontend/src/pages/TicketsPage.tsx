@@ -28,9 +28,11 @@ export function TicketsPage() {
   const [status, setStatus] = useState(initialStatus);
   const [priority, setPriority] = useState('');
   const [domain, setDomain] = useState(''); const [categoryId, setCategoryId] = useState('');
+  const [circleId, setCircleId] = useState(''); const [divisionId, setDivisionId] = useState('');
+  const [subdivisionId, setSubdivisionId] = useState('');
   const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('createdAt'); const [sortOrder, setSortOrder] = useState('desc');
-  const [filters, setFilters] = useState({ search: '', status: initialStatus, priority: '', domain: '', categoryId: '', dateFrom: '', dateTo: '', sortBy: 'createdAt', sortOrder: 'desc' });
+  const [filters, setFilters] = useState({ search: '', status: initialStatus, priority: '', domain: '', categoryId: '', circleId: '', divisionId: '', subdivisionId: '', dateFrom: '', dateTo: '', sortBy: 'createdAt', sortOrder: 'desc' });
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (page = 1) => {
@@ -43,6 +45,9 @@ export function TicketsPage() {
         ...(filters.priority === '' ? {} : { priority: filters.priority }),
         ...(filters.domain === '' ? {} : { domain: filters.domain }),
         ...(filters.categoryId === '' ? {} : { categoryId: filters.categoryId }),
+        ...(filters.circleId === '' ? {} : { circleId: filters.circleId }),
+        ...(filters.divisionId === '' ? {} : { divisionId: filters.divisionId }),
+        ...(filters.subdivisionId === '' ? {} : { subdivisionId: filters.subdivisionId }),
         ...(filters.dateFrom === '' ? {} : { dateFrom: filters.dateFrom }),
         ...(filters.dateTo === '' ? {} : { dateTo: filters.dateTo }),
         sortBy: filters.sortBy, sortOrder: filters.sortOrder,
@@ -55,6 +60,8 @@ export function TicketsPage() {
   useEffect(() => { void catalogRequest().then(setCatalog).catch((caught: unknown) => setError(getApiErrorMessage(caught))); }, []);
   const canSubmit = user?.role === 'consumer' || user?.role === 'employee';
   const categoryDomain = canSubmit ? user.role : domain;
+  const divisions = catalog?.circles.find((circle) => String(circle.id) === circleId)?.divisions ?? [];
+  const subdivisions = divisions.find((division) => String(division.id) === divisionId)?.subdivisions ?? [];
   const dashboardViewLabel = dashboardView === 'open'
     ? 'Showing tickets that are still open'
     : dashboardView === 'overdue' ? 'Showing open tickets that are past SLA' : null;
@@ -76,12 +83,15 @@ export function TicketsPage() {
             <button type="button" onClick={clearDashboardView}>Show all tickets</button>
           </div>
         )}
-        <form className={`directory-filters ticket-filters${canSubmit ? ' ticket-filters--without-domain' : ''}`} onSubmit={(event) => { event.preventDefault(); setFilters({ search, status, priority, domain: canSubmit ? '' : domain, categoryId, dateFrom, dateTo, sortBy, sortOrder }); }}>
+        <form className={`directory-filters ticket-filters${canSubmit ? ' ticket-filters--without-domain' : ''}`} onSubmit={(event) => { event.preventDefault(); setFilters({ search, status, priority, domain: canSubmit ? '' : domain, categoryId, circleId, divisionId, subdivisionId, dateFrom, dateTo, sortBy, sortOrder }); }}>
           <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ticket number, subject, or description" /></label>
           <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{catalog?.statuses.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
           <label><span>Priority</span><select value={priority} onChange={(event) => setPriority(event.target.value)}><option value="">All priorities</option>{catalog?.priorities.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}</select></label>
           {!canSubmit && <label><span>Domain</span><select value={domain} onChange={(event) => { setDomain(event.target.value); setCategoryId(''); }}><option value="">All domains</option><option value="consumer">Consumer</option><option value="employee">Employee</option></select></label>}
           <label><span>Category</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">All categories</option>{catalog?.categories.filter((item) => categoryDomain === '' || item.domain === categoryDomain).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label><span>Circle</span><select value={circleId} onChange={(event) => { setCircleId(event.target.value); setDivisionId(''); setSubdivisionId(''); }}><option value="">All circles</option>{catalog?.circles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label><span>Division</span><select value={divisionId} disabled={circleId === ''} onChange={(event) => { setDivisionId(event.target.value); setSubdivisionId(''); }}><option value="">All divisions</option>{divisions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label><span>Sub-division</span><select value={subdivisionId} disabled={divisionId === ''} onChange={(event) => setSubdivisionId(event.target.value)}><option value="">All sub-divisions</option>{subdivisions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label><span>Created from</span><input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
           <label><span>Created to</span><input type="date" value={dateTo} min={dateFrom} onChange={(event) => setDateTo(event.target.value)} /></label>
           <label><span>Sort by</span><select value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="createdAt">Created date</option><option value="updatedAt">Last updated</option><option value="ticketNumber">Ticket number</option><option value="priority">Priority</option><option value="status">Status</option></select></label>

@@ -7,7 +7,12 @@ export interface DepartmentSeed {
 
 export interface CircleSeed {
   name: string;
-  cities: readonly string[];
+  divisions: readonly DivisionSeed[];
+}
+
+export interface DivisionSeed {
+  name: string;
+  subdivisions: readonly string[];
 }
 
 export interface CategorySeed {
@@ -283,38 +288,111 @@ export const departments: readonly DepartmentSeed[] = [
 ];
 
 export const circles: readonly CircleSeed[] = [
-  { name: 'Multan Circle', cities: ['Multan', 'Shujabad', 'Jalalpur Pirwala', 'Other'] },
+  {
+    name: 'Multan Circle',
+    divisions: [
+      { name: 'Multan Cantt Division', subdivisions: ['Cantt', 'Nawan Sheher', 'Hasan Parwana', 'Industrial Estate'] },
+      { name: 'Mumtazabad Division', subdivisions: ['Mumtazabad', 'Ghalla Mandi', 'Makhdoom Rashid', 'Qasba Maral'] },
+      { name: 'Musa Pak Division', subdivisions: ['Gulgasht', 'Shamasabad', 'Hasanabad', 'Bosan Road', 'WAPDA Town'] },
+      { name: 'Shah Rukn-e-Alam Division', subdivisions: ['Shah Rukn-e-Alam', 'New Multan', 'Manzoorabad', 'Gulberg', 'Piran Ghaib'] },
+      { name: 'City Division', subdivisions: ['Multan City', 'Walayatabad', 'Pak Gate', 'Garden Town'] },
+      { name: 'Shujabad Division', subdivisions: ['Shujabad Urban', 'Sikandar Abad', 'Raja Ram', 'Alipur Sadaat'] },
+      { name: 'Jalalpur Pirwala Division', subdivisions: ['Jalalpur City', 'Jalalpur Rural', 'Shadan Lund'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
+  },
   {
     name: 'Khanewal Circle',
-    cities: ['Khanewal', 'Kabirwala', 'Mian Channu', 'Jahanian', 'Other'],
+    divisions: [
+      { name: 'Khanewal Division', subdivisions: ['Khanewal Old', 'Civil Lines', 'Khanewal Kohna', 'Khanewal Rural'] },
+      { name: 'Kabirwala Division', subdivisions: ['Kabirwala City', 'Kabirwala Rural', 'Sarai Sidhu', 'Makhdoompur Pahuran'] },
+      { name: 'Mian Channu Division', subdivisions: ['Mian Channu City', 'Mian Channu Rural', 'Tulamba'] },
+      { name: 'Jahanian Division', subdivisions: ['Jahanian City', 'Jahanian Rural', 'Thatha Sadiqabad'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
-  { name: 'Vehari Circle', cities: ['Vehari', 'Burewala', 'Mailsi', 'Other'] },
+  {
+    name: 'Vehari Circle',
+    divisions: [
+      { name: 'Vehari Division', subdivisions: ['Vehari City', 'Faisal Town', 'Thingi', 'Ludden'] },
+      { name: 'Burewala Division', subdivisions: ['Burewala City', 'Satellite Town', 'Azimabad', 'Madina Town', 'Haji Sher'] },
+      { name: 'Mailsi Division', subdivisions: ['Mailsi-I', 'Mailsi-II', 'Tibba Sultanpur', 'Sardar Pur Jhandir'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
+  },
   {
     name: 'Sahiwal Circle',
-    cities: ['Sahiwal', 'Chichawatni', 'Pakpattan', 'Arifwala', 'Other'],
+    divisions: [
+      { name: 'Sahiwal 1st Division', subdivisions: ['Sahiwal City', 'Sahiwal Urban', 'Farid Town', 'Sahiwal Rural'] },
+      { name: 'Sahiwal 2nd Division', subdivisions: ['Yousafwala', 'Kameer', 'Harappa'] },
+      { name: 'Chichawatni Division', subdivisions: ['Chichawatni City', 'Chichawatni Rural', 'Okanwala', 'Kassowal'] },
+      { name: 'Pakpattan Division', subdivisions: ['Pakpattan City', 'Faridnagar', 'Pakpattan Rural'] },
+      { name: 'Arifwala Division', subdivisions: ['Arifwala City', 'Arifwala Rural', 'Qaboola'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
   {
     name: 'Dera Ghazi Khan (D.G. Khan) Circle',
-    cities: ['Dera Ghazi Khan', 'Taunsa Sharif', 'Kot Chutta', 'Rajanpur', 'Jampur', 'Rojhan', 'Other'],
+    divisions: [
+      { name: 'D.G. Khan Division', subdivisions: ['D.G. Khan-I', 'D.G. Khan-II', 'Fort Manro', 'Ghazi', 'Sakhi Sarwar', 'Quetta Road', 'Shah Sadar Din'] },
+      { name: 'Kot Chutta Division', subdivisions: ['Kot Chutta City', 'Chotti', 'Sangam Chowk'] },
+      { name: 'Taunsa Sharif Division', subdivisions: ['Taunsa City', 'Taunsa Rural', 'Vohwa', 'Shadan Lund', 'Tibi Qaisrani'] },
+      { name: 'Rajanpur Division', subdivisions: ['Rajanpur City', 'Kot Mithan', 'Fazilpur', 'Rojhan'] },
+      { name: 'Jampur Division', subdivisions: ['Jampur City', 'Gulshan Abad', 'Dajal'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
   {
     name: 'Muzaffargarh Circle',
-    cities: ['Muzaffargarh', 'Kot Addu', 'Alipur', 'Khan Garh', 'Other'],
+    divisions: [
+      { name: 'Muzaffargarh Division', subdivisions: ['Muzaffargarh City', 'Muzaffargarh Rural', 'Khangarh', 'Shah Jamal'] },
+      { name: 'Kot Addu Division', subdivisions: ['Kot Addu City', 'Kot Addu Rural', 'Sanawan', 'Chowk Munda'] },
+      { name: 'Alipur Division', subdivisions: ['Alipur City', 'Alipur Rural', 'Jatoi', 'Khairpur Sadat'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
-  { name: 'Layyah Circle', cities: ['Layyah', 'Chowk Azam', 'Keoror Lal Esan', 'Other'] },
+  {
+    name: 'Layyah Circle',
+    divisions: [
+      { name: 'Layyah Division', subdivisions: ['Layyah City', 'Layyah Rural', 'Kot Sultan'] },
+      { name: 'Chowk Azam Division', subdivisions: ['Chowk Azam City', 'Fatehpur', 'Chaubara'] },
+      { name: 'Karor Lal Esan Division', subdivisions: ['Karor City', 'Karor Rural'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
+  },
   {
     name: 'Bahawalpur Circle',
-    cities: ['Bahawalpur', 'Ahmedpur East', 'Hasilpur', 'Lodhran', 'Kahror Pacca', 'Dunyapur', 'Other'],
+    divisions: [
+      { name: 'Bahawalpur Division (Model Town)', subdivisions: ['Abbasia', 'Satellite Town', 'Baghdad-ul-Jadeed'] },
+      { name: 'Ahmedpur East Division', subdivisions: ['Ahmedpur City', 'Ahmedpur Rural', 'Uch Sharif'] },
+      { name: 'Hasilpur Division', subdivisions: ['Hasilpur City', 'Hasilpur Rural', 'Khairpur Tamewali'] },
+      { name: 'Lodhran Division', subdivisions: ['Lodhran City', 'Lodhran Rural'] },
+      { name: 'Kahror Pacca Division', subdivisions: ['Kahror Pacca City', 'Kahror Pacca Rural'] },
+      { name: 'Dunyapur Division', subdivisions: ['Dunyapur City', 'Dunyapur Rural'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
   {
     name: 'Bahawalnagar Circle',
-    cities: ['Bahawalnagar', 'Chishtian', 'Haroonabad', 'Fort Abbas', 'Other'],
+    divisions: [
+      { name: 'Bahawalnagar Division', subdivisions: ['Bahawalnagar City', 'Minchinabad', 'Donga Bonga'] },
+      { name: 'Chishtian Division', subdivisions: ['Chishtian City', 'Chishtian Rural', 'Dahranwala'] },
+      { name: 'Haroonabad Division', subdivisions: ['Haroonabad City', 'Haroonabad Rural', 'Faqirwali'] },
+      { name: 'Fort Abbas Division', subdivisions: ['Fort Abbas City', 'Fort Abbas Rural'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
   {
     name: 'Rahim Yar Khan Circle',
-    cities: ['Rahim Yar Khan', 'Sadiqabad', 'Liaqatpur', 'Khanpur', 'Other'],
+    divisions: [
+      { name: 'Rahim Yar Khan Division', subdivisions: ['RYK City', 'Smart Town', 'Gulshan-e-Iqbal', 'Jinnah', 'Chowk Bahawalpur'] },
+      { name: 'Sadiqabad Division', subdivisions: ['Sadiqabad City', 'Sadiqabad Town', 'Ahmed Pur Lama (A.P.L)', 'JDW'] },
+      { name: 'Liaqatpur Division', subdivisions: ['Liaqatpur City', 'Allah Abad', 'Khanbela', 'Feroza'] },
+      { name: 'Khanpur Division', subdivisions: ['Khanpur City', 'Khanpur Rural', 'Kot Samaba', 'Zahirpir'] },
+      { name: 'Other Division', subdivisions: ['Other Sub-division'] },
+    ],
   },
-  { name: 'Other', cities: ['Other'] },
+  { name: 'Other', divisions: [{ name: 'Other Division', subdivisions: ['Other Sub-division'] }] },
 ];
 
 const consumerCategories: readonly CategorySeed[] = [

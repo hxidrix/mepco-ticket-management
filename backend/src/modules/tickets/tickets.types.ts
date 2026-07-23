@@ -9,7 +9,8 @@ export interface TicketCreateInput {
   complaintTypeId: number;
   departmentId?: number;
   circleId?: number;
-  cityId?: number;
+  divisionId?: number;
+  subdivisionId?: number;
   otherCategory?: string;
   otherComplaintType?: string;
   locationDetails?: string;
@@ -40,6 +41,8 @@ export interface TicketListInput {
   categoryId?: number;
   departmentId?: number;
   circleId?: number;
+  divisionId?: number;
+  subdivisionId?: number;
   assigneeId?: number;
   dateFrom?: string;
   dateTo?: string;

@@ -9,7 +9,8 @@ import type { MasterCatalog, MasterItem, MasterResource } from '../types/master-
 
 const resources: Array<{ id: MasterResource; label: string }> = [
   { id: 'departments', label: 'Departments' }, { id: 'circles', label: 'Circles' },
-  { id: 'cities', label: 'Cities' }, { id: 'categories', label: 'Categories' },
+  { id: 'divisions', label: 'Divisions' }, { id: 'subdivisions', label: 'Sub-divisions' },
+  { id: 'categories', label: 'Categories' },
   { id: 'complaint-types', label: 'Complaint types' }, { id: 'priorities', label: 'Priorities' },
   { id: 'statuses', label: 'Statuses' },
 ];
@@ -60,7 +61,7 @@ export function MasterDataPage() {
       name: value(data, 'name'), slug: value(data, 'slug'), description: value(data, 'description'),
       sortOrder: Number(value(data, 'sortOrder')) || 0, isActive: checked(data, 'isActive'),
     };
-    if (resource === 'cities' || resource === 'complaint-types') input.parentId = Number(value(data, 'parentId'));
+    if (resource === 'divisions' || resource === 'subdivisions' || resource === 'complaint-types') input.parentId = Number(value(data, 'parentId'));
     if (resource === 'categories') {
       input.domain = value(data, 'domain'); input.departmentId = Number(value(data, 'departmentId')) || undefined;
     }
@@ -105,7 +106,8 @@ export function MasterDataPage() {
           <label className="form-grid__wide"><span>Description</span><input name="description" defaultValue={editing?.description ?? ''} /></label>
           <label><span>Sort order</span><input name="sortOrder" type="number" min="0" defaultValue={editing?.sortOrder ?? items.length + 1} /></label>
           <label className="check-label"><input name="isActive" type="checkbox" defaultChecked={editing === null || active(editing)} /><span>Active</span></label>
-          {resource === 'cities' && <label className="form-grid__wide"><span>Circle</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select circle</option>{catalog?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>}
+          {resource === 'divisions' && <label className="form-grid__wide"><span>Circle</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select circle</option>{catalog?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}</select></label>}
+          {resource === 'subdivisions' && <label className="form-grid__wide"><span>Division</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select division</option>{catalog?.circles.flatMap((circle) => circle.divisions.map((division) => <option key={division.id} value={division.id}>{circle.name} / {division.name}</option>))}</select></label>}
           {resource === 'categories' && <><label><span>Domain</span><select name="domain" defaultValue={editing?.domain ?? 'consumer'}><option value="consumer">Consumer</option><option value="employee">Employee</option></select></label><label><span>Department</span><select name="departmentId" defaultValue={editing?.departmentId ?? ''}><option value="">No department</option>{catalog?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label></>}
           {resource === 'complaint-types' && <><label className="form-grid__wide"><span>Category</span><select name="parentId" defaultValue={editing?.parentId ?? ''} required><option value="">Select category</option>{catalog?.categories.map((category) => <option key={category.id} value={category.id}>{category.domain} / {category.name}</option>)}</select></label><label><span>Normal SLA target (hours)</span><input name="slaTargetHours" type="number" min="1" max="10000" defaultValue={editing?.slaTargetHours ?? 120} required /></label><label className="check-label"><input name="isConfidential" type="checkbox" defaultChecked={editing?.isConfidential === 1 || editing?.isConfidential === true} /><span>Confidential type</span></label></>}
           {resource === 'priorities' && <><label><span>Color token</span><input name="colorToken" defaultValue={editing?.colorToken ?? 'blue'} required /></label><label><span>SLA target (hours)</span><input name="slaTargetHours" type="number" min="1" defaultValue={editing?.slaTargetHours ?? ''} /></label></>}

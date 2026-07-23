@@ -19,6 +19,10 @@ export interface RegistrationOptions {
   circles: Array<{
     id: number;
     name: string;
-    cities: Array<{ id: number; name: string }>;
+    divisions: Array<{
+      id: number;
+      name: string;
+      subdivisions: Array<{ id: number; name: string }>;
+    }>;
   }>;
 }

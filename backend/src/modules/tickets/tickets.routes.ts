@@ -40,7 +40,8 @@ ticketsRouter.post(
   body('categoryId').isInt({ min: 1 }).toInt(), body('complaintTypeId').isInt({ min: 1 }).toInt(),
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('circleId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
-  body('cityId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
+  body('divisionId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
+  body('subdivisionId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('priorityId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('otherCategory').optional({ values: 'falsy' }).trim().isLength({ max: 180 }),
   body('otherComplaintType').optional({ values: 'falsy' }).trim().isLength({ max: 255 }),
@@ -61,7 +62,10 @@ ticketsRouter.get(
   query('view').optional().isIn(['open', 'overdue']),
   query('domain').optional().isIn(['consumer', 'employee']),
   query('categoryId').optional().isInt({ min: 1 }).toInt(), query('departmentId').optional().isInt({ min: 1 }).toInt(),
-  query('circleId').optional().isInt({ min: 1 }).toInt(), query('assigneeId').optional().isInt({ min: 1 }).toInt(),
+  query('circleId').optional().isInt({ min: 1 }).toInt(),
+  query('divisionId').optional().isInt({ min: 1 }).toInt(),
+  query('subdivisionId').optional().isInt({ min: 1 }).toInt(),
+  query('assigneeId').optional().isInt({ min: 1 }).toInt(),
   query('dateFrom').optional().isISO8601(), query('dateTo').optional().isISO8601(),
   query('sortBy').optional().isIn(['createdAt', 'updatedAt', 'ticketNumber', 'priority', 'status']),
   query('sortOrder').optional().isIn(['asc', 'desc']), validateRequest,
@@ -78,6 +82,8 @@ ticketsRouter.get(
     const categoryId = optionalNumber('categoryId'); if (categoryId !== undefined) input.categoryId = categoryId;
     const departmentId = optionalNumber('departmentId'); if (departmentId !== undefined) input.departmentId = departmentId;
     const circleId = optionalNumber('circleId'); if (circleId !== undefined) input.circleId = circleId;
+    const divisionId = optionalNumber('divisionId'); if (divisionId !== undefined) input.divisionId = divisionId;
+    const subdivisionId = optionalNumber('subdivisionId'); if (subdivisionId !== undefined) input.subdivisionId = subdivisionId;
     const assigneeId = optionalNumber('assigneeId'); if (assigneeId !== undefined) input.assigneeId = assigneeId;
     const dateFrom = optionalString('dateFrom'); if (dateFrom !== undefined) input.dateFrom = dateFrom;
     const dateTo = optionalString('dateTo'); if (dateTo !== undefined) input.dateTo = dateTo;
@@ -109,7 +115,9 @@ ticketsRouter.get(
   '/reports/export.csv', authorizeRoles('supervisor', 'administrator'),
   query('status').optional().trim().isLength({ max: 70 }), query('priority').optional().trim().isLength({ max: 50 }),
   query('domain').optional().isIn(['consumer', 'employee']), query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601(), validateRequest,
+  query('dateTo').optional().isISO8601(), query('circleId').optional().isInt({ min: 1 }).toInt(),
+  query('divisionId').optional().isInt({ min: 1 }).toInt(),
+  query('subdivisionId').optional().isInt({ min: 1 }).toInt(), validateRequest,
   asyncHandler(async (request, response) => {
     const input: Omit<TicketListInput, 'page' | 'pageSize'> = {};
     if (typeof request.query.status === 'string' && request.query.status !== '') input.status = request.query.status;
@@ -117,6 +125,9 @@ ticketsRouter.get(
     if (request.query.domain === 'consumer' || request.query.domain === 'employee') input.domain = request.query.domain;
     if (typeof request.query.dateFrom === 'string') input.dateFrom = request.query.dateFrom;
     if (typeof request.query.dateTo === 'string') input.dateTo = request.query.dateTo;
+    if (request.query.circleId !== undefined) input.circleId = Number(request.query.circleId);
+    if (request.query.divisionId !== undefined) input.divisionId = Number(request.query.divisionId);
+    if (request.query.subdivisionId !== undefined) input.subdivisionId = Number(request.query.subdivisionId);
     response.type('text/csv').attachment(`mepco-tickets-${new Date().toISOString().slice(0, 10)}.csv`)
       .send(await exportTicketsCsv(request.auth!, input));
   }),
@@ -126,7 +137,9 @@ ticketsRouter.get(
   '/reports/export.pdf', authorizeRoles('supervisor', 'administrator'),
   query('status').optional().trim().isLength({ max: 70 }), query('priority').optional().trim().isLength({ max: 50 }),
   query('domain').optional().isIn(['consumer', 'employee']), query('dateFrom').optional().isISO8601(),
-  query('dateTo').optional().isISO8601(), validateRequest,
+  query('dateTo').optional().isISO8601(), query('circleId').optional().isInt({ min: 1 }).toInt(),
+  query('divisionId').optional().isInt({ min: 1 }).toInt(),
+  query('subdivisionId').optional().isInt({ min: 1 }).toInt(), validateRequest,
   asyncHandler(async (request, response) => {
     const input: Omit<TicketListInput, 'page' | 'pageSize'> = {};
     if (typeof request.query.status === 'string' && request.query.status !== '') input.status = request.query.status;
@@ -134,6 +147,9 @@ ticketsRouter.get(
     if (request.query.domain === 'consumer' || request.query.domain === 'employee') input.domain = request.query.domain;
     if (typeof request.query.dateFrom === 'string') input.dateFrom = request.query.dateFrom;
     if (typeof request.query.dateTo === 'string') input.dateTo = request.query.dateTo;
+    if (request.query.circleId !== undefined) input.circleId = Number(request.query.circleId);
+    if (request.query.divisionId !== undefined) input.divisionId = Number(request.query.divisionId);
+    if (request.query.subdivisionId !== undefined) input.subdivisionId = Number(request.query.subdivisionId);
     response.type('application/pdf').attachment(`mepco-tickets-${new Date().toISOString().slice(0, 10)}.pdf`)
       .send(await exportTicketsPdf(request.auth!, input));
   }),

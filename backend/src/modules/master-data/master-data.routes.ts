@@ -12,7 +12,7 @@ import {
 import type { MasterResource } from './master-data.repository.js';
 
 export const masterDataRouter = Router();
-const resources: MasterResource[] = ['departments', 'circles', 'cities', 'categories', 'complaint-types', 'priorities', 'statuses'];
+const resources: MasterResource[] = ['departments', 'circles', 'divisions', 'subdivisions', 'categories', 'complaint-types', 'priorities', 'statuses'];
 const resourceParam = param('resource').isIn(resources);
 
 masterDataRouter.use(authenticate);

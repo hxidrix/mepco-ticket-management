@@ -16,7 +16,7 @@ async function login(mode: 'consumer' | 'employee' | 'staff', identifier: string
 
 interface CatalogShape {
   categories: Array<{ id: number; domain: string; name: string; departmentId: number | null; complaintTypes: Array<{ id: number; name: string }> }>;
-  circles: Array<{ id: number; cities: Array<{ id: number }> }>;
+  circles: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
   priorities: Array<{ id: number; slug: string }>;
 }
 
@@ -34,8 +34,9 @@ describe('requester ticket API', () => {
       item.domain === 'consumer' && item.name === 'Leads / Requests / Others');
     const complaintType = category?.complaintTypes.find((item) => item.name === 'Electrification');
     const circle = data.circles[0];
-    const city = circle?.cities[0];
-    if (category === undefined || complaintType === undefined || circle === undefined || city === undefined) {
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
+    if (category === undefined || complaintType === undefined || circle === undefined || division === undefined || subdivision === undefined) {
       throw new Error('Long-term consumer complaint data is missing');
     }
 
@@ -47,7 +48,8 @@ describe('requester ticket API', () => {
         categoryId: category.id,
         complaintTypeId: complaintType.id,
         circleId: circle.id,
-        cityId: city.id,
+        divisionId: division.id,
+        subdivisionId: subdivision.id,
         locationDetails: 'Fictional long-term request location',
       })
       .expect(201);
@@ -69,15 +71,17 @@ describe('requester ticket API', () => {
     const category = data.categories.find((item) => item.domain === 'consumer' && item.name === 'Line Complaints');
     const type = category?.complaintTypes.find((item) => item.name !== 'Other');
     const circle = data.circles[0];
-    const city = circle?.cities[0];
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
     const priority = data.priorities.find((item) => item.slug === 'medium');
-    if (category === undefined || type === undefined || circle === undefined || city === undefined || priority === undefined) {
+    if (category === undefined || type === undefined || circle === undefined || division === undefined || subdivision === undefined || priority === undefined) {
       throw new Error('Seed catalog is incomplete');
     }
     const payload = {
       subject: 'Fictional requester acceptance issue',
       description: 'A fictional consumer ticket created by the integration acceptance suite.',
-      categoryId: category.id, complaintTypeId: type.id, circleId: circle.id, cityId: city.id,
+      categoryId: category.id, complaintTypeId: type.id, circleId: circle.id,
+      divisionId: division.id, subdivisionId: subdivision.id,
       priorityId: priority.id, locationDetails: 'Fictional acceptance location',
       idempotencyKey: 'ticket-integration-idempotency-0001',
     };

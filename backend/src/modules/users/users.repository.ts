@@ -27,8 +27,10 @@ interface ProfileRow extends RowDataPacket {
   address: string | null;
   circleId: number | null;
   circleName: string | null;
-  cityId: number | null;
-  cityName: string | null;
+  divisionId: number | null;
+  divisionName: string | null;
+  subdivisionId: number | null;
+  subdivisionName: string | null;
   serviceAddress: string | null;
   employeeId: string | null;
   departmentId: number | null;
@@ -60,8 +62,10 @@ function mapProfile(row: ProfileRow): UserProfile {
       address: row.address ?? '',
       circleId: row.circleId ?? 0,
       circleName: row.circleName ?? '',
-      cityId: row.cityId ?? 0,
-      cityName: row.cityName ?? '',
+      divisionId: row.divisionId ?? 0,
+      divisionName: row.divisionName ?? '',
+      subdivisionId: row.subdivisionId ?? 0,
+      subdivisionName: row.subdivisionName ?? '',
       serviceAddress: row.serviceAddress,
     });
   } else {
@@ -80,8 +84,10 @@ const profileSelect = `
   SELECT u.id, r.name AS role, u.display_name AS displayName, u.username, u.email, u.phone,
          u.status, u.status_reason AS statusReason, u.last_login_at AS lastLoginAt,
          u.created_at AS createdAt, cp.reference_number AS referenceNumber, cp.address,
-         cp.circle_id AS circleId, c.name AS circleName, cp.city_id AS cityId,
-         city.name AS cityName, cp.service_address AS serviceAddress,
+         cp.circle_id AS circleId, c.name AS circleName,
+         cp.division_id AS divisionId, division.name AS divisionName,
+         cp.subdivision_id AS subdivisionId, subdivision.name AS subdivisionName,
+         cp.service_address AS serviceAddress,
          ep.employee_id AS employeeId,
          COALESCE(ep.department_id, sp.department_id) AS departmentId,
          d.name AS departmentName, COALESCE(ep.designation, sp.designation) AS designation,
@@ -90,7 +96,8 @@ const profileSelect = `
   JOIN roles r ON r.id = u.role_id
   LEFT JOIN consumer_profiles cp ON cp.user_id = u.id
   LEFT JOIN circles c ON c.id = cp.circle_id
-  LEFT JOIN cities city ON city.id = cp.city_id
+  LEFT JOIN divisions division ON division.id = cp.division_id
+  LEFT JOIN subdivisions subdivision ON subdivision.id = cp.subdivision_id
   LEFT JOIN employee_profiles ep ON ep.user_id = u.id
   LEFT JOIN staff_profiles sp ON sp.user_id = u.id
   LEFT JOIN departments d ON d.id = COALESCE(ep.department_id, sp.department_id)`;
@@ -126,18 +133,27 @@ export async function updateUserProfile(
       [input.displayName, input.email ?? null, input.phone ?? null, userId],
     );
     if (role === 'consumer') {
-      if (input.circleId === undefined || input.cityId === undefined || input.address === undefined) {
+      if (input.circleId === undefined || input.divisionId === undefined
+          || input.subdivisionId === undefined || input.address === undefined) {
         throw new AppError(422, 'PROFILE_FIELDS_REQUIRED', 'Consumer location and address are required');
       }
-      const [cities] = await connection.execute<IdRow[]>(
-        `SELECT id FROM cities WHERE id = ? AND circle_id = ? AND is_active = TRUE`,
-        [input.cityId, input.circleId],
+      const [locations] = await connection.execute<IdRow[]>(
+        `SELECT sd.id FROM subdivisions sd
+         JOIN divisions d ON d.id = sd.division_id
+         JOIN circles c ON c.id = d.circle_id
+         WHERE c.id = ? AND d.id = ? AND sd.id = ?
+           AND c.is_active = TRUE AND d.is_active = TRUE AND sd.is_active = TRUE`,
+        [input.circleId, input.divisionId, input.subdivisionId],
       );
-      if (cities[0] === undefined) throw new AppError(422, 'INVALID_LOCATION', 'The selected city is invalid');
+      if (locations[0] === undefined) {
+        throw new AppError(422, 'INVALID_LOCATION', 'The selected operational location is invalid');
+      }
       await connection.execute(
-        `UPDATE consumer_profiles SET address = ?, circle_id = ?, city_id = ?, service_address = ?
+        `UPDATE consumer_profiles
+         SET address = ?, circle_id = ?, division_id = ?, subdivision_id = ?, service_address = ?
          WHERE user_id = ?`,
-        [input.address, input.circleId, input.cityId, input.serviceAddress ?? null, userId],
+        [input.address, input.circleId, input.divisionId, input.subdivisionId,
+          input.serviceAddress ?? null, userId],
       );
     } else {
       if (input.designation === undefined || input.workLocation === undefined) {

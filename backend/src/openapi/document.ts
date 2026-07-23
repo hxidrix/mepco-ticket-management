@@ -34,7 +34,7 @@ export const openApiDocument = {
   paths: {
     '/api/v1/health/live': { get: operation('Health', 'Check API liveness', { security: false }) },
     '/api/v1/health/ready': { get: operation('Health', 'Check API and MySQL readiness', { security: false }) },
-    '/api/v1/auth/registration-options': { get: operation('Authentication', 'List registration departments and locations', { security: false }) },
+    '/api/v1/auth/registration-options': { get: operation('Authentication', 'List registration departments and the Circle → Division → Sub-division hierarchy', { security: false }) },
     '/api/v1/auth/register/consumer': { post: operation('Authentication', 'Register a consumer account', { security: false, body: true, created: true }) },
     '/api/v1/auth/register/employee': { post: operation('Authentication', 'Register an employee account', { security: false, body: true, created: true }) },
     '/api/v1/auth/login': { post: { ...operation('Authentication', 'Sign in and issue access/refresh credentials', { security: false, body: true }), requestBody: jsonRequest({ $ref: '#/components/schemas/LoginRequest' }) } },
@@ -58,7 +58,7 @@ export const openApiDocument = {
     '/api/v1/users/admin': { get: operation('Users', 'Search and paginate user accounts'), post: operation('Users', 'Create a staff account', { body: true, created: true }) },
     '/api/v1/users/admin/{id}': { put: operation('Users', 'Update role, profile, or account status', { body: true, parameters: [idParameter] }), delete: operation('Users', 'Soft-delete an account', { parameters: [idParameter] }) },
     '/api/v1/users/admin/{id}/reset-password': { post: operation('Users', 'Reset a user password and revoke sessions', { body: true, parameters: [idParameter] }) },
-    '/api/v1/master-data/catalog': { get: operation('Master data', 'Get the active ticket-form catalog') },
+    '/api/v1/master-data/catalog': { get: operation('Master data', 'Get the active ticket-form catalog with nested circles, divisions, and sub-divisions') },
     '/api/v1/master-data/admin/{resource}': {
       get: operation('Master data', 'List an administrative master-data resource', { parameters: [{ name: 'resource', in: 'path', required: true, schema: { $ref: '#/components/schemas/MasterResource' } }] }),
       post: operation('Master data', 'Create a master-data item', { body: true, created: true, parameters: [{ name: 'resource', in: 'path', required: true, schema: { $ref: '#/components/schemas/MasterResource' } }] }),
@@ -96,7 +96,7 @@ export const openApiDocument = {
       SuccessResponse: { type: 'object', required: ['success', 'data', 'meta'], properties: { success: { type: 'boolean', const: true }, data: {}, message: { type: 'string' }, meta: { type: ['object', 'null'] } } },
       ErrorResponse: { type: 'object', required: ['success', 'error', 'requestId'], properties: { success: { type: 'boolean', const: false }, error: { type: 'object', required: ['code', 'message'], properties: { code: { type: 'string' }, message: { type: 'string' }, details: {} } }, requestId: { type: 'string', format: 'uuid' } } },
       LoginRequest: { type: 'object', required: ['mode', 'identifier', 'password'], properties: { mode: { type: 'string', enum: ['consumer', 'employee', 'staff'] }, identifier: { type: 'string' }, password: { type: 'string', format: 'password' } } },
-      MasterResource: { type: 'string', enum: ['departments', 'circles', 'cities', 'categories', 'complaint-types', 'priorities', 'statuses'] },
+      MasterResource: { type: 'string', enum: ['departments', 'circles', 'divisions', 'subdivisions', 'categories', 'complaint-types', 'priorities', 'statuses'] },
     },
   },
 } as const;

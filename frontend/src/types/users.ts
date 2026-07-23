@@ -18,8 +18,10 @@ export interface UserProfile {
   address?: string;
   circleId?: number;
   circleName?: string;
-  cityId?: number;
-  cityName?: string;
+  divisionId?: number;
+  divisionName?: string;
+  subdivisionId?: number;
+  subdivisionName?: string;
   serviceAddress?: string | null;
   employeeId?: string;
   departmentId?: number | null;

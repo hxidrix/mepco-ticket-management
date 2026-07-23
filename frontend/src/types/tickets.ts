@@ -12,7 +12,8 @@ export interface TicketSummary {
   complaintTypeName: string;
   departmentName: string | null;
   circleName: string | null;
-  cityName: string | null;
+  divisionName: string | null;
+  subdivisionName: string | null;
   priorityId: number;
   priorityName: string;
   prioritySlug: string;

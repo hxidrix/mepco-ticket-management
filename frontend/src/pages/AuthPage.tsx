@@ -41,6 +41,8 @@ export function AuthPage() {
   const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('consumer');
   const [options, setOptions] = useState<RegistrationOptions | null>(null);
   const [circleId, setCircleId] = useState('');
+  const [divisionId, setDivisionId] = useState('');
+  const [subdivisionId, setSubdivisionId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -50,14 +52,21 @@ export function AuthPage() {
       .then((result) => {
         setOptions(result);
         const firstCircle = result.circles[0];
-        if (firstCircle !== undefined) setCircleId(String(firstCircle.id));
+        const firstDivision = firstCircle?.divisions[0];
+        setCircleId(String(firstCircle?.id ?? ''));
+        setDivisionId(String(firstDivision?.id ?? ''));
+        setSubdivisionId(String(firstDivision?.subdivisions[0]?.id ?? ''));
       })
       .catch(() => setOptions(null));
   }, []);
 
-  const cities = useMemo(
-    () => options?.circles.find((circle) => String(circle.id) === circleId)?.cities ?? [],
+  const divisions = useMemo(
+    () => options?.circles.find((circle) => String(circle.id) === circleId)?.divisions ?? [],
     [circleId, options],
+  );
+  const subdivisions = useMemo(
+    () => divisions.find((division) => String(division.id) === divisionId)?.subdivisions ?? [],
+    [divisionId, divisions],
   );
 
   if (user !== null) return <Navigate to={user.status === 'suspended' ? '/suspension' : '/app'} replace />;
@@ -99,7 +108,8 @@ export function AuthPage() {
           password: fieldValue(data, 'password'),
           address: fieldValue(data, 'address'),
           circleId: Number(fieldValue(data, 'circleId')),
-          cityId: Number(fieldValue(data, 'cityId')),
+          divisionId: Number(fieldValue(data, 'divisionId')),
+          subdivisionId: Number(fieldValue(data, 'subdivisionId')),
           serviceAddress: fieldValue(data, 'serviceAddress') || undefined,
         });
         setLoginMode('consumer');
@@ -270,14 +280,32 @@ export function AuthPage() {
                     <label className="auth-form__wide"><span>Address</span><input name="address" required /></label>
                     <label>
                       <span>Circle</span>
-                      <select name="circleId" required value={circleId} onChange={(event) => setCircleId(event.target.value)}>
+                      <select name="circleId" required value={circleId} onChange={(event) => {
+                        const nextCircleId = event.target.value;
+                        const nextDivisions = options?.circles.find((circle) => String(circle.id) === nextCircleId)?.divisions ?? [];
+                        const nextDivision = nextDivisions[0];
+                        setCircleId(nextCircleId);
+                        setDivisionId(String(nextDivision?.id ?? ''));
+                        setSubdivisionId(String(nextDivision?.subdivisions[0]?.id ?? ''));
+                      }}>
                         {options?.circles.map((circle) => <option key={circle.id} value={circle.id}>{circle.name}</option>)}
                       </select>
                     </label>
                     <label>
-                      <span>City</span>
-                      <select name="cityId" required>
-                        {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
+                      <span>Division</span>
+                      <select name="divisionId" required value={divisionId} onChange={(event) => {
+                        const nextDivisionId = event.target.value;
+                        const nextSubdivision = divisions.find((division) => String(division.id) === nextDivisionId)?.subdivisions[0];
+                        setDivisionId(nextDivisionId);
+                        setSubdivisionId(String(nextSubdivision?.id ?? ''));
+                      }}>
+                        {divisions.map((division) => <option key={division.id} value={division.id}>{division.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="auth-form__wide">
+                      <span>Sub-division</span>
+                      <select name="subdivisionId" required value={subdivisionId} onChange={(event) => setSubdivisionId(event.target.value)}>
+                        {subdivisions.map((subdivision) => <option key={subdivision.id} value={subdivision.id}>{subdivision.name}</option>)}
                       </select>
                     </label>
                     <label className="auth-form__wide"><span>Service address <small>optional</small></span><input name="serviceAddress" /></label>

@@ -22,7 +22,12 @@ describe('SRS master-data seed', () => {
   it('contains the complete department and operational circle lists', () => {
     expect(departments).toHaveLength(14);
     expect(circles).toHaveLength(11);
-    expect(circles.every((circle) => circle.cities.includes('Other'))).toBe(true);
+    expect(circles.flatMap((circle) => circle.divisions)).toHaveLength(55);
+    expect(circles.flatMap((circle) => circle.divisions)
+      .flatMap((division) => division.subdivisions)).toHaveLength(169);
+    expect(circles.every((circle) =>
+      circle.divisions.some((division) => division.name === 'Other Division'
+        && division.subdivisions.includes('Other Sub-division')))).toBe(true);
   });
 
   it('includes Other in every category and preserves both service domains', () => {

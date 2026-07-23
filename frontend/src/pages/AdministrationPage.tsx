@@ -17,12 +17,14 @@ interface ScopeDraft {
   departmentId: string;
   categoryId: string;
   circleId: string;
+  divisionId: string;
+  subdivisionId: string;
 }
 
 let nextScopeKey = 1;
 
 function emptyScopeDraft(domain: ScopeDomain = 'consumer'): ScopeDraft {
-  return { key: nextScopeKey++, domain, departmentId: '', categoryId: '', circleId: '' };
+  return { key: nextScopeKey++, domain, departmentId: '', categoryId: '', circleId: '', divisionId: '', subdivisionId: '' };
 }
 
 function draftFromScope(scope: StaffScope): ScopeDraft {
@@ -32,6 +34,8 @@ function draftFromScope(scope: StaffScope): ScopeDraft {
     departmentId: scope.departmentId === null ? '' : String(scope.departmentId),
     categoryId: scope.categoryId === null ? '' : String(scope.categoryId),
     circleId: scope.circleId === null ? '' : String(scope.circleId),
+    divisionId: scope.divisionId === null ? '' : String(scope.divisionId),
+    subdivisionId: scope.subdivisionId === null ? '' : String(scope.subdivisionId),
   };
 }
 
@@ -78,6 +82,8 @@ function scopeDescription(scope: StaffScope): string {
     scope.departmentName === null ? null : scope.departmentName,
     scope.categoryName === null ? null : scope.categoryName,
     scope.circleName === null ? null : scope.circleName,
+    scope.divisionName === null ? null : scope.divisionName,
+    scope.subdivisionName === null ? null : scope.subdivisionName,
   ].filter((value): value is string => value !== null);
   return boundaries.length === 0 ? `All ${scope.domain} tickets` : boundaries.join(' · ');
 }
@@ -156,7 +162,8 @@ export function AdministrationPage() {
   }, [scopeCoverage, scopeSearch, staffGroups]);
 
   const configuredStaff = staffGroups.filter(({ rules }) => rules.length > 0).length;
-  const broadRules = scopes.filter((scope) => scope.departmentId === null && scope.categoryId === null && scope.circleId === null).length;
+  const broadRules = scopes.filter((scope) => scope.departmentId === null && scope.categoryId === null
+    && scope.circleId === null && scope.divisionId === null && scope.subdivisionId === null).length;
   const targetedRules = scopes.length - broadRules;
 
   const editStaffBoundaries = (userId: number) => {
@@ -171,7 +178,7 @@ export function AdministrationPage() {
     setScopeDrafts((current) => current.map((draft) => {
       if (draft.key !== key) return draft;
       if (updates.domain !== undefined && updates.domain !== draft.domain) {
-        return { ...draft, ...updates, departmentId: '', categoryId: '', circleId: '' };
+        return { ...draft, ...updates, departmentId: '', categoryId: '', circleId: '', divisionId: '', subdivisionId: '' };
       }
       return { ...draft, ...updates };
     }));
@@ -192,6 +199,8 @@ export function AdministrationPage() {
         ...(draft.departmentId === '' ? {} : { departmentId: Number(draft.departmentId) }),
         ...(draft.categoryId === '' ? {} : { categoryId: Number(draft.categoryId) }),
         ...(draft.circleId === '' ? {} : { circleId: Number(draft.circleId) }),
+        ...(draft.divisionId === '' ? {} : { divisionId: Number(draft.divisionId) }),
+        ...(draft.subdivisionId === '' ? {} : { subdivisionId: Number(draft.subdivisionId) }),
       })));
       setMessage(`${scopeDrafts.length} access ${scopeDrafts.length === 1 ? 'rule' : 'rules'} saved.`);
       await Promise.all([loadOperations(), loadAudit()]);
@@ -240,6 +249,8 @@ export function AdministrationPage() {
         <div className="scope-builder__rules">
           {scopeDrafts.map((draft, index) => {
             const categories = catalog?.categories.filter((item) => item.domain === draft.domain) ?? [];
+            const divisions = catalog?.circles.find((item) => String(item.id) === draft.circleId)?.divisions ?? [];
+            const subdivisions = divisions.find((item) => String(item.id) === draft.divisionId)?.subdivisions ?? [];
             return (
               <fieldset className="scope-rule-editor" key={draft.key}>
                 <legend>Rule {index + 1}</legend>
@@ -254,7 +265,11 @@ export function AdministrationPage() {
                   {draft.domain === 'employee' ? (
                     <label><span>Department</span><select value={draft.departmentId} onChange={(event) => updateScopeDraft(draft.key, { departmentId: event.target.value })}><option value="">Every department</option>{catalog?.departments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
                   ) : (
-                    <label><span>Circle</span><select value={draft.circleId} onChange={(event) => updateScopeDraft(draft.key, { circleId: event.target.value })}><option value="">Every circle</option>{catalog?.circles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                    <>
+                      <label><span>Circle</span><select value={draft.circleId} onChange={(event) => updateScopeDraft(draft.key, { circleId: event.target.value, divisionId: '', subdivisionId: '' })}><option value="">Every circle</option>{catalog?.circles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                      <label><span>Division</span><select value={draft.divisionId} disabled={draft.circleId === ''} onChange={(event) => updateScopeDraft(draft.key, { divisionId: event.target.value, subdivisionId: '' })}><option value="">Every division</option>{divisions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                      <label><span>Sub-division</span><select value={draft.subdivisionId} disabled={draft.divisionId === ''} onChange={(event) => updateScopeDraft(draft.key, { subdivisionId: event.target.value })}><option value="">Every sub-division</option>{subdivisions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+                    </>
                   )}
                   <label><span>Category</span><select value={draft.categoryId} onChange={(event) => updateScopeDraft(draft.key, { categoryId: event.target.value })}><option value="">Every category</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
                 </div>
@@ -299,7 +314,7 @@ export function AdministrationPage() {
                   <div className="scope-person__rule" key={rule.id}>
                     <span className={`scope-domain scope-domain--${rule.domain}`}>{rule.domain}</span>
                     <strong>{scopeDescription(rule)}</strong>
-                    <small>{rule.departmentId === null && rule.categoryId === null && rule.circleId === null ? 'Broad coverage' : 'Targeted coverage'}</small>
+                    <small>{rule.departmentId === null && rule.categoryId === null && rule.circleId === null && rule.divisionId === null && rule.subdivisionId === null ? 'Broad coverage' : 'Targeted coverage'}</small>
                   </div>
                 ))}</div>
               )}
