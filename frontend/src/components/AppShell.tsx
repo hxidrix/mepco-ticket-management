@@ -20,6 +20,7 @@ const navigation: NavigationItem[] = [
   { label: 'Tickets', to: '/app/tickets', section: 'Workspace' },
   { label: 'Submit ticket', to: '/app/tickets/new', roles: ['consumer', 'employee'], section: 'Workspace' },
   { label: 'Notifications', to: '/app/notifications', section: 'Workspace' },
+  { label: 'Messages', to: '/app/messages', roles: ['technician', 'supervisor', 'administrator'], section: 'Workspace' },
   { label: 'Reports & SLA', to: '/app/reports', roles: ['supervisor', 'administrator'], section: 'Workspace' },
   { label: 'Announcements', to: '/app/announcements', roles: ['supervisor', 'administrator'], section: 'Workspace' },
   { label: 'Account governance', to: '/app/account-governance', roles: ['technician', 'supervisor', 'administrator'], section: 'Workspace' },

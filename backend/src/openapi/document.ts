@@ -29,7 +29,7 @@ export const openApiDocument = {
   tags: [
     { name: 'Health' }, { name: 'Authentication' }, { name: 'Users' }, { name: 'Master data' },
     { name: 'Tickets' }, { name: 'Workflow' }, { name: 'Collaboration' }, { name: 'Notifications' },
-    { name: 'Reports' }, { name: 'Suspensions' }, { name: 'Account governance' }, { name: 'Administration' },
+    { name: 'Reports' }, { name: 'Internal messages' }, { name: 'Suspensions' }, { name: 'Account governance' }, { name: 'Administration' },
   ],
   paths: {
     '/api/v1/health/live': { get: operation('Health', 'Check API liveness', { security: false }) },
@@ -80,6 +80,13 @@ export const openApiDocument = {
     '/api/v1/notifications': { get: operation('Notifications', 'List own notifications and unread count') },
     '/api/v1/notifications/read-all': { post: operation('Notifications', 'Mark all own notifications read') },
     '/api/v1/notifications/{id}/read': { post: operation('Notifications', 'Mark one own notification read', { parameters: [idParameter] }) },
+    '/api/v1/internal-messages/recipients': { get: operation('Internal messages', 'List valid active recipients: managers for technicians, or technicians for managers') },
+    '/api/v1/internal-messages/threads': {
+      get: operation('Internal messages', 'List private message threads where the actor is a participant'),
+      post: operation('Internal messages', 'Start a private technician-to-manager thread from either side', { body: true, created: true }),
+    },
+    '/api/v1/internal-messages/threads/{id}': { get: operation('Internal messages', 'Open a participant-only message thread and mark it read', { parameters: [idParameter] }) },
+    '/api/v1/internal-messages/threads/{id}/messages': { post: operation('Internal messages', 'Reply to a participant-only message thread', { body: true, created: true, parameters: [idParameter] }) },
     '/api/v1/tickets/reports/metrics': { get: operation('Reports', 'Get role-scoped status, SLA, and workload metrics') },
     '/api/v1/tickets/reports/export.csv': { get: { ...operation('Reports', 'Export a manager-scoped UTF-8 ticket CSV'), responses: { '200': { description: 'CSV export', content: { 'text/csv': { schema: { type: 'string' } } } }, ...errorResponses } } },
     '/api/v1/tickets/reports/export.pdf': { get: { ...operation('Reports', 'Export a manager-scoped paginated ticket PDF'), responses: { '200': { description: 'PDF export', content: { 'application/pdf': { schema: { type: 'string', format: 'binary' } } } }, ...errorResponses } } },

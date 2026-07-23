@@ -12,6 +12,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { accountGovernanceRouter } from './modules/account-governance/account-governance.routes.js';
 import { administrationRouter } from './modules/administration/administration.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { internalMessagesRouter } from './modules/internal-messages/internal-messages.routes.js';
 import { masterDataRouter } from './modules/master-data/master-data.routes.js';
 import { notificationsRouter } from './modules/notifications/notifications.routes.js';
 import { suspensionsRouter } from './modules/suspensions/suspensions.routes.js';
@@ -48,6 +49,7 @@ app.use('/api/v1/suspensions', suspensionsRouter);
 app.use('/api/v1/administration', administrationRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/master-data', masterDataRouter);
+app.use('/api/v1/internal-messages', internalMessagesRouter);
 app.use('/api/v1/notifications', notificationsRouter);
 app.use('/api/v1/tickets', ticketsRouter);
 

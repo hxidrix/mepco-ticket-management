@@ -14,6 +14,7 @@ All records and credentials in this repository are fictional. The application ha
 - Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
 - Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications.
+- Private technician-to-manager messaging: either side can start an immutable thread with a valid active recipient, both participants can reply from the Messages panel, and unread replies generate direct-link notifications. Thread access is participant-only and message bodies are never copied into audit metadata.
 - Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and manager-scoped CSV/PDF exports.
 - Complaint-specific SLA targets from 4 hours to 90 days, with priority urgency caps and configurable master-data values; see [the SLA catalogue](docs/SLA_TARGETS.md).
 - Administrator master data, announcements/audiences, Circle → Division → Sub-division staff routing scopes, users, and immutable audit-log views.
@@ -158,9 +159,9 @@ npm.cmd run verify
 
 The final verified automated baseline is:
 
-- 22 backend unit/foundation tests.
+- 28 backend unit/foundation tests.
 - 3 frontend component tests.
-- 35 isolated MySQL integration tests across 10 suites.
+- 40 isolated MySQL integration tests across 11 suites.
 - Zero reported npm vulnerabilities in the installed dependency trees.
 - Passing backend/frontend production builds.
 
@@ -168,7 +169,7 @@ The final verified automated baseline is:
 
 All application routes are versioned below `/api/v1`. Success responses use `{ success, data, message?, meta }`; errors use `{ success: false, error: { code, message, details? }, requestId }`. Lists use bounded pagination. Protected Swagger operations accept the access token through the `bearerAuth` control.
 
-Swagger UI: <http://localhost:5000/api-docs>. The machine-readable OpenAPI 3.1 document is at <http://localhost:5000/api-docs.json> and describes all implemented authentication, suspended-account support, user, master-data, ticket, workflow, collaboration, notification, report, and administration paths.
+Swagger UI: <http://localhost:5000/api-docs>. The machine-readable OpenAPI 3.1 document is at <http://localhost:5000/api-docs.json> and describes all implemented authentication, suspended-account support, user, master-data, ticket, workflow, collaboration, private internal-messaging, notification, report, and administration paths.
 
 ## Environment reference
 

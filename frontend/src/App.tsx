@@ -13,6 +13,7 @@ import { AccountGovernancePage } from './pages/AccountGovernancePage';
 import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MasterDataPage } from './pages/MasterDataPage';
+import { InternalMessagesPage } from './pages/InternalMessagesPage';
 import { NewTicketPage } from './pages/NewTicketPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -38,6 +39,7 @@ function AppRoutes() {
         <Route path="tickets/new" element={<RoleRoute roles={['consumer', 'employee']}><NewTicketPage /></RoleRoute>} />
         <Route path="tickets/:id" element={<TicketDetailPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="messages" element={<RoleRoute roles={['technician', 'supervisor', 'administrator']}><InternalMessagesPage /></RoleRoute>} />
         <Route path="reports" element={<RoleRoute roles={['supervisor', 'administrator']}><ReportsPage /></RoleRoute>} />
         <Route path="announcements" element={<RoleRoute roles={['supervisor', 'administrator']}><AnnouncementsPage /></RoleRoute>} />
         <Route path="account-governance" element={<RoleRoute roles={['technician', 'supervisor', 'administrator']}><AccountGovernancePage /></RoleRoute>} />
