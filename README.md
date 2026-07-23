@@ -8,7 +8,7 @@ All records and credentials in this repository are fictional. The application ha
 
 - Consumer, employee, technician, supervisor, and administrator roles with backend-enforced RBAC.
 - Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
-- Role-specific profiles and administrator account lifecycle controls, including a restricted suspended-account portal with appeal/support requests and administrator review.
+- Role-specific profiles and accountable suspension governance: technicians can submit ticket-linked requester suspension cases, supervisors/administrators record structured decisions, managers can directly suspend with full details, sessions are revoked, and the restricted portal shows the account holder the recorded reason and evidence. Supervisors and administrators manage and reply to account-holder appeals/support requests from the Account governance page.
 - Complete SRS reference catalog: 14 departments, 11 circles, 52 cities, 18 categories, 154 complaint types, priorities, statuses, and protected `Other` values.
 - Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
@@ -47,7 +47,7 @@ Every active account uses the development-only password `Demo@12345`.
 | Staff | Administrator | `admin.demo` |
 | Consumer | Suspended portal demo | `10000000000099` |
 
-The suspended consumer uses the same development-only password. It can sign in only to the restricted account portal, read the recorded suspension reason, submit an appeal or support request, and see administrator responses. All ticket and operational APIs recheck the current database status and remain blocked until an administrator approves the appeal or otherwise reactivates the account. The seed also includes an inactive account and eight fictional tickets covering all important workflow states.
+The suspended consumer uses the same development-only password. It can sign in only to the restricted account portal, read the recorded suspension reason, submit an appeal or support request, and see account-support responses. All ticket and operational APIs recheck the current database status and remain blocked until a supervisor or administrator approves the appeal or otherwise reactivates the account. The seed also includes an inactive account and eight fictional tickets covering all important workflow states.
 
 ## Method A: Docker Compose
 
@@ -159,7 +159,7 @@ The final verified automated baseline is:
 
 - 22 backend unit/foundation tests.
 - 3 frontend component tests.
-- 33 isolated MySQL integration tests across 9 suites.
+- 35 isolated MySQL integration tests across 10 suites.
 - Zero reported npm vulnerabilities in the installed dependency trees.
 - Passing backend/frontend production builds.
 

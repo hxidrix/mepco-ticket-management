@@ -601,6 +601,246 @@ textarea:focus-visible {
   }
 }
 
+/* Account suspension governance. */
+.governance-page {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.governance-lead {
+  max-width: 52rem;
+  margin: -1rem 0 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.83rem;
+  line-height: 1.7;
+}
+
+.governance-direct,
+.governance-queue {
+  margin: 0;
+  padding: 1.5rem;
+}
+
+.governance-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: end;
+  margin: 1rem 0;
+}
+
+.governance-search label,
+.governance-decision-form label,
+.governance-toolbar label,
+.governance-review-form label,
+.ticket-suspension-request form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.38rem;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  font-weight: 620;
+}
+
+.governance-decision-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.governance-form-wide {
+  grid-column: 1 / -1;
+}
+
+.governance-decision-form textarea,
+.governance-review-form textarea,
+.ticket-suspension-request textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.governance-reactivation-list {
+  display: grid;
+  gap: 0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.governance-reactivation-list > span {
+  margin-bottom: 0.4rem;
+  color: var(--text-tertiary);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.governance-reactivation-list article {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.governance-reactivation-list article > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.governance-reactivation-list strong { color: var(--text-primary); font-size: 0.72rem; }
+.governance-reactivation-list small { color: var(--text-tertiary); font-size: 0.59rem; }
+.governance-reactivation-list button {
+  padding: 0.48rem 0.68rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.66rem;
+  color: var(--text-primary);
+  background: var(--control);
+  font: inherit;
+  font-size: 0.62rem;
+  cursor: pointer;
+}
+
+.governance-toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  justify-content: space-between;
+  margin: 1rem 0 0;
+}
+
+.governance-toolbar label { width: min(100%, 16rem); }
+.governance-toolbar p { margin: 0 0 0.65rem; color: var(--text-tertiary); font-size: 0.63rem; }
+
+.governance-case-list {
+  display: grid;
+  margin-top: 0.8rem;
+}
+
+.governance-case-list > article {
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.governance-case-list > article:last-child { border-bottom: 0; }
+
+.governance-case-list header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.governance-case-list header > div { display: grid; gap: 0.18rem; }
+.governance-case-list header > div > span,
+.governance-case-list blockquote > span {
+  color: var(--brand-blue);
+  font-size: 0.55rem;
+  font-weight: 720;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+.governance-case-list header strong { color: var(--text-primary); font-size: 0.82rem; }
+.governance-case-list header small { color: var(--text-tertiary); font-size: 0.57rem; }
+
+.governance-status {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+.governance-status--pending { border-color: color-mix(in srgb, var(--brand-yellow) 48%, var(--border)); color: color-mix(in srgb, var(--brand-yellow) 78%, var(--text-primary)); }
+.governance-status--approved { border-color: color-mix(in srgb, #22a06b 48%, var(--border)); color: color-mix(in srgb, #22a06b 78%, var(--text-primary)); }
+.governance-status--rejected { border-color: color-mix(in srgb, var(--brand-red) 45%, var(--border)); color: color-mix(in srgb, var(--brand-red) 72%, var(--text-primary)); }
+
+.governance-case-list dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0.9rem 0;
+}
+.governance-case-list dl > div { padding-left: 0.7rem; border-left: 2px solid var(--border-strong); }
+.governance-case-list dt { color: var(--text-tertiary); font-size: 0.53rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.governance-case-list dd { margin: 0.28rem 0 0; color: var(--text-secondary); font-size: 0.64rem; }
+.governance-case-list dd a { color: var(--brand-blue); text-decoration: none; }
+
+.governance-case-copy { padding: 0.2rem 0 0.6rem; }
+.governance-case-copy strong { color: var(--text-primary); font-size: 0.75rem; }
+.governance-case-copy p,
+.governance-case-list blockquote p { margin: 0.4rem 0 0; color: var(--text-secondary); font-size: 0.67rem; line-height: 1.65; white-space: pre-wrap; }
+.governance-case-list blockquote { margin: 0.5rem 0 0; padding: 0.75rem 0.85rem; border: 0; border-left: 3px solid var(--brand-blue); background: color-mix(in srgb, var(--brand-blue) 6%, transparent); }
+
+.governance-review-form {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.32fr) minmax(16rem, 1fr) auto;
+  gap: 0.7rem;
+  align-items: end;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.ticket-suspension-request {
+  margin-bottom: 1.2rem;
+  padding: 1.4rem;
+}
+.ticket-suspension-request__summary { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+.ticket-suspension-request__summary p { max-width: 54rem; color: var(--text-secondary); font-size: 0.7rem; line-height: 1.65; }
+.ticket-suspension-request form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.8rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+.ticket-suspension-request__wide { grid-column: 1 / -1; }
+
+.suspension-case-details {
+  margin: 0.2rem 0 1.25rem;
+  padding: 0.2rem 0 0.2rem 0.9rem;
+  border-left: 3px solid color-mix(in srgb, var(--brand-red) 58%, var(--border));
+}
+.suspension-case-details > span { color: color-mix(in srgb, var(--brand-red) 62%, var(--text-primary)); font-size: 0.56rem; font-weight: 720; letter-spacing: 0.07em; text-transform: uppercase; }
+.suspension-case-details > strong { display: block; margin-top: 0.42rem; color: var(--text-primary); font-size: 0.78rem; }
+.suspension-case-details > p,
+.suspension-case-details blockquote p { margin: 0.4rem 0; color: var(--text-secondary); font-size: 0.67rem; line-height: 1.65; white-space: pre-wrap; }
+.suspension-case-details dl { margin-top: 0.75rem; }
+.suspension-case-details blockquote { margin: 0.75rem 0 0; padding: 0.7rem 0.8rem; border: 0; background: color-mix(in srgb, var(--control) 55%, transparent); }
+.suspension-case-details blockquote span { color: var(--brand-blue); font-size: 0.55rem; font-weight: 700; text-transform: uppercase; }
+
+.row-actions a {
+  padding: 0.42rem 0.58rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.58rem;
+  color: var(--text-primary);
+  background: var(--control);
+  font-size: 0.58rem;
+  font-weight: 640;
+  text-decoration: none;
+}
+
+@media (max-width: 820px) {
+  .governance-search,
+  .governance-decision-form,
+  .governance-review-form,
+  .ticket-suspension-request form {
+    grid-template-columns: 1fr;
+  }
+  .governance-form-wide,
+  .ticket-suspension-request__wide { grid-column: 1; }
+  .governance-case-list dl { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .governance-toolbar,
+  .governance-case-list header,
+  .ticket-suspension-request__summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -4809,54 +5049,69 @@ body {
 }
 
 /* Restricted suspended-account portal and administrator appeal queue. */
+.suspension-shell .workspace-background {
+  inset: 0;
+}
+
 .suspension-page {
   position: relative;
-  min-height: 100dvh;
-  overflow: hidden;
-  padding: 1rem;
-  color: var(--text-primary);
-  background: var(--app-background);
+  min-height: auto;
+  overflow: visible;
+  padding: 0;
+  color: inherit;
+  background: transparent;
 }
 
-.suspension-header,
+.suspension-hero {
+  margin-bottom: 1.2rem;
+}
+
+.suspension-hero .suspension-state {
+  min-width: 10.5rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  background: var(--glass);
+  box-shadow: var(--shadow-control), inset 0 1px var(--glass-highlight);
+  backdrop-filter: blur(20px) saturate(1.3);
+}
+
+.suspension-sidebar__notice {
+  margin: auto 1.1rem 1rem;
+  padding: 0.9rem 0.85rem;
+  border-left: 2px solid color-mix(in srgb, var(--brand-red) 55%, var(--border));
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--brand-red) 5%, transparent);
+}
+
+.suspension-sidebar .workspace-sidebar__foot {
+  margin-top: 0;
+}
+
+.suspension-sidebar__notice span {
+  color: color-mix(in srgb, var(--brand-red) 62%, var(--text-primary));
+  font-size: 0.58rem;
+  font-weight: 720;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.suspension-sidebar__notice p {
+  margin: 0.42rem 0 0;
+  font-size: 0.62rem;
+  line-height: 1.55;
+}
+
 .suspension-layout {
   position: relative;
-  z-index: 2;
-  width: min(100%, 94rem);
-  margin-inline: auto;
-}
-
-.suspension-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 0.4rem 1.25rem;
-}
-
-.suspension-header > div {
-  display: flex;
-  gap: 0.65rem;
-  align-items: center;
-}
-
-.suspension-header > div > button {
-  min-height: 2.45rem;
-  padding: 0.55rem 0.9rem;
-  border: 1px solid color-mix(in srgb, var(--brand-red) 38%, var(--border));
-  border-radius: 999px;
-  color: color-mix(in srgb, var(--brand-red) 76%, var(--text-primary));
-  background: color-mix(in srgb, var(--brand-red) 8%, transparent);
-  font: inherit;
-  font-size: 0.66rem;
-  font-weight: 680;
-  cursor: pointer;
-}
-
-.suspension-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.72fr);
   gap: 1rem;
-  padding-bottom: 1rem;
+  padding-bottom: 1.2rem;
+}
+
+.suspension-layout > section {
+  scroll-margin-top: 1.5rem;
 }
 
 .suspension-layout > .panel {
@@ -4874,7 +5129,7 @@ body {
   gap: 0.6rem;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2.4rem;
+  margin: 0;
 }
 
 .suspension-state span,
@@ -5167,5 +5422,999 @@ body {
   .suspension-request__message,
   .suspension-request form > .button {
     grid-column: 1;
+  }
+}
+
+/* Suspension governance fields use one predictable control layout. */
+.governance-page :is(
+  .governance-search,
+  .governance-decision-form,
+  .governance-toolbar,
+  .governance-review-form
+) label,
+.ticket-suspension-request form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.governance-page :is(
+  .governance-search,
+  .governance-decision-form,
+  .governance-toolbar,
+  .governance-review-form
+) label > span,
+.ticket-suspension-request form label > span {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 680;
+  letter-spacing: 0.01em;
+}
+
+.governance-page :is(input, select, textarea),
+.ticket-suspension-request form :is(input, select, textarea) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  box-sizing: border-box;
+  padding: 0.76rem 0.86rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.78rem;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--control) 78%, transparent);
+  box-shadow: 0 7px 20px rgba(15, 40, 66, 0.06);
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.governance-page :is(input, textarea)::placeholder,
+.ticket-suspension-request form :is(input, textarea)::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.92;
+}
+
+.governance-page :is(input, select, textarea):hover:not(:disabled),
+.ticket-suspension-request form :is(input, select, textarea):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--text-secondary) 42%, var(--border-strong));
+  background: color-mix(in srgb, var(--control) 90%, transparent);
+}
+
+.governance-page :is(input, select, textarea):focus,
+.ticket-suspension-request form :is(input, select, textarea):focus {
+  border-color: color-mix(in srgb, var(--brand-blue) 72%, var(--border-strong));
+  outline: 0;
+  background: color-mix(in srgb, var(--control) 94%, transparent);
+  box-shadow:
+    0 0 0 3px var(--focus),
+    0 9px 24px rgba(15, 71, 112, 0.09);
+}
+
+.governance-page select,
+.ticket-suspension-request form select {
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.governance-page textarea,
+.ticket-suspension-request form textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.governance-search {
+  grid-template-columns: minmax(16rem, 1fr) auto;
+  gap: 0.8rem;
+}
+
+.governance-search .button,
+.governance-review-form .button {
+  min-height: 3rem;
+  white-space: nowrap;
+}
+
+.governance-decision-form {
+  gap: 1rem;
+}
+
+.governance-decision-form > .button {
+  width: fit-content;
+  min-width: 12rem;
+  justify-self: start;
+}
+
+.governance-toolbar label {
+  width: min(100%, 15rem);
+}
+
+.governance-review-form {
+  grid-template-columns: minmax(12rem, 0.34fr) minmax(18rem, 1fr) auto;
+  gap: 0.85rem;
+}
+
+.governance-review-form textarea {
+  min-height: 5.4rem;
+}
+
+.ticket-suspension-request form {
+  gap: 1rem;
+}
+
+.ticket-suspension-request form > .button {
+  width: fit-content;
+  min-width: 12rem;
+  justify-self: start;
+}
+
+@media (max-width: 820px) {
+  .governance-search,
+  .governance-decision-form,
+  .governance-review-form,
+  .ticket-suspension-request form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .governance-search .button,
+  .governance-decision-form > .button,
+  .governance-review-form .button,
+  .ticket-suspension-request form > .button {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
+/* Standalone restricted portal: focused content without application navigation. */
+.suspension-shell {
+  min-height: 100vh;
+  overflow: visible;
+}
+
+.suspension-portal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 94rem);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1rem clamp(1rem, 3vw, 2.5rem) 2rem;
+}
+
+.suspension-portal__topbar {
+  display: flex;
+  min-height: 4.75rem;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.suspension-portal__brand .brand-lockup {
+  gap: 0.65rem;
+}
+
+.suspension-portal__brand .brand-lockup__plate {
+  width: 3rem;
+}
+
+.suspension-portal__brand .brand-lockup__copy strong {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.suspension-portal__brand .brand-lockup__copy span {
+  color: var(--text-tertiary);
+  font-size: 0.64rem;
+}
+
+.suspension-portal__actions {
+  position: relative;
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.suspension-portal__actions .theme-toggle {
+  width: fit-content;
+  min-width: auto;
+  min-height: auto;
+  padding: 0.15rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.suspension-signout {
+  width: auto;
+  min-width: 6.6rem;
+  min-height: 2.5rem;
+  padding-inline: 1rem;
+}
+
+.suspension-signout-confirmation {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: 15rem;
+  padding: 0.85rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 0.9rem;
+  background: var(--glass-strong);
+  box-shadow: var(--shadow-soft);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  backdrop-filter: blur(24px) saturate(1.35);
+}
+
+.suspension-page {
+  width: 100%;
+  max-width: none;
+}
+
+.suspension-hero {
+  margin: 1.4rem 0 1rem;
+}
+
+.suspension-layout {
+  grid-template-columns: minmax(20rem, 0.72fr) minmax(0, 1.28fr);
+  gap: 1rem;
+}
+
+.suspension-layout > .panel {
+  padding: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+.suspension-summary {
+  grid-column: 1 / -1;
+}
+
+.suspension-summary .panel__heading {
+  margin-bottom: 0;
+}
+
+.suspension-lead {
+  max-width: 62rem;
+  margin: 1.15rem 0 1.25rem;
+  font-size: 0.76rem;
+}
+
+.suspension-decision-record {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.suspension-decision-record__heading {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.suspension-decision-record__heading > span,
+.suspension-access-note span,
+.suspension-decision-note > span {
+  color: color-mix(in srgb, var(--brand-red) 68%, var(--text-primary));
+  font-size: 0.56rem;
+  font-weight: 720;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.suspension-decision-record__heading > strong {
+  width: fit-content;
+  padding: 0.32rem 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--brand-red) 28%, var(--border));
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--brand-red) 6%, transparent);
+  font-size: 0.56rem;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.suspension-decision-record h3 {
+  max-width: 58rem;
+  margin: 0.7rem 0 0;
+  color: var(--text-primary);
+  font-size: clamp(1.08rem, 2vw, 1.35rem);
+  font-weight: 590;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.suspension-decision-record > p {
+  max-width: 68rem;
+  margin: 0.65rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.72;
+  white-space: pre-wrap;
+}
+
+.suspension-summary .suspension-decision-record dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 1.15rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.suspension-summary .suspension-decision-record dl > div {
+  min-width: 0;
+  padding: 0 1rem;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.suspension-summary .suspension-decision-record dl > div:first-child {
+  padding-left: 0;
+}
+
+.suspension-summary .suspension-decision-record dl > div:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.suspension-decision-note {
+  margin-top: 1rem;
+  padding: 0.1rem 0 0.1rem 0.85rem;
+  border-left: 2px solid color-mix(in srgb, var(--brand-blue) 48%, var(--border));
+}
+
+.suspension-decision-note > span {
+  color: var(--brand-blue);
+}
+
+.suspension-decision-note p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.62;
+}
+
+.suspension-decision-record--legacy {
+  padding-left: 1rem;
+  border-left: 3px solid color-mix(in srgb, var(--brand-red) 48%, var(--border));
+}
+
+.suspension-access-note {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+}
+
+.suspension-access-note > div {
+  min-width: 0;
+}
+
+.suspension-access-note p {
+  margin: 0.3rem 0 0;
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  line-height: 1.55;
+}
+
+.suspension-access-note > p {
+  max-width: 30rem;
+  margin: 0;
+  text-align: right;
+}
+
+.suspension-history {
+  grid-column: auto;
+}
+
+.suspension-request .page-message {
+  margin: 0.85rem 0 0;
+}
+
+@media (max-width: 900px) {
+  .suspension-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .suspension-summary,
+  .suspension-history {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .suspension-portal {
+    padding-inline: 0.75rem;
+  }
+
+  .suspension-portal__topbar {
+    align-items: flex-start;
+  }
+
+  .suspension-portal__brand .brand-lockup__copy span {
+    display: none;
+  }
+
+  .suspension-signout {
+    min-width: auto;
+  }
+
+  .suspension-hero {
+    padding-inline: 0.2rem;
+  }
+
+  .suspension-decision-record__heading,
+  .suspension-access-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .suspension-summary .suspension-decision-record dl {
+    grid-template-columns: 1fr;
+  }
+
+  .suspension-summary .suspension-decision-record dl > div,
+  .suspension-summary .suspension-decision-record dl > div:first-child,
+  .suspension-summary .suspension-decision-record dl > div:last-child {
+    padding: 0.65rem 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .suspension-summary .suspension-decision-record dl > div:last-child {
+    border-bottom: 0;
+  }
+
+  .suspension-access-note > p {
+    text-align: left;
+  }
+}
+
+/* Compact governance records and the shared appeal-response queue. */
+.governance-toolbar {
+  margin-top: 0.85rem;
+}
+
+.governance-toolbar label {
+  width: min(100%, 13rem);
+}
+
+.governance-case-list > article {
+  padding: 1rem 0;
+}
+
+.governance-case-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: start;
+  margin-top: 0.8rem;
+}
+
+.governance-case-copy {
+  padding: 0;
+}
+
+.governance-case-copy strong {
+  font-size: 0.78rem;
+}
+
+.governance-case-copy p {
+  max-width: 62rem;
+  margin-top: 0.3rem;
+}
+
+.governance-case-list .governance-case-body dl {
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 1px solid var(--border);
+}
+
+.governance-case-list .governance-case-body dl > div {
+  padding: 0;
+  border: 0;
+}
+
+.governance-case-list blockquote {
+  margin-top: 0.75rem;
+  padding: 0.15rem 0 0.15rem 0.8rem;
+  background: transparent;
+}
+
+.governance-case-list blockquote p {
+  margin-top: 0.25rem;
+}
+
+.governance-support {
+  margin: 0;
+  padding: 1.5rem;
+}
+
+.governance-support__intro {
+  display: flex;
+  gap: 1.5rem;
+  align-items: end;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+}
+
+.governance-support__intro > p {
+  max-width: 58rem;
+  margin: 0 0 0.65rem;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.65;
+}
+
+.governance-support__intro label,
+.governance-support-form label {
+  display: grid;
+  min-width: 0;
+  gap: 0.42rem;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  font-weight: 650;
+}
+
+.governance-support__intro label {
+  width: min(100%, 14rem);
+  flex: 0 0 auto;
+}
+
+.governance-support :is(select, textarea) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  box-sizing: border-box;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.78rem;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--control) 80%, transparent);
+  box-shadow: 0 7px 20px rgba(15, 40, 66, 0.05);
+  font: inherit;
+  font-size: 0.72rem;
+}
+
+.governance-support :is(select, textarea):focus {
+  border-color: color-mix(in srgb, var(--brand-blue) 72%, var(--border-strong));
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--focus);
+}
+
+.governance-support-list {
+  display: grid;
+  margin-top: 0.75rem;
+}
+
+.governance-support-list > article {
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.governance-support-list > article:last-child {
+  padding-bottom: 0;
+}
+
+.governance-support-list header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.governance-support-list header > div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.governance-support-list header > div > span,
+.governance-support-list__body span,
+.governance-support-list blockquote > span {
+  color: var(--brand-blue);
+  font-size: 0.54rem;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.governance-support-list header strong {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.governance-support-list header small {
+  color: var(--text-tertiary);
+  font-size: 0.57rem;
+}
+
+.governance-support-list__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(16rem, 0.65fr);
+  gap: 1.5rem;
+  margin-top: 0.8rem;
+}
+
+.governance-support-list__body > div:last-child {
+  padding-left: 1rem;
+  border-left: 1px solid var(--border);
+}
+
+.governance-support-list__body p,
+.governance-support-list blockquote p {
+  margin: 0.3rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.governance-support-list blockquote {
+  margin: 0.8rem 0 0;
+  padding: 0.15rem 0 0.15rem 0.8rem;
+  border: 0;
+  border-left: 2px solid color-mix(in srgb, var(--brand-blue) 52%, var(--border));
+}
+
+.governance-support-form {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.32fr) minmax(18rem, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.governance-support-form textarea {
+  min-height: 5.2rem;
+  resize: vertical;
+}
+
+.governance-support-form .button {
+  min-height: 3rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .governance-case-body,
+  .governance-support-list__body,
+  .governance-support-form {
+    grid-template-columns: 1fr;
+  }
+
+  .governance-case-list .governance-case-body dl,
+  .governance-support-list__body > div:last-child {
+    padding: 0.8rem 0 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .governance-support-form .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .governance-support__intro,
+  .governance-support-list header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .governance-support__intro label {
+    width: 100%;
+  }
+}
+
+/* Stable sidebar chrome: fixed brand/footer and a non-scrolling desktop menu. */
+.workspace-sidebar,
+.workspace-sidebar.border-glow-target {
+  height: calc(100dvh - 1.6rem);
+  max-height: none;
+  grid-template-rows: 5.7rem minmax(0, 1fr) auto;
+}
+
+.workspace-sidebar__brand {
+  position: relative;
+  z-index: 4;
+  grid-row: 1;
+  min-height: 0;
+  padding-inline: 1.2rem;
+  overflow: hidden;
+  border-bottom: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.workspace-sidebar__brand .brand-lockup__plate {
+  width: 3.15rem;
+}
+
+.workspace-sidebar nav {
+  position: relative;
+  z-index: 2;
+  grid-row: 2;
+  min-height: 0;
+  gap: 0.65rem;
+  align-content: start;
+  padding: 0.72rem 0.75rem 0.45rem;
+  overflow: hidden;
+  scrollbar-gutter: auto;
+  overscroll-behavior: contain;
+}
+
+.workspace-nav-group {
+  gap: 0.2rem;
+}
+
+.workspace-nav-group__label {
+  padding: 0 0.65rem 0.18rem;
+  font-size: 0.56rem;
+}
+
+.workspace-nav-list {
+  gap: 0.12rem;
+}
+
+.workspace-sidebar nav .workspace-nav-list a {
+  min-height: 2.32rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.68rem;
+  font-size: 0.75rem;
+}
+
+.workspace-sidebar__foot {
+  position: relative;
+  z-index: 4;
+  grid-row: 3;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0.55rem 1rem 1rem;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Very short viewports still keep every action reachable without overlap. */
+@media (max-height: 700px) {
+  .workspace-sidebar nav {
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspace-sidebar,
+  .workspace-sidebar.border-glow-target {
+    height: calc(100dvh - 1.3rem);
+    grid-template-rows: 5.7rem minmax(0, 1fr) auto;
+  }
+
+  .workspace-sidebar__brand {
+    padding-right: 4rem;
+  }
+
+  .workspace-sidebar__close {
+    z-index: 5;
+  }
+}
+
+/* Audit-style account governance disclosures. */
+.governance-record-list {
+  margin-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.governance-record-list__head,
+.governance-record__trigger {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.45fr) minmax(11rem, 0.9fr) minmax(9rem, 0.75fr) auto 1.5rem;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.governance-record-list__head {
+  padding: 0.58rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: 0.52rem;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.governance-record {
+  border-bottom: 1px solid var(--border);
+}
+
+.governance-record:last-child {
+  border-bottom: 0;
+}
+
+.governance-record__trigger {
+  width: 100%;
+  padding: 0.82rem 0.2rem;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.governance-record__trigger:hover,
+.governance-record.is-expanded > .governance-record__trigger {
+  background: color-mix(in srgb, var(--surface-soft) 68%, transparent);
+}
+
+.governance-record__trigger:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.governance-record__trigger > span:not(.governance-status, .suspension-request-status, .governance-record__chevron) {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+}
+
+.governance-record__trigger strong,
+.governance-record__trigger time {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.64rem;
+  font-weight: 620;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.governance-record__trigger small {
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 0.54rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.governance-record__trigger time {
+  color: var(--text-secondary);
+  font-size: 0.57rem;
+  font-weight: 520;
+}
+
+.governance-record__trigger > :is(.governance-status, .suspension-request-status) {
+  justify-self: start;
+}
+
+.governance-record__chevron {
+  display: grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.governance-record__details {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.15rem 0.2rem 1rem;
+}
+
+.governance-record__details .governance-case-body,
+.governance-record__details .governance-support-list__body {
+  margin-top: 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.governance-record__details .governance-case-copy {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.governance-record__details .governance-case-copy > span {
+  color: var(--brand-blue);
+  font-size: 0.54rem;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.governance-record__details blockquote {
+  margin: 0;
+  padding: 0.15rem 0 0.15rem 0.8rem;
+  border: 0;
+  border-left: 2px solid color-mix(in srgb, var(--brand-blue) 52%, var(--border));
+  background: transparent;
+}
+
+.governance-record__details blockquote > span {
+  color: var(--brand-blue);
+  font-size: 0.54rem;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.governance-record__details blockquote p {
+  margin: 0.28rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.governance-record__details :is(.governance-review-form, .governance-support-form) {
+  margin-top: 0;
+}
+
+@media (max-width: 920px) {
+  .governance-record-list__head,
+  .governance-record__trigger {
+    grid-template-columns: minmax(11rem, 1.3fr) minmax(9rem, 0.8fr) minmax(7rem, 0.7fr) auto 1.5rem;
+    gap: 0.55rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .governance-record-list__head {
+    display: none;
+  }
+
+  .governance-record__trigger {
+    grid-template-columns: minmax(0, 1fr) auto 1.5rem;
+    gap: 0.55rem;
+    padding-inline: 0;
+  }
+
+  .governance-record__trigger > span:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .governance-record__trigger > span:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .governance-record__trigger time {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .governance-record__trigger > :is(.governance-status, .suspension-request-status) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .governance-record__chevron {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .governance-record__details {
+    padding-inline: 0;
   }
 }

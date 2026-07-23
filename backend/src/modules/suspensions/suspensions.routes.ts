@@ -42,29 +42,47 @@ suspensionsRouter.post(
   }),
 );
 
-suspensionsRouter.use('/admin', requireActiveAccount, authorizeRoles('administrator'));
-suspensionsRouter.get(
-  '/admin/requests',
-  query('status').optional().isIn(['submitted', 'under-review', 'approved', 'rejected', 'resolved']),
-  validateRequest,
-  asyncHandler(async (request, response) => {
-    const status = typeof request.query.status === 'string' ? request.query.status as SuspensionRequestStatus : undefined;
-    sendSuccess(response, 200, await listSuspensionRequests(status));
-  }),
+function supportReviewRouter(): Router {
+  const router = Router();
+  router.get(
+    '/requests',
+    query('status').optional().isIn(['submitted', 'under-review', 'approved', 'rejected', 'resolved']),
+    validateRequest,
+    asyncHandler(async (request, response) => {
+      const status = typeof request.query.status === 'string' ? request.query.status as SuspensionRequestStatus : undefined;
+      sendSuccess(response, 200, await listSuspensionRequests(status));
+    }),
+  );
+  router.put(
+    '/requests/:id',
+    param('id').isInt({ min: 1 }).toInt(),
+    body('status').isIn(['under-review', 'approved', 'rejected', 'resolved']),
+    body('response').trim().isLength({ min: 3, max: 4000 }),
+    validateRequest,
+    asyncHandler(async (request, response) => {
+      await reviewSuspensionRequest(
+        request.auth!.id,
+        Number(request.params.id),
+        request.body as { status: 'under-review' | 'approved' | 'rejected' | 'resolved'; response: string },
+        requestContext(request),
+      );
+      sendSuccess(response, 200, null, 'Suspension request updated');
+    }),
+  );
+  return router;
+}
+
+suspensionsRouter.use(
+  '/management',
+  requireActiveAccount,
+  authorizeRoles('supervisor', 'administrator'),
+  supportReviewRouter(),
 );
-suspensionsRouter.put(
-  '/admin/requests/:id',
-  param('id').isInt({ min: 1 }).toInt(),
-  body('status').isIn(['under-review', 'approved', 'rejected', 'resolved']),
-  body('response').trim().isLength({ min: 3, max: 4000 }),
-  validateRequest,
-  asyncHandler(async (request, response) => {
-    await reviewSuspensionRequest(
-      request.auth!.id,
-      Number(request.params.id),
-      request.body as { status: 'under-review' | 'approved' | 'rejected' | 'resolved'; response: string },
-      requestContext(request),
-    );
-    sendSuccess(response, 200, null, 'Suspension request updated');
-  }),
+
+// Retained for compatibility with existing administrator clients.
+suspensionsRouter.use(
+  '/admin',
+  requireActiveAccount,
+  authorizeRoles('administrator'),
+  supportReviewRouter(),
 );

@@ -112,7 +112,13 @@ usersRouter.put(
   body('displayName').trim().isLength({ min: 2, max: 140 }), optionalEmail,
   body('phone').optional({ values: 'falsy' }).trim().isLength({ max: 30 }),
   body('status').isIn(['active', 'suspended', 'inactive']),
-  body('statusReason').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
+  body('statusReason').custom((value: unknown, { req }) => {
+    const requestBody = req.body as { status?: unknown };
+    if (requestBody.status === 'suspended' && (typeof value !== 'string' || value.trim().length < 10)) {
+      throw new Error('A specific suspension reason of at least 10 characters is required');
+    }
+    return value === undefined || value === null || (typeof value === 'string' && value.trim().length <= 500);
+  }),
   body('role').optional().isIn(['technician', 'supervisor', 'administrator']),
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('designation').optional().trim().isLength({ min: 2, max: 140 }),

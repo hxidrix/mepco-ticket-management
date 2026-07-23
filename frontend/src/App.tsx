@@ -9,6 +9,7 @@ import { ThemeProvider } from './context/ThemeProvider';
 import { useAuth } from './hooks/useAuth';
 import { AuthPage } from './pages/AuthPage';
 import { AdministrationPage } from './pages/AdministrationPage';
+import { AccountGovernancePage } from './pages/AccountGovernancePage';
 import { AnnouncementsPage } from './pages/AnnouncementsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { MasterDataPage } from './pages/MasterDataPage';
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="reports" element={<RoleRoute roles={['supervisor', 'administrator']}><ReportsPage /></RoleRoute>} />
         <Route path="announcements" element={<RoleRoute roles={['supervisor', 'administrator']}><AnnouncementsPage /></RoleRoute>} />
+        <Route path="account-governance" element={<RoleRoute roles={['technician', 'supervisor', 'administrator']}><AccountGovernancePage /></RoleRoute>} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="admin/users" element={<RoleRoute roles={['administrator']}><UserManagementPage /></RoleRoute>} />
         <Route path="admin/master-data" element={<RoleRoute roles={['administrator']}><MasterDataPage /></RoleRoute>} />

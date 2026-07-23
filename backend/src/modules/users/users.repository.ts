@@ -296,12 +296,20 @@ export async function updateUserAsAdmin(
   const connection = await databasePool.getConnection();
   try {
     await connection.beginTransaction();
-    const [targetRows] = await connection.execute<Array<RowDataPacket & { role: UserRole }>>(
-      `SELECT r.name AS role FROM users u JOIN roles r ON r.id = u.role_id
+    const [targetRows] = await connection.execute<Array<RowDataPacket & { role: UserRole; status: UserStatus }>>(
+      `SELECT r.name AS role,u.status FROM users u JOIN roles r ON r.id = u.role_id
        WHERE u.id = ? AND u.deleted_at IS NULL FOR UPDATE`, [targetId],
     );
-    const currentRole = targetRows[0]?.role;
-    if (currentRole === undefined) throw new AppError(404, 'USER_NOT_FOUND', 'The user was not found');
+    const currentTarget = targetRows[0];
+    if (currentTarget === undefined) throw new AppError(404, 'USER_NOT_FOUND', 'The user was not found');
+    const currentRole = currentTarget.role;
+    if ((currentRole === 'consumer' || currentRole === 'employee') && currentTarget.status !== input.status) {
+      throw new AppError(
+        422,
+        'ACCOUNT_GOVERNANCE_REQUIRED',
+        'Requester status changes must use the account governance workflow with complete details',
+      );
+    }
     let roleId: number | null = null;
     if (input.role !== undefined) {
       if (!['technician', 'supervisor', 'administrator'].includes(currentRole)) {

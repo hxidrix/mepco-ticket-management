@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 import { PasswordInput } from '../components/PasswordInput';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
-import {
-  reviewSuspensionRequestAdmin,
-  suspensionRequestsAdminRequest,
-} from '../lib/suspension-api';
-import type { SuspensionRequest, SuspensionRequestStatus } from '../lib/suspension-api';
 import {
   createStaffRequest,
   deleteUserRequest,
@@ -16,7 +12,7 @@ import {
   usersRequest,
 } from '../lib/users-api';
 import type { RegistrationOptions, UserRole } from '../types/auth';
-import type { PaginationMeta, UserProfile, UserStatus } from '../types/users';
+import type { PaginationMeta, UserProfile } from '../types/users';
 
 function formValue(data: FormData, name: string): string {
   const entry = data.get(name);
@@ -35,9 +31,6 @@ export function UserManagementPage() {
   const [filters, setFilters] = useState({ search: '', role: '', status: '' });
   const [showCreate, setShowCreate] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [suspensionRequests, setSuspensionRequests] = useState<SuspensionRequest[]>([]);
-  const [requestStatus, setRequestStatus] = useState('');
-  const [busyRequestId, setBusyRequestId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -49,20 +42,14 @@ export function UserManagementPage() {
         ...(filters.role === '' ? {} : { role: filters.role }),
         ...(filters.status === '' ? {} : { status: filters.status }),
       } });
-      setUsers(result.items); setMeta(result.meta);
-    } catch (caught) { setError(getApiErrorMessage(caught)); }
-  }, [filters]);
-
-  const loadSuspensionRequests = useCallback(async () => {
-    try {
-      setSuspensionRequests(await suspensionRequestsAdminRequest(requestStatus));
+      setUsers(result.items);
+      setMeta(result.meta);
     } catch (caught) {
       setError(getApiErrorMessage(caught));
     }
-  }, [requestStatus]);
+  }, [filters]);
 
   useEffect(() => { void loadUsers(); }, [loadUsers]);
-  useEffect(() => { void loadSuspensionRequests(); }, [loadSuspensionRequests]);
   useEffect(() => {
     void registrationOptionsRequest().then(setOptions).catch((caught: unknown) => {
       setError(getApiErrorMessage(caught));
@@ -70,35 +57,84 @@ export function UserManagementPage() {
   }, []);
 
   const createAccount = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setError(null); setMessage(null); setBusyId(0);
+    event.preventDefault();
+    setError(null); setMessage(null); setBusyId(0);
     const data = new FormData(event.currentTarget);
     try {
       await createStaffRequest({
-        role: formValue(data, 'role'), username: formValue(data, 'username'),
-        displayName: formValue(data, 'displayName'), email: formValue(data, 'email'),
-        phone: formValue(data, 'phone'), password: formValue(data, 'password'),
+        role: formValue(data, 'role'),
+        username: formValue(data, 'username'),
+        displayName: formValue(data, 'displayName'),
+        email: formValue(data, 'email'),
+        phone: formValue(data, 'phone'),
+        password: formValue(data, 'password'),
         departmentId: Number(formValue(data, 'departmentId')) || undefined,
-        designation: formValue(data, 'designation'), workLocation: formValue(data, 'workLocation'),
+        designation: formValue(data, 'designation'),
+        workLocation: formValue(data, 'workLocation'),
       });
-      event.currentTarget.reset(); setShowCreate(false); setMessage('Staff account created.'); await loadUsers();
-    } catch (caught) { setError(getApiErrorMessage(caught)); }
-    finally { setBusyId(null); }
+      event.currentTarget.reset();
+      setShowCreate(false);
+      setMessage('Staff account created.');
+      await loadUsers();
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const setAccountStatus = async (profile: UserProfile, nextStatus: UserStatus) => {
+  const activateAccount = async (profile: UserProfile) => {
     setBusyId(profile.id); setError(null); setMessage(null);
     try {
       await updateUserRequest(profile.id, {
-        displayName: profile.displayName, email: profile.email ?? '', phone: profile.phone ?? '',
-        status: nextStatus, statusReason: nextStatus === 'active' ? '' : 'Updated by administrator',
+        displayName: profile.displayName,
+        email: profile.email ?? '',
+        phone: profile.phone ?? '',
+        status: 'active',
+        statusReason: '',
         ...(['technician', 'supervisor', 'administrator'].includes(profile.role) ? {
-          role: profile.role, departmentId: profile.departmentId ?? undefined,
-          designation: profile.designation, workLocation: profile.workLocation,
+          role: profile.role,
+          departmentId: profile.departmentId ?? undefined,
+          designation: profile.designation,
+          workLocation: profile.workLocation,
         } : {}),
       });
-      setMessage(`${profile.displayName} is now ${nextStatus}.`); await loadUsers(meta.page);
-    } catch (caught) { setError(getApiErrorMessage(caught)); }
-    finally { setBusyId(null); }
+      setMessage(`${profile.displayName} is now active.`);
+      await loadUsers(meta.page);
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const suspendStaffAccount = async (profile: UserProfile) => {
+    const reason = window.prompt(`Provide the specific reason for suspending ${profile.displayName}:`);
+    if (reason === null) return;
+    if (reason.trim().length < 10) {
+      setError('The suspension reason must contain at least 10 characters.');
+      return;
+    }
+    setBusyId(profile.id); setError(null); setMessage(null);
+    try {
+      await updateUserRequest(profile.id, {
+        displayName: profile.displayName,
+        email: profile.email ?? '',
+        phone: profile.phone ?? '',
+        status: 'suspended',
+        statusReason: reason.trim(),
+        role: profile.role,
+        departmentId: profile.departmentId ?? undefined,
+        designation: profile.designation,
+        workLocation: profile.workLocation,
+      });
+      setMessage(`${profile.displayName} is now suspended.`);
+      await loadUsers(meta.page);
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const resetPassword = async (profile: UserProfile) => {
@@ -107,33 +143,24 @@ export function UserManagementPage() {
     try {
       await resetPasswordRequest(profile.id, 'Demo@12345');
       setMessage(`Password reset for ${profile.displayName}; their sessions were revoked.`);
-    } catch (caught) { setError(getApiErrorMessage(caught)); }
-    finally { setBusyId(null); }
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const deleteAccount = async (profile: UserProfile) => {
     if (!window.confirm(`Soft-delete ${profile.displayName}? Their historical records remain available.`)) return;
     setBusyId(profile.id); setError(null); setMessage(null);
-    try { await deleteUserRequest(profile.id); setMessage('Account deleted.'); await loadUsers(meta.page); }
-    catch (caught) { setError(getApiErrorMessage(caught)); }
-    finally { setBusyId(null); }
-  };
-
-  const reviewRequest = async (event: FormEvent<HTMLFormElement>, request: SuspensionRequest) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    setBusyRequestId(request.id); setError(null); setMessage(null);
     try {
-      await reviewSuspensionRequestAdmin(request.id, {
-        status: formValue(data, 'status') as Exclude<SuspensionRequestStatus, 'submitted'>,
-        response: formValue(data, 'response'),
-      });
-      setMessage(`Request #${request.id} was updated.`);
-      await Promise.all([loadSuspensionRequests(), loadUsers(meta.page)]);
+      await deleteUserRequest(profile.id);
+      setMessage('Account deleted.');
+      await loadUsers(meta.page);
     } catch (caught) {
       setError(getApiErrorMessage(caught));
     } finally {
-      setBusyRequestId(null);
+      setBusyId(null);
     }
   };
 
@@ -144,6 +171,7 @@ export function UserManagementPage() {
         <button className="button button--primary" type="button" onClick={() => setShowCreate((shown) => !shown)}>{showCreate ? 'Close form' : 'Add staff account'}</button>
       </div>
       {(message !== null || error !== null) && <p className={error === null ? 'page-message is-success' : 'page-message is-error'}>{error ?? message}</p>}
+
       {showCreate && (
         <form className="panel form-grid admin-create" onSubmit={(event) => void createAccount(event)}>
           <div className="panel__heading form-grid__wide"><div><span>New identity</span><h2>Create staff account</h2></div></div>
@@ -159,26 +187,11 @@ export function UserManagementPage() {
           <button className="button button--primary form-grid__wide" type="submit" disabled={busyId === 0}>Create account</button>
         </form>
       )}
-      <section className="panel suspension-review-panel">
-        <div className="panel__heading"><div><span>Account support queue</span><h2>Suspension appeals and requests</h2></div><small>{suspensionRequests.length} shown</small></div>
-        <div className="suspension-review-toolbar"><label><span>Request status</span><select value={requestStatus} onChange={(event) => setRequestStatus(event.target.value)}><option value="">All requests</option><option value="submitted">Submitted</option><option value="under-review">Under review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="resolved">Resolved</option></select></label></div>
-        {suspensionRequests.length === 0 ? <p className="empty-state">No suspension requests match this filter.</p> : <div className="suspension-review-list">{suspensionRequests.map((request) => (
-          <article key={request.id}>
-            <header><div><span>{request.requestType}</span><strong>{request.displayName} · Request #{request.id}</strong><small>{request.role} · {new Intl.DateTimeFormat('en-PK', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(request.createdAt))}</small></div><span className={`suspension-request-status suspension-request-status--${request.status}`}>{request.status.replace('-', ' ')}</span></header>
-            <dl><div><dt>Suspension reason</dt><dd>{request.suspensionReason ?? 'No reason recorded'}</dd></div><div><dt>Preferred reply</dt><dd>{request.contactPreference}</dd></div></dl>
-            <p>{request.message}</p>
-            {request.adminResponse !== null && <blockquote><span>Latest response</span><p>{request.adminResponse}</p></blockquote>}
-            <form onSubmit={(event) => void reviewRequest(event, request)}>
-              <label><span>Decision</span><select name="status" defaultValue={request.status === 'submitted' ? 'under-review' : request.status}>{request.requestType === 'appeal' && <option value="approved">Approve and reactivate</option>}<option value="under-review">Under review</option><option value="rejected">Reject</option><option value="resolved">Resolve support request</option></select></label>
-              <label><span>Response to account holder</span><textarea name="response" minLength={3} maxLength={4000} required defaultValue={request.adminResponse ?? ''} placeholder="Explain the decision or ask for more information." /></label>
-              <button className="button button--secondary" type="submit" disabled={busyRequestId === request.id}>{busyRequestId === request.id ? 'Saving…' : 'Save response'}</button>
-            </form>
-          </article>
-        ))}</div>}
-      </section>
+
       <section className="panel user-directory">
         <form className="directory-filters" onSubmit={(event) => {
-          event.preventDefault(); setFilters({ search, role, status });
+          event.preventDefault();
+          setFilters({ search, role, status });
         }}>
           <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, username, email, reference or employee ID" /></label>
           <label><span>Role</span><select value={role} onChange={(event) => setRole(event.target.value)}><option value="">All roles</option>{(['consumer', 'employee', 'technician', 'supervisor', 'administrator'] as UserRole[]).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
@@ -196,7 +209,10 @@ export function UserManagementPage() {
                 <td>{profile.role}</td>
                 <td><span className={`status-pill status-pill--${profile.status}`}>{profile.status}</span></td>
                 <td><div className="row-actions">
-                  <button type="button" disabled={busyId === profile.id} onClick={() => void setAccountStatus(profile, profile.status === 'active' ? 'suspended' : 'active')}>{profile.status === 'active' ? 'Suspend' : 'Activate'}</button>
+                  {profile.status === 'active' && (profile.role === 'consumer' || profile.role === 'employee') && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.referenceNumber ?? profile.employeeId ?? profile.displayName)}`}>Suspend with details</Link>}
+                  {profile.status === 'suspended' && (profile.role === 'consumer' || profile.role === 'employee') && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.referenceNumber ?? profile.employeeId ?? profile.displayName)}`}>Review suspension</Link>}
+                  {profile.status === 'active' && !['consumer', 'employee'].includes(profile.role) && <button type="button" disabled={busyId === profile.id} onClick={() => void suspendStaffAccount(profile)}>Suspend staff</button>}
+                  {profile.status !== 'active' && !['consumer', 'employee'].includes(profile.role) && <button type="button" disabled={busyId === profile.id} onClick={() => void activateAccount(profile)}>Activate</button>}
                   <button type="button" disabled={busyId === profile.id} onClick={() => void resetPassword(profile)}>Reset password</button>
                   <button className="is-danger" type="button" disabled={busyId === profile.id} onClick={() => void deleteAccount(profile)}>Delete</button>
                 </div></td>

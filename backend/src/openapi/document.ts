@@ -29,7 +29,7 @@ export const openApiDocument = {
   tags: [
     { name: 'Health' }, { name: 'Authentication' }, { name: 'Users' }, { name: 'Master data' },
     { name: 'Tickets' }, { name: 'Workflow' }, { name: 'Collaboration' }, { name: 'Notifications' },
-    { name: 'Reports' }, { name: 'Suspensions' }, { name: 'Administration' },
+    { name: 'Reports' }, { name: 'Suspensions' }, { name: 'Account governance' }, { name: 'Administration' },
   ],
   paths: {
     '/api/v1/health/live': { get: operation('Health', 'Check API liveness', { security: false }) },
@@ -43,8 +43,16 @@ export const openApiDocument = {
     '/api/v1/auth/me': { get: operation('Authentication', 'Return the authenticated identity') },
     '/api/v1/suspensions/me': { get: operation('Suspensions', 'Get suspension details and own support request history') },
     '/api/v1/suspensions/me/requests': { post: operation('Suspensions', 'Submit a suspension appeal or support request', { body: true, created: true }) },
-    '/api/v1/suspensions/admin/requests': { get: operation('Suspensions', 'Administrator: list suspension appeals and support requests') },
-    '/api/v1/suspensions/admin/requests/{id}': { put: operation('Suspensions', 'Administrator: review a suspension request', { body: true, parameters: [idParameter] }) },
+    '/api/v1/suspensions/management/requests': { get: operation('Suspensions', 'Supervisor or administrator: list suspension appeals and support requests') },
+    '/api/v1/suspensions/management/requests/{id}': { put: operation('Suspensions', 'Supervisor or administrator: reply to and decide a suspension request', { body: true, parameters: [idParameter] }) },
+    '/api/v1/account-governance/requests': {
+      get: operation('Account governance', 'List own technician requests or the manager review queue'),
+      post: operation('Account governance', 'Technician: request suspension of the requester on an assigned ticket', { body: true, created: true }),
+    },
+    '/api/v1/account-governance/requests/{id}/review': { put: operation('Account governance', 'Supervisor or administrator: approve or reject a technician request', { body: true, parameters: [idParameter] }) },
+    '/api/v1/account-governance/requesters': { get: operation('Account governance', 'Supervisor or administrator: search consumer and employee accounts') },
+    '/api/v1/account-governance/users/{id}/suspend': { post: operation('Account governance', 'Supervisor or administrator: directly suspend a requester with details', { body: true, created: true, parameters: [idParameter] }) },
+    '/api/v1/account-governance/users/{id}/reactivate': { post: operation('Account governance', 'Supervisor or administrator: reactivate a requester with a reason', { body: true, parameters: [idParameter] }) },
     '/api/v1/users/me/profile': { get: operation('Users', 'Get own role-specific profile'), put: operation('Users', 'Update own profile', { body: true }) },
     '/api/v1/users/me/password': { post: operation('Users', 'Change own password and revoke sessions', { body: true }) },
     '/api/v1/users/admin': { get: operation('Users', 'Search and paginate user accounts'), post: operation('Users', 'Create a staff account', { body: true, created: true }) },

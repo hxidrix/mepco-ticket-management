@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/error-handler.js';
 import { httpLogger } from './middleware/http-logger.js';
 import { notFoundHandler } from './middleware/not-found.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { accountGovernanceRouter } from './modules/account-governance/account-governance.routes.js';
 import { administrationRouter } from './modules/administration/administration.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { masterDataRouter } from './modules/master-data/master-data.routes.js';
@@ -42,6 +43,7 @@ app.get('/api-docs.json', (_request, response) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 app.use('/api/v1/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/account-governance', accountGovernanceRouter);
 app.use('/api/v1/suspensions', suspensionsRouter);
 app.use('/api/v1/administration', administrationRouter);
 app.use('/api/v1/users', usersRouter);

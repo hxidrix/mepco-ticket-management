@@ -37,6 +37,7 @@ export function NotificationsPage() {
             <button type="button" onClick={() => void markOne(item)} aria-label={`Mark ${item.title} as read`} />
             <div><strong>{item.title}</strong><p>{item.message}</p><time>{formatDate(item.createdAt)}</time></div>
             {item.targetType === 'ticket' && item.targetId !== null && <Link to={`/app/tickets/${item.targetId}`} onClick={() => void markOne(item)}>Open ticket</Link>}
+            {(item.targetType === 'suspension_case' || item.targetType === 'support_request') && item.targetId !== null && <Link to="/app/account-governance" onClick={() => void markOne(item)}>Open account governance</Link>}
           </article>)}
         </div>}
       </section>

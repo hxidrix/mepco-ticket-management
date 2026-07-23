@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import type { SuspensionCase } from './account-governance-api';
 
 export type SuspensionRequestType = 'appeal' | 'support';
 export type SuspensionRequestStatus = 'submitted' | 'under-review' | 'approved' | 'rejected' | 'resolved';
@@ -31,6 +32,7 @@ export interface SuspensionPortal {
     statusReason: string | null;
     statusUpdatedAt: string;
   };
+  suspensionCase: SuspensionCase | null;
   requests: SuspensionRequest[];
 }
 
@@ -54,16 +56,16 @@ export async function submitSuspensionRequest(input: {
   await apiClient.post('/suspensions/me/requests', input);
 }
 
-export async function suspensionRequestsAdminRequest(status = ''): Promise<SuspensionRequest[]> {
-  const response = await apiClient.get('/suspensions/admin/requests', {
+export async function suspensionRequestsManagementRequest(status = ''): Promise<SuspensionRequest[]> {
+  const response = await apiClient.get('/suspensions/management/requests', {
     params: status === '' ? undefined : { status },
   });
   return unwrap<SuspensionRequest[]>(response.data);
 }
 
-export async function reviewSuspensionRequestAdmin(
+export async function reviewSuspensionRequestManagement(
   id: number,
   input: { status: Exclude<SuspensionRequestStatus, 'submitted'>; response: string },
 ): Promise<void> {
-  await apiClient.put(`/suspensions/admin/requests/${id}`, input);
+  await apiClient.put(`/suspensions/management/requests/${id}`, input);
 }

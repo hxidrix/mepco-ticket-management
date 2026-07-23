@@ -3,6 +3,7 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
 import type { RequestContext } from '../auth/auth.types.js';
+import { currentSuspensionCase } from '../account-governance/account-governance.repository.js';
 
 export type SuspensionRequestType = 'appeal' | 'support';
 export type SuspensionRequestStatus = 'submitted' | 'under-review' | 'approved' | 'rejected' | 'resolved';
@@ -85,7 +86,7 @@ export async function suspensionPortal(userId: number) {
   const [requests] = await databasePool.execute<SupportRequestRow[]>(
     `${requestSelect} WHERE request.user_id=? ORDER BY request.created_at DESC`, [userId],
   );
-  return { account, requests };
+  return { account, suspensionCase: await currentSuspensionCase(userId), requests };
 }
 
 export async function createSuspensionRequest(
@@ -98,10 +99,11 @@ export async function createSuspensionRequest(
     await connection.beginTransaction();
     const [accounts] = await connection.execute<Array<RowDataPacket & {
       status: string;
+      displayName: string;
       email: string | null;
       phone: string | null;
     }>>(
-      'SELECT status,email,phone FROM users WHERE id=? AND deleted_at IS NULL FOR UPDATE', [userId],
+      'SELECT status,display_name AS displayName,email,phone FROM users WHERE id=? AND deleted_at IS NULL FOR UPDATE', [userId],
     );
     const account = accounts[0];
     if (account?.status !== 'suspended') {
@@ -125,6 +127,17 @@ export async function createSuspensionRequest(
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO account_support_requests (user_id,request_type,message,contact_preference)
        VALUES (?,?,?,?)`, [userId, input.requestType, input.message, input.contactPreference],
+    );
+    await connection.execute(
+      `INSERT INTO notifications (recipient_id,type,title,message,target_type,target_id)
+       SELECT u.id,'suspension_support_submitted',?,?,'support_request',?
+       FROM users u JOIN roles role ON role.id=u.role_id
+       WHERE role.name IN ('supervisor','administrator') AND u.status='active' AND u.deleted_at IS NULL`,
+      [
+        input.requestType === 'appeal' ? 'Suspension appeal submitted' : 'Account support request submitted',
+        `${account.displayName} submitted a suspension ${input.requestType}.`,
+        result.insertId,
+      ],
     );
     await writeAudit(connection, {
       actorId: userId,
@@ -183,7 +196,7 @@ export async function reviewSuspensionRequest(
     }
     await writeAudit(connection, {
       actorId: reviewerId,
-      action: 'admin.suspension_request.reviewed',
+      action: 'account.suspension_request.reviewed',
       entityId: String(requestId),
       context,
       metadata: { status: input.status, userId: target.userId, requestType: target.requestType },

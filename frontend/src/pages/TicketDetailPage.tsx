@@ -3,6 +3,8 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
+import { requestAccountSuspension } from '../lib/account-governance-api';
+import type { SuspensionCategory } from '../lib/account-governance-api';
 import { getApiErrorMessage } from '../lib/auth-api';
 import { catalogRequest } from '../lib/master-data-api';
 import {
@@ -49,6 +51,7 @@ export function TicketDetailPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [suspensionFormOpen, setSuspensionFormOpen] = useState(false);
   const manager = user?.role === 'supervisor' || user?.role === 'administrator';
   const requester = user?.role === 'consumer' || user?.role === 'employee';
 
@@ -147,6 +150,27 @@ export function TicketDetailPage() {
     form.reset();
   };
 
+  const submitSuspensionRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    setBusy(true); setError(null); setMessage(null);
+    try {
+      await requestAccountSuspension(ticketId, {
+        category: formValue(data, 'category') as SuspensionCategory,
+        reasonSummary: formValue(data, 'reasonSummary'),
+        details: formValue(data, 'details'),
+      });
+      form.reset();
+      setSuspensionFormOpen(false);
+      setMessage('The suspension request was sent to supervisors and administrators for review.');
+    } catch (caught) {
+      setError(getApiErrorMessage(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (detail === null) return <div className="workspace-loading">{error ?? 'Loading ticket...'}</div>;
   const { ticket } = detail;
   const requesterReadOnly = requester && ['closed', 'cancelled'].includes(ticket.statusSlug);
@@ -173,6 +197,7 @@ export function TicketDetailPage() {
             </form>}
       </section>}
       {detail.review !== null && <section className="panel ticket-review-summary"><div className="panel__heading"><div><span>Requester feedback</span><h2>Closure review</h2></div></div><dl><div><dt>Issue resolved</dt><dd>{detail.review.issueResolved ? 'Yes' : 'No'}</dd></div><div><dt>Satisfaction</dt><dd>{detail.review.satisfactionRating} / 5</dd></div><div><dt>Submitted by</dt><dd>{detail.review.requesterName}</dd></div></dl>{detail.review.reviewText !== null && <p>{detail.review.reviewText}</p>}</section>}
+      {user?.role === 'technician' && <section className="panel ticket-suspension-request"><div className="panel__heading"><div><span>Account safety</span><h2>Request account suspension</h2></div><small>Manager review required</small></div><div className="ticket-suspension-request__summary"><p>If {ticket.requesterName}'s conduct or account activity requires formal review, submit complete details linked to this ticket. This does not suspend the account immediately.</p><button className="button button--secondary" type="button" onClick={() => setSuspensionFormOpen((open) => !open)}>{suspensionFormOpen ? 'Cancel request' : 'Prepare request'}</button></div>{suspensionFormOpen && <form onSubmit={(event) => void submitSuspensionRequest(event)}><label><span>Reason category</span><select name="category" required><option value="abusive-behavior">Abusive behavior</option><option value="fraudulent-information">Fraudulent information</option><option value="repeated-policy-violation">Repeated policy violation</option><option value="security-risk">Security risk</option><option value="misuse-of-service">Misuse of service</option><option value="other">Other documented reason</option></select></label><label><span>Reason summary</span><input name="reasonSummary" minLength={10} maxLength={255} required placeholder="Clear summary for the review queue" /></label><label className="ticket-suspension-request__wide"><span>Full details and evidence</span><textarea name="details" minLength={20} maxLength={4000} required placeholder="Describe the conduct, dates, conversation or attachments that support this request." /></label><button className="button button--danger ticket-suspension-request__wide" type="submit" disabled={busy}>Send for review</button></form>}</section>}
       {user?.role === 'administrator' && <section className="panel ticket-danger-zone"><div className="panel__heading"><div><span>Administrator action</span><h2>Delete ticket</h2></div></div><p>Soft-delete this ticket from operational lists. The audit record is retained.</p><form onSubmit={(event) => void submitDeletion(event)}><label><span>Deletion reason</span><input name="reason" minLength={3} maxLength={500} required placeholder="Explain why this ticket should be deleted" /></label><button className="button button--danger" type="submit" disabled={busy}>Delete ticket</button></form></section>}
       <div className="ticket-detail__grid">
         <div className="ticket-detail__main">

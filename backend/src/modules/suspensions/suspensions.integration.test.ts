@@ -21,7 +21,7 @@ async function login(mode: 'consumer' | 'staff', identifier: string) {
 }
 
 describe('suspended account support portal', () => {
-  it('permits only the restricted portal, stores an appeal, and supports administrator review', async () => {
+  it('permits only the restricted portal, stores an appeal, and supports supervisor review', async () => {
     const suspendedLogin = await login('consumer', '10000000000099');
     const suspendedToken = accessToken(suspendedLogin);
     const suspendedCookie = refreshCookie(suspendedLogin);
@@ -53,15 +53,15 @@ describe('suspended account support portal', () => {
       .send({ requestType: 'appeal', contactPreference: 'portal', message: 'This duplicate fictional appeal must be prevented while the first remains open.' })
       .expect(409);
 
-    const adminLogin = await login('staff', 'admin.demo');
-    const adminToken = accessToken(adminLogin);
-    const queue = await request(app).get('/api/v1/suspensions/admin/requests?status=submitted')
-      .set('Authorization', `Bearer ${adminToken}`).expect(200);
+    const supervisorLogin = await login('staff', 'supervisor.demo');
+    const supervisorToken = accessToken(supervisorLogin);
+    const queue = await request(app).get('/api/v1/suspensions/management/requests?status=submitted')
+      .set('Authorization', `Bearer ${supervisorToken}`).expect(200);
     expect((queue.body as { data: Array<{ id: number; status: string }> }).data)
       .toEqual(expect.arrayContaining([expect.objectContaining({ id: requestId, status: 'submitted' })]));
 
-    await request(app).put(`/api/v1/suspensions/admin/requests/${requestId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+    await request(app).put(`/api/v1/suspensions/management/requests/${requestId}`)
+      .set('Authorization', `Bearer ${supervisorToken}`)
       .send({ status: 'approved', response: 'Identity verified. The fictional account has been restored.' })
       .expect(200);
 

@@ -22,6 +22,7 @@ const navigation: NavigationItem[] = [
   { label: 'Notifications', to: '/app/notifications', section: 'Workspace' },
   { label: 'Reports & SLA', to: '/app/reports', roles: ['supervisor', 'administrator'], section: 'Workspace' },
   { label: 'Announcements', to: '/app/announcements', roles: ['supervisor', 'administrator'], section: 'Workspace' },
+  { label: 'Account governance', to: '/app/account-governance', roles: ['technician', 'supervisor', 'administrator'], section: 'Workspace' },
   { label: 'My profile', to: '/app/profile', section: 'Workspace' },
   { label: 'User accounts', to: '/app/admin/users', roles: ['administrator'], section: 'Administration' },
   { label: 'Master data', to: '/app/admin/master-data', roles: ['administrator'], section: 'Administration' },
