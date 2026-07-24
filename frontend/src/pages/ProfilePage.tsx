@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import { PasswordInput } from '../components/PasswordInput';
+import { OperationalLocationFields } from '../components/OperationalLocationFields';
 import { useAuth } from '../hooks/useAuth';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
 import {
@@ -37,9 +38,20 @@ export function ProfilePage() {
         if (!active) return;
         setProfile(nextProfile);
         setOptions(nextOptions);
-        setCircleId(String(nextProfile.circleId ?? nextOptions.circles[0]?.id ?? ''));
-        setDivisionId(String(nextProfile.divisionId ?? nextOptions.circles[0]?.divisions[0]?.id ?? ''));
-        setSubdivisionId(String(nextProfile.subdivisionId ?? nextOptions.circles[0]?.divisions[0]?.subdivisions[0]?.id ?? ''));
+        const consumerFallback = nextProfile.role === 'consumer';
+        setCircleId(String(
+          nextProfile.circleId ?? (consumerFallback ? nextOptions.circles[0]?.id : '') ?? '',
+        ));
+        setDivisionId(String(
+          nextProfile.divisionId
+          ?? (consumerFallback ? nextOptions.circles[0]?.divisions[0]?.id : '')
+          ?? '',
+        ));
+        setSubdivisionId(String(
+          nextProfile.subdivisionId
+          ?? (consumerFallback ? nextOptions.circles[0]?.divisions[0]?.subdivisions[0]?.id : '')
+          ?? '',
+        ));
       })
       .catch((caught: unknown) => { if (active) setError(getApiErrorMessage(caught)); });
     return () => { active = false; };
@@ -68,7 +80,10 @@ export function ProfilePage() {
             divisionId: Number(value(data, 'divisionId')),
             subdivisionId: Number(value(data, 'subdivisionId')) }
         : { ...common, departmentId: Number(value(data, 'departmentId')) || undefined,
-            designation: value(data, 'designation'), workLocation: value(data, 'workLocation') };
+            designation: value(data, 'designation'),
+            circleId: Number(value(data, 'circleId')),
+            divisionId: Number(value(data, 'divisionId')),
+            subdivisionId: Number(value(data, 'subdivisionId')) };
       const updated = await updateProfileRequest(input);
       setProfile(updated); updateDisplayName(updated.displayName); setMessage('Profile saved successfully.');
     } catch (caught) { setError(getApiErrorMessage(caught)); }
@@ -155,7 +170,17 @@ export function ProfilePage() {
               {profile.username !== null && <label><span>Username</span><input value={profile.username} disabled /></label>}
               <label className="form-grid__wide"><span>Department</span><select name="departmentId" defaultValue={profile.departmentId ?? ''}><option value="">No department</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
               <label><span>Designation</span><input name="designation" defaultValue={profile.designation} required /></label>
-              <label><span>Work location</span><input name="workLocation" defaultValue={profile.workLocation} required /></label>
+              <OperationalLocationFields
+                options={options}
+                circleId={circleId}
+                divisionId={divisionId}
+                subdivisionId={subdivisionId}
+                onChange={(nextCircleId, nextDivisionId, nextSubdivisionId) => {
+                  setCircleId(nextCircleId);
+                  setDivisionId(nextDivisionId);
+                  setSubdivisionId(nextSubdivisionId);
+                }}
+              />
             </>
           )}
           <button className="button button--primary form-grid__wide" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save profile'}</button>

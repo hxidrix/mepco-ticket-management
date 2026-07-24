@@ -10,6 +10,7 @@ All records and credentials in this repository are fictional. The application ha
 - Database-enforced identity formats: consumer reference numbers are exactly 14 digits, employee codes are normalized to exactly 8 digits with leading zeroes, phone numbers contain exactly 11 digits beginning with `03`, and every role supports a unique 13-digit CNIC in its profile. See [the identifier format catalogue](docs/IDENTIFIER_FORMATS.md).
 - Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
 - Role-specific profiles and accountable suspension governance: technicians can submit ticket-linked requester suspension cases, supervisors/administrators record structured decisions, managers can directly suspend with full details, sessions are revoked, and the restricted portal shows the account holder the recorded reason and evidence. Supervisors and administrators manage and reply to account-holder appeals/support requests from the Account governance page.
+- Structured Circle → Division → Sub-division work locations for employee, technician, supervisor, and administrator profiles, employee registration, and staff-account creation; selections are validated as an active matching hierarchy by the backend.
 - Complete reference catalog: 14 departments, 11 circles, 55 divisions, 169 sub-divisions, 18 categories, 154 complaint types, priorities, statuses, and protected fallback values. See [the operational location hierarchy](docs/LOCATION_HIERARCHY.md).
 - Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
@@ -160,7 +161,7 @@ npm.cmd run verify
 The final verified automated baseline is:
 
 - 28 backend unit/foundation tests.
-- 3 frontend component tests.
+- 4 frontend component tests.
 - 40 isolated MySQL integration tests across 11 suites.
 - Zero reported npm vulnerabilities in the installed dependency trees.
 - Passing backend/frontend production builds.

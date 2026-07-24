@@ -54,7 +54,6 @@ usersRouter.put(
   body('serviceAddress').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('designation').optional().trim().isLength({ min: 2, max: 140 }),
-  body('workLocation').optional().trim().isLength({ min: 2, max: 255 }),
   validateRequest,
   asyncHandler(async (request, response) => {
     const profile = await updateProfile(
@@ -108,7 +107,9 @@ usersRouter.post(
   body('cnic').trim().custom(isCnic).withMessage('CNIC must contain exactly 13 digits'),
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('designation').trim().isLength({ min: 2, max: 140 }),
-  body('workLocation').trim().isLength({ min: 2, max: 255 }), validateRequest,
+  body('circleId').isInt({ min: 1 }).toInt(),
+  body('divisionId').isInt({ min: 1 }).toInt(),
+  body('subdivisionId').isInt({ min: 1 }).toInt(), validateRequest,
   asyncHandler(async (request, response) => {
     const profile = await createStaff(request.body as StaffCreateInput, request.auth!.id, requestContext(request));
     sendSuccess(response, 201, { profile }, 'Staff account created successfully');
@@ -133,7 +134,9 @@ usersRouter.put(
   body('role').optional().isIn(['technician', 'supervisor', 'administrator']),
   body('departmentId').optional({ values: 'falsy' }).isInt({ min: 1 }).toInt(),
   body('designation').optional().trim().isLength({ min: 2, max: 140 }),
-  body('workLocation').optional().trim().isLength({ min: 2, max: 255 }), validateRequest,
+  body('circleId').optional().isInt({ min: 1 }).toInt(),
+  body('divisionId').optional().isInt({ min: 1 }).toInt(),
+  body('subdivisionId').optional().isInt({ min: 1 }).toInt(), validateRequest,
   asyncHandler(async (request, response) => {
     const profile = await updateUserAsAdmin(
       Number(request.params.id), request.auth!.id, request.body as AdminUserUpdateInput, requestContext(request),

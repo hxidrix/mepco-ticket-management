@@ -1,12 +1,14 @@
 # Operational Location Hierarchy
 
-The active consumer location model is:
+The active operational location model is:
 
 **Circle → Division → Sub-division**
 
-Registration, consumer profiles, consumer ticket submission and filters, ticket details, automatic staff routing, staff access boundaries, reports, master-data administration, and Swagger use this hierarchy.
+Consumer and employee registration, every role-specific profile, consumer ticket submission and filters, ticket details, automatic staff routing, staff access boundaries, reports, master-data administration, and Swagger use this hierarchy. Consumer profiles represent the service/request location. Employee, technician, supervisor, and administrator profiles use the same hierarchy for their work location.
 
 Existing records created under the earlier Circle/City model are preserved. Where an exact new location cannot be safely inferred, the migration assigns the record to **Other Division → Other Sub-division** inside its existing circle. Administrators can then correct it without losing history. The old city fields remain only as migration history and are not exposed by active APIs or forms.
+
+Older employee and staff free-text work locations are preserved as readable history. They are not guessed into a possibly incorrect circle. If an older account has no structured work location yet, its profile shows an empty required hierarchy and the user chooses the correct Circle → Division → Sub-division when saving.
 
 ## 1. Multan Circle
 

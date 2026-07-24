@@ -5,6 +5,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { BrandLogo } from '../components/BrandLogo';
 import { GlassSurface } from '../components/GlassSurface';
+import { OperationalLocationFields } from '../components/OperationalLocationFields';
 import { PasswordInput } from '../components/PasswordInput';
 import { SilkBackground } from '../components/SilkBackground';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -138,7 +139,9 @@ export function AuthPage() {
           password: fieldValue(data, 'password'),
           departmentId: Number(fieldValue(data, 'departmentId')),
           designation: fieldValue(data, 'designation'),
-          workLocation: fieldValue(data, 'workLocation'),
+          circleId: Number(fieldValue(data, 'circleId')),
+          divisionId: Number(fieldValue(data, 'divisionId')),
+          subdivisionId: Number(fieldValue(data, 'subdivisionId')),
         });
         setLoginMode('employee');
       }
@@ -433,7 +436,17 @@ export function AuthPage() {
                       </select>
                     </label>
                     <label><span>Designation</span><input name="designation" required /></label>
-                    <label><span>Work location</span><input name="workLocation" required /></label>
+                    <OperationalLocationFields
+                      options={options}
+                      circleId={circleId}
+                      divisionId={divisionId}
+                      subdivisionId={subdivisionId}
+                      onChange={(nextCircleId, nextDivisionId, nextSubdivisionId) => {
+                        setCircleId(nextCircleId);
+                        setDivisionId(nextDivisionId);
+                        setSubdivisionId(nextSubdivisionId);
+                      }}
+                    />
                   </>
                 )}
                 <PasswordInput

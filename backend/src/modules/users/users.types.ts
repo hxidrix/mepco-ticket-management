@@ -43,7 +43,6 @@ export interface ProfileUpdateInput {
   serviceAddress?: string;
   departmentId?: number;
   designation?: string;
-  workLocation?: string;
 }
 
 export interface StaffCreateInput {
@@ -56,7 +55,9 @@ export interface StaffCreateInput {
   password: string;
   departmentId?: number;
   designation: string;
-  workLocation: string;
+  circleId: number;
+  divisionId: number;
+  subdivisionId: number;
 }
 
 export interface AdminUserUpdateInput {
@@ -69,5 +70,7 @@ export interface AdminUserUpdateInput {
   role?: StaffRole;
   departmentId?: number;
   designation?: string;
-  workLocation?: string;
+  circleId?: number;
+  divisionId?: number;
+  subdivisionId?: number;
 }

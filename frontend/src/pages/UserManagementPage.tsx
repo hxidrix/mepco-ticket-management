@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
 import { PasswordInput } from '../components/PasswordInput';
+import { OperationalLocationFields } from '../components/OperationalLocationFields';
 import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
 import {
   createStaffRequest,
@@ -36,6 +37,9 @@ export function UserManagementPage() {
   const [status, setStatus] = useState('');
   const [filters, setFilters] = useState({ search: '', role: '', status: '' });
   const [showCreate, setShowCreate] = useState(false);
+  const [circleId, setCircleId] = useState('');
+  const [divisionId, setDivisionId] = useState('');
+  const [subdivisionId, setSubdivisionId] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -57,7 +61,14 @@ export function UserManagementPage() {
 
   useEffect(() => { void loadUsers(); }, [loadUsers]);
   useEffect(() => {
-    void registrationOptionsRequest().then(setOptions).catch((caught: unknown) => {
+    void registrationOptionsRequest().then((result) => {
+      setOptions(result);
+      const firstCircle = result.circles[0];
+      const firstDivision = firstCircle?.divisions[0];
+      setCircleId(String(firstCircle?.id ?? ''));
+      setDivisionId(String(firstDivision?.id ?? ''));
+      setSubdivisionId(String(firstDivision?.subdivisions[0]?.id ?? ''));
+    }).catch((caught: unknown) => {
       setError(getApiErrorMessage(caught));
     });
   }, []);
@@ -77,7 +88,9 @@ export function UserManagementPage() {
         password: formValue(data, 'password'),
         departmentId: Number(formValue(data, 'departmentId')) || undefined,
         designation: formValue(data, 'designation'),
-        workLocation: formValue(data, 'workLocation'),
+        circleId: Number(formValue(data, 'circleId')),
+        divisionId: Number(formValue(data, 'divisionId')),
+        subdivisionId: Number(formValue(data, 'subdivisionId')),
       });
       event.currentTarget.reset();
       setShowCreate(false);
@@ -104,7 +117,9 @@ export function UserManagementPage() {
           role: profile.role,
           departmentId: profile.departmentId ?? undefined,
           designation: profile.designation,
-          workLocation: profile.workLocation,
+          circleId: profile.circleId,
+          divisionId: profile.divisionId,
+          subdivisionId: profile.subdivisionId,
         } : {}),
       });
       setMessage(`${profile.displayName} is now active.`);
@@ -135,7 +150,9 @@ export function UserManagementPage() {
         role: profile.role,
         departmentId: profile.departmentId ?? undefined,
         designation: profile.designation,
-        workLocation: profile.workLocation,
+        circleId: profile.circleId,
+        divisionId: profile.divisionId,
+        subdivisionId: profile.subdivisionId,
       });
       setMessage(`${profile.displayName} is now suspended.`);
       await loadUsers(meta.page);
@@ -218,7 +235,17 @@ export function UserManagementPage() {
           <PasswordInput name="password" label="Temporary password" autoComplete="new-password" defaultValue="Demo@12345" minLength={10} />
           <label className="form-grid__wide"><span>Department</span><select name="departmentId"><option value="">No department</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
           <label><span>Designation</span><input name="designation" required /></label>
-          <label><span>Work location</span><input name="workLocation" required /></label>
+          <OperationalLocationFields
+            options={options}
+            circleId={circleId}
+            divisionId={divisionId}
+            subdivisionId={subdivisionId}
+            onChange={(nextCircleId, nextDivisionId, nextSubdivisionId) => {
+              setCircleId(nextCircleId);
+              setDivisionId(nextDivisionId);
+              setSubdivisionId(nextSubdivisionId);
+            }}
+          />
           <button className="button button--primary form-grid__wide" type="submit" disabled={busyId === 0}>Create account</button>
         </form>
       )}

@@ -56,10 +56,18 @@ describe('user profile and account administration API', () => {
 
   it('supports the administrator account lifecycle with audit-safe soft deletion', async () => {
     const adminToken = await login('staff', 'admin.demo');
-    const departments = await request(app).get('/api/v1/auth/registration-options').expect(200);
-    const departmentId = (departments.body as { data: { departments: Array<{ id: number }> } })
-      .data.departments[0]?.id;
-    if (departmentId === undefined) throw new Error('Expected a seeded department');
+    const registrationOptions = await request(app).get('/api/v1/auth/registration-options').expect(200);
+    const optionData = (registrationOptions.body as { data: {
+      departments: Array<{ id: number }>;
+      circles: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
+    } }).data;
+    const departmentId = optionData.departments[0]?.id;
+    const circle = optionData.circles[0];
+    const division = circle?.divisions[0];
+    const subdivision = division?.subdivisions[0];
+    if (departmentId === undefined || circle === undefined || division === undefined || subdivision === undefined) {
+      throw new Error('Expected seeded department and location options');
+    }
 
     const created = await request(app)
       .post('/api/v1/users/admin')
@@ -68,10 +76,20 @@ describe('user profile and account administration API', () => {
         role: 'technician', username: 'tech.milestone4', displayName: 'Milestone Four Technician',
         email: 'm4-tech@example.test', phone: '03004444444', password: 'Demo@12345',
         cnic: '3520290000010',
-        departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
+        departmentId, designation: 'Acceptance Technician',
+        circleId: circle.id, divisionId: division.id, subdivisionId: subdivision.id,
       })
       .expect(201);
     const profile = (created.body as { data: { profile: { id: number } } }).data.profile;
+    expect(created.body).toMatchObject({
+      data: {
+        profile: {
+          circleId: circle.id,
+          divisionId: division.id,
+          subdivisionId: subdivision.id,
+        },
+      },
+    });
 
     const list = await request(app)
       .get('/api/v1/users/admin?search=tech.milestone4')
@@ -86,7 +104,8 @@ describe('user profile and account administration API', () => {
         displayName: 'Milestone Four Technician', email: 'm4-tech@example.test', phone: '03004444444',
         cnic: '3520290000010',
         status: 'suspended', statusReason: 'Fictional acceptance check', role: 'technician',
-        departmentId, designation: 'Acceptance Technician', workLocation: 'Fictional Test Office',
+        departmentId, designation: 'Acceptance Technician',
+        circleId: circle.id, divisionId: division.id, subdivisionId: subdivision.id,
       })
       .expect(200);
     const suspendedLogin = await request(app)
@@ -134,7 +153,8 @@ describe('user profile and account administration API', () => {
       .expect(200);
     const profile = (me.body as { data: { profile: {
       id: number; displayName: string; email: string; phone: string; cnic: string;
-      departmentId: number; designation: string; workLocation: string;
+      departmentId: number; designation: string;
+      circleId: number; divisionId: number; subdivisionId: number;
     } } }).data.profile;
 
     await request(app)

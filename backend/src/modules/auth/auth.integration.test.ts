@@ -150,9 +150,29 @@ describe('authentication API', () => {
         password: 'NewDemo@123',
         departmentId: department.id,
         designation: 'Demo Officer',
-        workLocation: 'Fictional Office',
+        circleId: circle.id,
+        divisionId: division.id,
+        subdivisionId: subdivision.id,
       })
       .expect(201);
+
+    const employeeLogin = await request(app).post('/api/v1/auth/login').send({
+      mode: 'employee',
+      identifier: suffix,
+      password: 'NewDemo@123',
+    }).expect(200);
+    const employeeProfile = await request(app).get('/api/v1/users/me/profile')
+      .set('Authorization', `Bearer ${accessToken(employeeLogin)}`).expect(200);
+    expect(employeeProfile.body).toMatchObject({
+      data: {
+        profile: {
+          role: 'employee',
+          circleId: circle.id,
+          divisionId: division.id,
+          subdivisionId: subdivision.id,
+        },
+      },
+    });
   });
 
   it('rejects malformed reference numbers and employee IDs', async () => {
@@ -197,7 +217,9 @@ describe('authentication API', () => {
         password: 'NewDemo@123',
         departmentId: department.id,
         designation: 'Demo Officer',
-        workLocation: 'Fictional Office',
+        circleId: circle.id,
+        divisionId: division.id,
+        subdivisionId: subdivision.id,
       })
       .expect(422);
   });

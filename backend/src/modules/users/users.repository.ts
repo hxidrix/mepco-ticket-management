@@ -3,6 +3,10 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
 import { normalizeOptionalPhoneNumber } from '../../shared/identity-format.js';
+import {
+  resolveActiveOperationalLocation,
+  type OperationalLocation,
+} from '../../shared/operational-location.js';
 import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext, UserRole } from '../auth/auth.types.js';
 import type {
@@ -39,6 +43,12 @@ interface ProfileRow extends RowDataPacket {
   departmentName: string | null;
   designation: string | null;
   workLocation: string | null;
+  workCircleId: number | null;
+  workCircleName: string | null;
+  workDivisionId: number | null;
+  workDivisionName: string | null;
+  workSubdivisionId: number | null;
+  workSubdivisionName: string | null;
 }
 
 interface IdRow extends RowDataPacket { id: number }
@@ -78,6 +88,12 @@ function mapProfile(row: ProfileRow): UserProfile {
       departmentName: row.departmentName,
       designation: row.designation ?? '',
       workLocation: row.workLocation ?? '',
+      circleId: row.workCircleId ?? undefined,
+      circleName: row.workCircleName ?? undefined,
+      divisionId: row.workDivisionId ?? undefined,
+      divisionName: row.workDivisionName ?? undefined,
+      subdivisionId: row.workSubdivisionId ?? undefined,
+      subdivisionName: row.workSubdivisionName ?? undefined,
     });
   }
   return profile;
@@ -94,7 +110,13 @@ const profileSelect = `
          ep.employee_id AS employeeId,
          COALESCE(ep.department_id, sp.department_id) AS departmentId,
          d.name AS departmentName, COALESCE(ep.designation, sp.designation) AS designation,
-         COALESCE(ep.work_location, sp.work_location) AS workLocation
+         COALESCE(ep.work_location, sp.work_location) AS workLocation,
+         COALESCE(ep.circle_id,sp.circle_id) AS workCircleId,
+         work_circle.name AS workCircleName,
+         COALESCE(ep.division_id,sp.division_id) AS workDivisionId,
+         work_division.name AS workDivisionName,
+         COALESCE(ep.subdivision_id,sp.subdivision_id) AS workSubdivisionId,
+         work_subdivision.name AS workSubdivisionName
   FROM users u
   JOIN roles r ON r.id = u.role_id
   LEFT JOIN consumer_profiles cp ON cp.user_id = u.id
@@ -103,7 +125,11 @@ const profileSelect = `
   LEFT JOIN subdivisions subdivision ON subdivision.id = cp.subdivision_id
   LEFT JOIN employee_profiles ep ON ep.user_id = u.id
   LEFT JOIN staff_profiles sp ON sp.user_id = u.id
-  LEFT JOIN departments d ON d.id = COALESCE(ep.department_id, sp.department_id)`;
+  LEFT JOIN departments d ON d.id = COALESCE(ep.department_id, sp.department_id)
+  LEFT JOIN circles work_circle ON work_circle.id=COALESCE(ep.circle_id,sp.circle_id)
+  LEFT JOIN divisions work_division ON work_division.id=COALESCE(ep.division_id,sp.division_id)
+  LEFT JOIN subdivisions work_subdivision
+    ON work_subdivision.id=COALESCE(ep.subdivision_id,sp.subdivision_id)`;
 
 async function activeDepartment(connection: PoolConnection, id: number | null): Promise<void> {
   if (id === null) return;
@@ -176,14 +202,37 @@ export async function updateUserProfile(
           input.serviceAddress ?? null, userId],
       );
     } else {
-      if (input.designation === undefined || input.workLocation === undefined) {
-        throw new AppError(422, 'PROFILE_FIELDS_REQUIRED', 'Designation and work location are required');
+      if (input.designation === undefined || input.circleId === undefined
+          || input.divisionId === undefined || input.subdivisionId === undefined
+          || (role === 'employee' && input.departmentId === undefined)) {
+        throw new AppError(
+          422,
+          'PROFILE_FIELDS_REQUIRED',
+          'Department, designation and structured work location are required',
+        );
       }
       await activeDepartment(connection, input.departmentId ?? null);
+      const workLocation = await resolveActiveOperationalLocation(
+        connection,
+        input.circleId,
+        input.divisionId,
+        input.subdivisionId,
+      );
       const table = role === 'employee' ? 'employee_profiles' : 'staff_profiles';
       await connection.execute(
-        `UPDATE ${table} SET department_id = ?, designation = ?, work_location = ? WHERE user_id = ?`,
-        [input.departmentId ?? null, input.designation, input.workLocation, userId],
+        `UPDATE ${table}
+         SET department_id=?,designation=?,work_location=?,
+           circle_id=?,division_id=?,subdivision_id=?
+         WHERE user_id=?`,
+        [
+          input.departmentId ?? null,
+          input.designation,
+          workLocation.label,
+          input.circleId,
+          input.divisionId,
+          input.subdivisionId,
+          userId,
+        ],
       );
     }
     await writeAudit(connection, {
@@ -289,6 +338,12 @@ export async function createStaffUser(
     const roleId = roles[0]?.id;
     if (roleId === undefined) throw new AppError(422, 'INVALID_ROLE', 'The selected role is unavailable');
     await activeDepartment(connection, input.departmentId ?? null);
+    const workLocation = await resolveActiveOperationalLocation(
+      connection,
+      input.circleId,
+      input.divisionId,
+      input.subdivisionId,
+    );
     const [existing] = await connection.execute<IdRow[]>(
       'SELECT id FROM users WHERE username = ? LIMIT 1', [input.username],
     );
@@ -302,9 +357,18 @@ export async function createStaffUser(
         normalizeOptionalPhoneNumber(input.phone), input.cnic, passwordHash],
     );
     await connection.execute(
-      `INSERT INTO staff_profiles (user_id, department_id, designation, work_location)
-       VALUES (?, ?, ?, ?)`,
-      [result.insertId, input.departmentId ?? null, input.designation, input.workLocation],
+      `INSERT INTO staff_profiles
+        (user_id,department_id,designation,work_location,circle_id,division_id,subdivision_id)
+       VALUES (?,?,?,?,?,?,?)`,
+      [
+        result.insertId,
+        input.departmentId ?? null,
+        input.designation,
+        workLocation.label,
+        input.circleId,
+        input.divisionId,
+        input.subdivisionId,
+      ],
     );
     await writeAudit(connection, {
       actorId, action: 'admin.user.created', entityType: 'user', entityId: String(result.insertId),
@@ -357,6 +421,32 @@ export async function updateUserAsAdmin(
       roleId = roles[0]?.id ?? null;
     }
     await activeDepartment(connection, input.departmentId ?? null);
+    const hasAnyWorkLocation = input.circleId !== undefined
+      || input.divisionId !== undefined
+      || input.subdivisionId !== undefined;
+    let workLocation: {
+      details: OperationalLocation;
+      circleId: number;
+      divisionId: number;
+      subdivisionId: number;
+    } | null = null;
+    if (hasAnyWorkLocation) {
+      const { circleId, divisionId, subdivisionId } = input;
+      if (circleId === undefined || divisionId === undefined || subdivisionId === undefined) {
+        throw new AppError(422, 'PROFILE_FIELDS_REQUIRED', 'Choose a complete structured work location');
+      }
+      workLocation = {
+        details: await resolveActiveOperationalLocation(
+          connection,
+          circleId,
+          divisionId,
+          subdivisionId,
+        ),
+        circleId,
+        divisionId,
+        subdivisionId,
+      };
+    }
     if (input.cnic !== undefined) await ensureCnicAvailable(connection, input.cnic, targetId);
     await connection.execute(
       `UPDATE users SET display_name = ?, email = ?, phone = ?, cnic = COALESCE(?, cnic),
@@ -365,10 +455,30 @@ export async function updateUserAsAdmin(
         input.cnic ?? null, input.status, input.statusReason ?? null, roleId, targetId],
     );
     if (['technician', 'supervisor', 'administrator'].includes(currentRole)) {
-      await connection.execute(
-        `UPDATE staff_profiles SET department_id = ?, designation = ?, work_location = ? WHERE user_id = ?`,
-        [input.departmentId ?? null, input.designation ?? '', input.workLocation ?? '', targetId],
-      );
+      if (workLocation === null) {
+        await connection.execute(
+          `UPDATE staff_profiles
+           SET department_id=COALESCE(?,department_id),designation=COALESCE(?,designation)
+           WHERE user_id=?`,
+          [input.departmentId ?? null, input.designation ?? null, targetId],
+        );
+      } else {
+        await connection.execute(
+          `UPDATE staff_profiles
+           SET department_id=COALESCE(?,department_id),designation=COALESCE(?,designation),
+             work_location=?,circle_id=?,division_id=?,subdivision_id=?
+           WHERE user_id=?`,
+          [
+            input.departmentId ?? null,
+            input.designation ?? null,
+            workLocation.details.label,
+            workLocation.circleId,
+            workLocation.divisionId,
+            workLocation.subdivisionId,
+            targetId,
+          ],
+        );
+      }
     }
     if (input.status !== 'active') {
       await connection.execute(

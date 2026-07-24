@@ -46,7 +46,9 @@ export interface EmployeeRegistrationInput {
   password: string;
   departmentId: number;
   designation: string;
-  workLocation: string;
+  circleId: number;
+  divisionId: number;
+  subdivisionId: number;
 }
 
 export interface RefreshSessionRecord {

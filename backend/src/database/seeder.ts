@@ -209,6 +209,33 @@ async function upsertMasterData(connection: PoolConnection): Promise<void> {
   }
 }
 
+async function demoWorkLocation(connection: PoolConnection): Promise<{
+  circleId: number;
+  divisionId: number;
+  subdivisionId: number;
+  label: string;
+}> {
+  const circleId = await idBy(connection, 'circles', 'name', 'Multan Circle');
+  const [divisionRows] = await connection.execute<IdRow[]>(
+    'SELECT id FROM divisions WHERE circle_id=? AND name=? LIMIT 1',
+    [circleId, 'Multan Cantt Division'],
+  );
+  const divisionId = divisionRows[0]?.id;
+  if (divisionId === undefined) throw new Error('Seed work division was not found');
+  const [subdivisionRows] = await connection.execute<IdRow[]>(
+    'SELECT id FROM subdivisions WHERE division_id=? AND name=? LIMIT 1',
+    [divisionId, 'Cantt'],
+  );
+  const subdivisionId = subdivisionRows[0]?.id;
+  if (subdivisionId === undefined) throw new Error('Seed work sub-division was not found');
+  return {
+    circleId,
+    divisionId,
+    subdivisionId,
+    label: 'Multan Circle / Multan Cantt Division / Cantt',
+  };
+}
+
 async function upsertStaffUser(
   connection: PoolConnection,
   roleName: 'technician' | 'supervisor' | 'administrator',
@@ -230,14 +257,25 @@ async function upsertStaffUser(
   const userId = result.insertId;
   const departmentId =
     departmentName === null ? null : await idBy(connection, 'departments', 'name', departmentName);
+  const location = await demoWorkLocation(connection);
 
   await connection.execute(
-    `INSERT INTO staff_profiles (user_id, department_id, designation, work_location)
-     VALUES (?, ?, ?, 'MEPCO Multan - Fictional Demo Office')
+    `INSERT INTO staff_profiles
+       (user_id,department_id,designation,work_location,circle_id,division_id,subdivision_id)
+     VALUES (?,?,?,?,?,?,?)
      ON DUPLICATE KEY UPDATE
        department_id = VALUES(department_id), designation = VALUES(designation),
-       work_location = VALUES(work_location)`,
-    [userId, departmentId, designation],
+       work_location = VALUES(work_location),circle_id=VALUES(circle_id),
+       division_id=VALUES(division_id),subdivision_id=VALUES(subdivision_id)`,
+    [
+      userId,
+      departmentId,
+      designation,
+      location.label,
+      location.circleId,
+      location.divisionId,
+      location.subdivisionId,
+    ],
   );
   return userId;
 }
@@ -347,6 +385,7 @@ async function upsertEmployee(
     'name',
     'Information Technology (IT) Directorate',
   );
+  const location = await demoWorkLocation(connection);
   let userId = existing[0]?.id;
 
   if (userId === undefined) {
@@ -358,15 +397,37 @@ async function upsertEmployee(
     userId = result.insertId;
     await connection.execute(
       `INSERT INTO employee_profiles
-         (user_id, employee_id, department_id, designation, work_location)
-       VALUES (?, ?, ?, 'Junior Software Engineer', 'MEPCO Multan - Fictional Demo Office')`,
-      [userId, employeeId, departmentId],
+         (user_id,employee_id,department_id,designation,work_location,
+          circle_id,division_id,subdivision_id)
+       VALUES (?, ?, ?, 'Junior Software Engineer', ?, ?, ?, ?)`,
+      [
+        userId,
+        employeeId,
+        departmentId,
+        location.label,
+        location.circleId,
+        location.divisionId,
+        location.subdivisionId,
+      ],
     );
   } else {
     await connection.execute(
       `UPDATE users SET role_id = ?, display_name = ?, password_hash = ?, status = 'active',
          deleted_at = NULL WHERE id = ?`,
       [roleId, displayName, passwordHash, userId],
+    );
+    await connection.execute(
+      `UPDATE employee_profiles
+       SET department_id=?,work_location=?,circle_id=?,division_id=?,subdivision_id=?
+       WHERE user_id=?`,
+      [
+        departmentId,
+        location.label,
+        location.circleId,
+        location.divisionId,
+        location.subdivisionId,
+        userId,
+      ],
     );
   }
   return userId;

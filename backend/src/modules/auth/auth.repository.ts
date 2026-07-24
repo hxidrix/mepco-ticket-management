@@ -2,6 +2,7 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
+import { resolveActiveOperationalLocation } from '../../shared/operational-location.js';
 import type {
   AuthenticatedUser,
   ConsumerRegistrationInput,
@@ -494,6 +495,12 @@ export async function registerEmployee(
     if (departmentRows[0] === undefined) {
       throw new AppError(422, 'INVALID_DEPARTMENT', 'The selected department is unavailable');
     }
+    const workLocation = await resolveActiveOperationalLocation(
+      connection,
+      input.circleId,
+      input.divisionId,
+      input.subdivisionId,
+    );
     const [duplicateRows] = await connection.execute<IdRow[]>(
       'SELECT user_id AS id FROM employee_profiles WHERE employee_id = ?',
       [input.employeeId],
@@ -515,9 +522,19 @@ export async function registerEmployee(
     );
     await connection.execute(
       `INSERT INTO employee_profiles
-         (user_id, employee_id, department_id, designation, work_location)
-       VALUES (?, ?, ?, ?, ?)`,
-      [result.insertId, input.employeeId, input.departmentId, input.designation, input.workLocation],
+         (user_id, employee_id, department_id, designation, work_location,
+          circle_id, division_id, subdivision_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        result.insertId,
+        input.employeeId,
+        input.departmentId,
+        input.designation,
+        workLocation.label,
+        input.circleId,
+        input.divisionId,
+        input.subdivisionId,
+      ],
     );
     await writeAudit(
       connection,

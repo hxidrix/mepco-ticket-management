@@ -127,7 +127,9 @@ authRouter.post(
   passwordValidation,
   body('departmentId').isInt({ min: 1 }).toInt(),
   body('designation').trim().isLength({ min: 2, max: 140 }),
-  body('workLocation').trim().isLength({ min: 2, max: 255 }),
+  body('circleId').isInt({ min: 1 }).toInt(),
+  body('divisionId').isInt({ min: 1 }).toInt(),
+  body('subdivisionId').isInt({ min: 1 }).toInt(),
   validateRequest,
   asyncHandler(async (request, response) => {
     const user = await createEmployeeAccount(
