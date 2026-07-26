@@ -57,7 +57,7 @@ export function NotificationsPage() {
     <main className="workspace-page">
       <div className="workspace-page__heading"><div><p>Inbox</p><h1>Notifications</h1></div>
         <button className="button button--secondary" type="button" disabled={unreadCount === 0 || markingAll} onClick={() => void markAll()}>
-          {markingAll ? 'Marking as read…' : 'Mark all as read'}
+          {markingAll ? 'Updating' : 'Mark all as read'}
         </button></div>
       {error !== null && <p className="page-message is-error">{error}</p>}
       <section className="panel notification-panel">
@@ -74,9 +74,9 @@ export function NotificationsPage() {
                   disabled={markingId === item.id || markingAll}
                   onClick={() => void markOne(item)}
                 >
-                  {markingId === item.id ? 'Marking…' : 'Mark as read'}
+                  {markingId === item.id ? 'Saving' : 'Mark as read'}
                 </button>
-              ) : <span className="notification-read-state"><span aria-hidden="true">✓</span> Read</span>}
+              ) : <span className="notification-read-state"><span className="notification-read-state__icon" aria-hidden="true" /> Read</span>}
               {item.targetType === 'ticket' && item.targetId !== null && <Link className="button button--primary notification-target-button" to={`/app/tickets/${item.targetId}`} onClick={() => void markOne(item)}>View ticket <span aria-hidden="true">→</span></Link>}
               {(item.targetType === 'suspension_case' || item.targetType === 'support_request') && item.targetId !== null && <Link className="button button--primary notification-target-button" to="/app/account-governance" onClick={() => void markOne(item)}>View request <span aria-hidden="true">→</span></Link>}
               {item.targetType === 'internal_message_thread' && item.targetId !== null && <Link className="button button--primary notification-target-button" to={`/app/messages?thread=${item.targetId}`} onClick={() => void markOne(item)}>View message <span aria-hidden="true">→</span></Link>}
