@@ -85,7 +85,7 @@ export function ProfilePage() {
             divisionId: Number(value(data, 'divisionId')),
             subdivisionId: Number(value(data, 'subdivisionId')) };
       const updated = await updateProfileRequest(input);
-      setProfile(updated); updateDisplayName(updated.displayName); setMessage('Profile saved successfully.');
+      setProfile(updated); updateDisplayName(updated.displayName); setMessage('Changes saved successfully.');
     } catch (caught) { setError(getApiErrorMessage(caught)); }
     finally { setSaving(false); }
   };
@@ -109,7 +109,7 @@ export function ProfilePage() {
   return (
     <main className="workspace-page">
       <div className="workspace-page__heading"><div><p>Account settings</p><h1>My profile</h1></div><span className={`status-pill status-pill--${profile.status}`}>{profile.status}</span></div>
-      {(message !== null || error !== null) && <p className={error === null ? 'page-message is-success' : 'page-message is-error'}>{error ?? message}</p>}
+      {error !== null && <p className="page-message is-error">{error}</p>}
       <div className="settings-grid">
         <form className="panel form-grid" onSubmit={(event) => void submitProfile(event)}>
           <div className="panel__heading"><div><span>Personal details</span><h2>Profile information</h2></div><small>{profile.role}</small></div>
@@ -183,7 +183,16 @@ export function ProfilePage() {
               />
             </>
           )}
-          <button className="button button--primary form-grid__wide" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save profile'}</button>
+          <div className="profile-save-actions form-grid__wide">
+            <button className="button button--primary" type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save profile'}
+            </button>
+            {message !== null && (
+              <p className="profile-save-confirmation" role="status">
+                <span aria-hidden="true">✓</span>{message}
+              </p>
+            )}
+          </div>
         </form>
 
         <form className="panel form-grid form-grid--single" onSubmit={(event) => void submitPassword(event)}>

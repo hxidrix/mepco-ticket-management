@@ -161,7 +161,7 @@ npm.cmd run verify
 The final verified automated baseline is:
 
 - 28 backend unit/foundation tests.
-- 4 frontend component tests.
+- 5 frontend component tests.
 - 40 isolated MySQL integration tests across 11 suites.
 - Zero reported npm vulnerabilities in the installed dependency trees.
 - Passing backend/frontend production builds.
