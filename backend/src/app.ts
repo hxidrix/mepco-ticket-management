@@ -60,3 +60,7 @@ app.use('/api/v1/tickets', ticketsRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
+
+// Vercel imports the Express application directly. The named export remains
+// available to the local HTTP server and the test suite.
+export default app;

@@ -2,6 +2,10 @@ import 'dotenv/config';
 
 const nodeEnvironments = ['development', 'test', 'production'] as const;
 type NodeEnvironment = (typeof nodeEnvironments)[number];
+const databaseSslModes = ['disabled', 'required', 'verify_identity'] as const;
+type DatabaseSslMode = (typeof databaseSslModes)[number];
+const attachmentStorageDrivers = ['local', 'vercel-blob'] as const;
+type AttachmentStorageDriver = (typeof attachmentStorageDrivers)[number];
 
 function readString(name: string, fallback: string): string {
   const value = process.env[name]?.trim();
@@ -31,6 +35,73 @@ function readBoolean(name: string, fallback: boolean): boolean {
   throw new Error(`${name} must be either true or false`);
 }
 
+function readChoice<T extends string>(name: string, choices: readonly T[], fallback: T): T {
+  const value = readString(name, fallback);
+  if (!choices.includes(value as T)) {
+    throw new Error(`${name} must be one of: ${choices.join(', ')}`);
+  }
+  return value as T;
+}
+
+function readDatabaseSettings(): {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  name: string;
+  connectionLimit: number;
+  mysqlBinDirectory: string;
+  sslMode: DatabaseSslMode;
+  sslCaBase64: string;
+} {
+  const databaseUrl = readOptionalString('DATABASE_URL');
+  const sslMode = readChoice(
+    'DB_SSL_MODE',
+    databaseSslModes,
+    process.env.VERCEL === '1' ? 'verify_identity' : 'disabled',
+  );
+  const shared = {
+    connectionLimit: readInteger('DB_CONNECTION_LIMIT', 10, 1, 100),
+    mysqlBinDirectory: readOptionalString('MYSQL_BIN_DIR'),
+    sslMode,
+    sslCaBase64: readOptionalString('DB_SSL_CA_BASE64'),
+  };
+
+  if (databaseUrl === '') {
+    return {
+      host: readString('DB_HOST', 'localhost'),
+      port: readInteger('DB_PORT', 3306, 1, 65_535),
+      user: readString('DB_USER', 'root'),
+      password: readOptionalString('DB_PASSWORD'),
+      name: readString('DB_NAME', 'mepco_help_desk'),
+      ...shared,
+    };
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(databaseUrl);
+  } catch {
+    throw new Error('DATABASE_URL must be a valid mysql:// connection URL');
+  }
+  if (parsed.protocol !== 'mysql:' && parsed.protocol !== 'mysql2:') {
+    throw new Error('DATABASE_URL must use the mysql:// or mysql2:// protocol');
+  }
+  const name = decodeURIComponent(parsed.pathname.replace(/^\//u, ''));
+  if (parsed.hostname === '' || parsed.username === '' || name === '') {
+    throw new Error('DATABASE_URL must include a host, username, and database name');
+  }
+
+  return {
+    host: parsed.hostname,
+    port: parsed.port === '' ? 3306 : Number(parsed.port),
+    user: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+    name,
+    ...shared,
+  };
+}
+
 function readNodeEnvironment(): NodeEnvironment {
   const value = readString('NODE_ENV', 'development');
   if (!nodeEnvironments.includes(value as NodeEnvironment)) {
@@ -56,6 +127,7 @@ const nodeEnv = readNodeEnvironment();
 const jwtAccessSecret = readSecret('JWT_ACCESS_SECRET', 'local-development-access-secret-change-me-now');
 const jwtRefreshSecret = readSecret('JWT_REFRESH_SECRET', 'local-development-refresh-secret-change-me');
 if (jwtAccessSecret === jwtRefreshSecret) throw new Error('JWT access and refresh secrets must be different');
+const database = readDatabaseSettings();
 
 export const env = Object.freeze({
   nodeEnv,
@@ -63,15 +135,13 @@ export const env = Object.freeze({
   port: readInteger('PORT', 5000, 1, 65_535),
   corsOrigin: readString('CORS_ORIGIN', 'http://localhost:5173'),
   logLevel: readString('LOG_LEVEL', 'info'),
-  database: Object.freeze({
-    host: readString('DB_HOST', 'localhost'),
-    port: readInteger('DB_PORT', 3306, 1, 65_535),
-    user: readString('DB_USER', 'root'),
-    password: readOptionalString('DB_PASSWORD'),
-    name: readString('DB_NAME', 'mepco_help_desk'),
-    connectionLimit: readInteger('DB_CONNECTION_LIMIT', 10, 1, 100),
-    mysqlBinDirectory: readOptionalString('MYSQL_BIN_DIR'),
-  }),
+  database: Object.freeze(database),
+  attachmentStorage: readChoice<AttachmentStorageDriver>(
+    'ATTACHMENT_STORAGE',
+    attachmentStorageDrivers,
+    process.env.VERCEL === '1' ? 'vercel-blob' : 'local',
+  ),
+  blobReadWriteToken: readOptionalString('BLOB_READ_WRITE_TOKEN'),
   uploadDirectory: readString('UPLOAD_DIR', 'uploads'),
   maxUploadBytes: readInteger('MAX_UPLOAD_BYTES', 5_242_880, 1_024, 25_000_000),
   jwtAccessSecret,

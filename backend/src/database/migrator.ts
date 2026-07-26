@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 import type { RowDataPacket } from 'mysql2/promise';
 
-import { env } from '../config/env.js';
+import { databaseConnectionOptions } from './connection-options.js';
 
 interface AppliedMigrationRow extends RowDataPacket {
   filename: string;
@@ -23,13 +23,7 @@ function migrationDirectory(): string {
 
 export async function runMigrations(): Promise<MigrationResult> {
   const connection = await mysql.createConnection({
-    host: env.database.host,
-    port: env.database.port,
-    user: env.database.user,
-    password: env.database.password,
-    database: env.database.name,
-    charset: 'utf8mb4',
-    timezone: 'Z',
+    ...databaseConnectionOptions(),
     multipleStatements: true,
   });
 
@@ -85,13 +79,7 @@ export async function runMigrations(): Promise<MigrationResult> {
 
 export async function getMigrationStatus(): Promise<AppliedMigrationRow[]> {
   const connection = await mysql.createConnection({
-    host: env.database.host,
-    port: env.database.port,
-    user: env.database.user,
-    password: env.database.password,
-    database: env.database.name,
-    charset: 'utf8mb4',
-    timezone: 'Z',
+    ...databaseConnectionOptions(),
   });
 
   try {
@@ -105,4 +93,3 @@ export async function getMigrationStatus(): Promise<AppliedMigrationRow[]> {
     await connection.end();
   }
 }
-

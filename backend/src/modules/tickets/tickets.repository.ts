@@ -1,12 +1,12 @@
 import { createHash, randomInt, randomUUID } from 'node:crypto';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
-import { extname, resolve, sep } from 'node:path';
+import { extname } from 'node:path';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import PDFDocument from 'pdfkit';
 
 import { env } from '../../config/env.js';
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
+import { deleteAttachment, storeAttachment } from '../../shared/attachment-storage.js';
 import { writeAudit } from '../../shared/audit.js';
 import { effectiveSlaTargetHours } from '../../shared/sla.js';
 import type { RequestContext } from '../auth/auth.types.js';
@@ -871,11 +871,13 @@ export async function addTicketAttachment(
   }
   const now = new Date();
   const relativeDirectory = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  const directory = resolve(env.uploadDirectory, relativeDirectory);
   const storedName = `${randomUUID()}${extension}`;
-  const storagePath = resolve(directory, storedName);
-  await mkdir(directory, { recursive: true });
-  await writeFile(storagePath, file.buffer, { flag: 'wx' });
+  const storagePath = await storeAttachment({
+    buffer: file.buffer,
+    mimeType: file.mimetype,
+    storedName,
+    relativeDirectory,
+  });
   const connection = await databasePool.getConnection();
   try {
     await connection.beginTransaction();
@@ -901,7 +903,7 @@ export async function addTicketAttachment(
     return result.insertId;
   } catch (error) {
     await connection.rollback();
-    await unlink(storagePath).catch(() => undefined);
+    await deleteAttachment(storagePath).catch(() => undefined);
     throw error;
   } finally { connection.release(); }
 }
@@ -918,12 +920,7 @@ export async function getTicketAttachment(
   if (attachment === undefined || !(await canAccessTicket(actor, attachment.ticketId))) {
     throw new AppError(404, 'ATTACHMENT_NOT_FOUND', 'The attachment was not found');
   }
-  const uploadRoot = resolve(env.uploadDirectory);
-  const storagePath = resolve(attachment.storagePath);
-  if (!storagePath.startsWith(`${uploadRoot}${sep}`) && storagePath !== uploadRoot) {
-    throw new AppError(500, 'ATTACHMENT_PATH_INVALID', 'The attachment storage path is invalid');
-  }
-  return { originalName: attachment.originalName, mimeType: attachment.mimeType, storagePath };
+  return { originalName: attachment.originalName, mimeType: attachment.mimeType, storagePath: attachment.storagePath };
 }
 
 export async function ticketMetrics(actor: TicketActor) {

@@ -1,9 +1,12 @@
+import { pipeline } from 'node:stream/promises';
+
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import multer from 'multer';
 
 import { env } from '../../config/env.js';
 import { validateRequest } from '../../middleware/validate-request.js';
+import { openAttachment } from '../../shared/attachment-storage.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { AppError } from '../../shared/app-error.js';
@@ -162,8 +165,14 @@ ticketsRouter.get(
     const attachment = await getTicketAttachment(request.auth!, Number(request.params.attachmentId));
     response.type(attachment.mimeType);
     response.attachment(attachment.originalName);
+    response.setHeader('Cache-Control', 'private, no-store');
+    const opened = await openAttachment(attachment.storagePath);
+    if (opened.kind === 'stream') {
+      await pipeline(opened.stream, response);
+      return;
+    }
     await new Promise<void>((resolve, reject) => {
-      response.sendFile(attachment.storagePath, (error) => error === undefined ? resolve() : reject(error));
+      response.sendFile(opened.path, (error) => error === undefined ? resolve() : reject(error));
     });
   }),
 );

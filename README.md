@@ -21,13 +21,15 @@ See [identifier formats](docs/IDENTIFIER_FORMATS.md), [location hierarchy](docs/
 
 - Frontend: React 19, TypeScript, Vite, React Router, Axios, Framer Motion.
 - Backend: Node.js 22+, Express 5, TypeScript, MySQL, bcrypt, JWT, Multer, Pino, Helmet, Swagger UI, Vitest, Supertest.
-- Database: MySQL 8.4 with Docker Compose, or XAMPP MariaDB on Windows.
+- Database: MySQL 8.4 with Docker Compose, XAMPP MariaDB on Windows, or managed MySQL with TLS on Vercel.
+- Cloud deployment: Vercel Services with Vite, Express Functions, and private Vercel Blob attachments.
 
 ```text
 backend/        Express API, migrations, reference seeds, tests, OpenAPI
 frontend/       React application and static assets
 docs/           Requirements and operational references
 docker-compose.yml
+vercel.json      Vercel Services build, API routing, and SPA fallback
 README.md
 RUN_GUIDE.md
 ```
@@ -129,6 +131,14 @@ docker compose down
 
 `docker compose down --volumes` permanently deletes the Docker database and attachments and must not be used on a system containing required data.
 
+## Vercel deployment
+
+The repository includes a root `vercel.json` for the Vite frontend and Express backend. A complete deployment also requires a managed MySQL 8 database and a connected Private Vercel Blob store; XAMPP and local upload folders cannot be used by cloud functions.
+
+In Vercel, keep the project root at the repository root and set the Framework Preset to **Services**. Configure the variables listed in `vercel.env.example`, initialize the hosted database once, and then redeploy.
+
+Follow the complete sequence in [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md). Do not run database migrations or administrator bootstrap code on every function start.
+
 ## Database operations
 
 ```powershell
@@ -187,7 +197,7 @@ Application routes are versioned under `/api/v1`. Success envelopes use `{ succe
 
 ## Environment and security
 
-The full variable templates are `.env.example`, `backend/.env.example`, and `frontend/.env.example`.
+The variable templates are `.env.example`, `backend/.env.example`, `frontend/.env.example`, and `vercel.env.example`.
 
 - Use different high-entropy `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` values.
 - Use HTTPS and `REFRESH_COOKIE_SECURE=true` outside local HTTP development.

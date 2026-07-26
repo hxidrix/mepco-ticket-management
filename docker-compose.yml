@@ -38,7 +38,9 @@ services:
       DB_USER: ${MYSQL_USER:-mepco_app}
       DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
       DB_NAME: ${MYSQL_DATABASE:-mepco_help_desk}
+      DB_SSL_MODE: ${DB_SSL_MODE:-disabled}
       LOG_LEVEL: info
+      ATTACHMENT_STORAGE: ${ATTACHMENT_STORAGE:-local}
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-5242880}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env}

@@ -27,6 +27,7 @@
     "test:integration": "cross-env NODE_ENV=test DB_NAME=mepco_help_desk_test tsx src/test/prepare-test-db.ts && cross-env NODE_ENV=test DB_NAME=mepco_help_desk_test vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@vercel/blob": "^2.6.1",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
