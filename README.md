@@ -1,154 +1,161 @@
-# MEPCO Integrated Help Desk & Ticket Management System
+# MEPCO Integrated Help Desk
 
-A complete local demonstration of the MEPCO help-desk requirements. Consumer electricity complaints and internal employee support share one traceable ticket engine while preserving separate identities, catalogs, routing scopes, privacy rules, and dashboards.
+A role-based ticket management system for MEPCO consumer complaints and internal employee support. The application provides one traceable workflow while preserving separate identities, catalogs, routing rules, privacy boundaries, and dashboards.
 
-All records and credentials in this repository are fictional. The application has no connection to live MEPCO billing, HR, ERP, GIS, SCADA, email, or SMS systems.
+## Capabilities
 
-## Delivered capabilities
+- Consumer, employee, technician, supervisor, and administrator access with backend-enforced RBAC.
+- Secure login with bcrypt password hashes, account lockout, short-lived JWT access tokens, rotating HttpOnly refresh sessions, reuse detection, revocation, and logout.
+- Fixed identity formats: 14-digit consumer reference number, 8-digit employee ID, 11-digit phone beginning with `03`, and unique 13-digit CNIC.
+- Circle → Division → Sub-division profiles, ticket locations, staff scopes, reporting filters, and automatic routing.
+- Consumer priority classification and department/location-based staff assignment.
+- Full ticket workflow, requester closure review, satisfaction rating, comments, internal notes, evidence attachments, history, notifications, and administrator soft deletion.
+- Suspension requests, manager decisions, restricted account portal, appeals, support requests, and secure technician/manager messaging.
+- Role-scoped dashboards, announcements, audit logs, SLA monitoring, and CSV/PDF reports.
+- Responsive light/dark liquid-glass interface with self-hosted Geist typography.
+- OpenAPI 3.1 documentation for the complete versioned API.
 
-- Consumer, employee, technician, supervisor, and administrator roles with backend-enforced RBAC.
-- Database-enforced identity formats: consumer reference numbers are exactly 14 digits, employee codes are normalized to exactly 8 digits with leading zeroes, phone numbers contain exactly 11 digits beginning with `03`, and every role supports a unique 13-digit CNIC in its profile. See [the identifier format catalogue](docs/IDENTIFIER_FORMATS.md).
-- Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
-- Role-specific profiles with inline save confirmation, show/hide password controls, CNIC/phone validation, and structured work-location editing. Accountable suspension governance lets technicians submit ticket-linked requester suspension cases, lets managers record structured decisions or suspend directly with full details, revokes sessions, and lets restricted account holders review the reason/evidence and submit appeals or support requests.
-- Structured Circle → Division → Sub-division work locations for employee, technician, supervisor, and administrator profiles, employee registration, and staff-account creation; selections are validated as an active matching hierarchy by the backend.
-- Complete reference catalog: 14 departments, 11 circles, 55 divisions, 169 sub-divisions, 18 categories, 154 complaint types, priorities, statuses, and protected fallback values. See [the operational location hierarchy](docs/LOCATION_HIERARCHY.md).
-- Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
-- Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
-- Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications with explicit read state, mark-one/mark-all actions, and direct ticket/message/governance links.
-- Private technician-to-manager messaging: either side can start an immutable thread with a valid active recipient, both participants can reply from the Messages panel, and unread replies generate direct-link notifications. Thread access is participant-only and message bodies are never copied into audit metadata.
-- Live role-scoped dashboards with awaiting-response queues and actionable metric cards. The manager Reports & SLA workspace includes total/open/overdue/resolution KPIs, open-queue SLA health, status/priority/workload visualizations, recent-ticket SLA watch, live complaint-target search, priority-cap explanations, and Circle/Division/Sub-division/date/status/priority/domain-filtered CSV/PDF exports.
-- Complaint-specific SLA targets from 4 hours to 90 days, with priority urgency caps and configurable master-data values; see [the SLA catalogue](docs/SLA_TARGETS.md).
-- Administrator master data, announcements/audiences, Circle → Division → Sub-division staff routing scopes, users, suspension review queues, expandable immutable audit-log views, and detailed search/filter controls.
-- Responsive Silk-backed light/dark themes, a minimal liquid-glass component system, accessible action states, confirmation prompts, compact mobile navigation, and self-hosted Geist typography.
-- Structured Pino logs, request IDs, safe error envelopes, Helmet/CORS, parameterized SQL, transactions, foreign keys, and soft deactivation.
-- OpenAPI 3.1 / Swagger for the complete API surface.
+See [identifier formats](docs/IDENTIFIER_FORMATS.md), [location hierarchy](docs/LOCATION_HIERARCHY.md), [SLA targets](docs/SLA_TARGETS.md), and [internal messaging](docs/INTERNAL_MESSAGES.md).
 
-## Stack and layout
+## Technology
 
-- Frontend: React 19, TypeScript, Vite, React Router, Axios, Framer Motion, Tailwind tooling, self-hosted Geist typography, persistent light/dark themes, and a responsive liquid-glass design system.
-- Backend: Node.js 22+, Express 5, TypeScript, `mysql2/promise`, `express-validator`, bcrypt, JWT, Multer, Pino, Helmet, Swagger UI, Vitest, and Supertest.
-- Database: MySQL 8.4 through Docker Compose or XAMPP MariaDB 10.4 on Windows.
+- Frontend: React 19, TypeScript, Vite, React Router, Axios, Framer Motion.
+- Backend: Node.js 22+, Express 5, TypeScript, MySQL, bcrypt, JWT, Multer, Pino, Helmet, Swagger UI, Vitest, Supertest.
+- Database: MySQL 8.4 with Docker Compose, or XAMPP MariaDB on Windows.
 
 ```text
-backend/        Express modules, SQL migration/seeds, tests, OpenAPI, protected uploads
-frontend/       React application and copied MEPCO logo asset
-docs/           Supplied SRS, master prompt, and design reference
+backend/        Express API, migrations, reference seeds, tests, OpenAPI
+frontend/       React application and static assets
+docs/           Requirements and operational references
 docker-compose.yml
 README.md
+RUN_GUIDE.md
 ```
 
-## Fictional demo accounts
+## Important data behavior
 
-Every active account uses the development-only password `Demo@12345`.
+`db:seed` installs required reference data only: roles, departments, locations, categories, complaint types, priorities, statuses, and SLA values. It does not create users, tickets, announcements, messages, or credentials.
 
-| Login mode | Role | Identifier |
-| --- | --- | --- |
-| Consumer | Consumer | `10000000000001` |
-| Employee | Employee | `00000001` |
-| Staff | Technician | `tech.it` |
-| Staff | Technician | `tech.ops` |
-| Staff | Supervisor | `supervisor.demo` |
-| Staff | Administrator | `admin.demo` |
-| Consumer | Suspended portal demo | `10000000000099` |
+Integration-test identities and scenarios are created only inside the isolated database whose name ends in `_test`. They are never installed by normal setup, reset, Docker startup, or production seeding.
 
-The suspended consumer uses the same development-only password. It can sign in only to the restricted account portal, read the recorded suspension reason, submit an appeal or support request, and see account-support responses. All ticket and operational APIs recheck the current database status and remain blocked until a supervisor or administrator approves the appeal or otherwise reactivates the account. The seed also includes an inactive account and eight fictional tickets covering all important workflow states.
+## Windows/XAMPP setup
 
-The table describes a freshly seeded database. Demo-account status is intentionally mutable through account governance, so a long-lived local XAMPP database may differ after testing. `db:seed` is idempotent and does not undo governance decisions; use the destructive `db:reset` command only when you deliberately want the original fictional baseline back.
+Prerequisites: Node.js 22.12+, npm, Git, and XAMPP.
 
-## Method A: Docker Compose
+```powershell
+cd "C:\Users\micro\Desktop\Ticket Management System"
+Copy-Item backend\.env.example backend\.env
+Copy-Item frontend\.env.example frontend\.env
+npm.cmd run install:all
+```
 
-Prerequisites: Docker Desktop/Engine with Compose. Docker uses host port `3307` for MySQL so it can coexist with XAMPP on `3306`.
+Start MySQL from XAMPP, then prepare the schema and reference catalog:
+
+```powershell
+npm.cmd run db:setup
+npm.cmd run db:status
+```
+
+Create the first administrator once. The command refuses to run if an administrator already exists.
+
+```powershell
+$env:BOOTSTRAP_ADMIN_USERNAME = Read-Host "Administrator username"
+$env:BOOTSTRAP_ADMIN_NAME = Read-Host "Administrator full name"
+$env:BOOTSTRAP_ADMIN_EMAIL = Read-Host "Administrator email"
+$env:BOOTSTRAP_ADMIN_PHONE = Read-Host "Phone (11 digits beginning 03)"
+$env:BOOTSTRAP_ADMIN_CNIC = Read-Host "CNIC (13 digits)"
+$securePassword = Read-Host "Strong initial password" -AsSecureString
+$env:BOOTSTRAP_ADMIN_PASSWORD = [Net.NetworkCredential]::new('', $securePassword).Password
+npm.cmd run db:bootstrap-admin
+Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_EMAIL,Env:BOOTSTRAP_ADMIN_PHONE,Env:BOOTSTRAP_ADMIN_CNIC,Env:BOOTSTRAP_ADMIN_PASSWORD
+```
+
+Start the API and web application in separate terminals:
+
+```powershell
+npm.cmd run dev:backend
+```
+
+```powershell
+npm.cmd run dev:frontend
+```
+
+- Application: <http://localhost:5173>
+- Readiness: <http://127.0.0.1:5000/api/v1/health/ready>
+- Swagger in development: <http://127.0.0.1:5000/api-docs>
+- OpenAPI JSON in development: <http://127.0.0.1:5000/api-docs.json>
+
+The frontend should use `VITE_API_URL=/api/v1` so Vite proxies API and refresh-cookie requests through the same origin.
+
+## Docker Compose setup
+
+Prerequisite: Docker Desktop or Docker Engine with Compose.
 
 ```powershell
 Copy-Item .env.example .env
-docker compose up --build
 ```
 
-The backend container waits for MySQL, applies the repeatable migration, seeds reference/demo data, then starts. Named volumes preserve MySQL and attachments.
+Edit `.env` before starting. Replace both database passwords and both JWT secrets. JWT secrets must be different, deployment-specific, and at least 32 characters. The production backend intentionally rejects missing or example secrets.
 
-- Application: <http://localhost:5173>
-- API readiness: <http://localhost:5000/api/v1/health/ready>
-- Swagger UI: <http://localhost:5000/api-docs>
-- OpenAPI JSON: <http://localhost:5000/api-docs.json>
+For a local HTTP-only Compose run, keep `REFRESH_COOKIE_SECURE=false`. Set it to `true` behind production HTTPS. Set `CORS_ORIGIN` to the exact public frontend origin. Keep `ENABLE_API_DOCS=false` unless protected documentation is intentionally required. Keep `ENABLE_SELF_REGISTRATION=false` until consumer and employee identity claims are verified against an authoritative source.
 
 ```powershell
+docker compose config --quiet
+docker compose up --build -d
 docker compose ps
 docker compose logs --follow backend
+```
+
+Docker applies migrations and reference data automatically. Create the first administrator by supplying the six bootstrap values to the built script inside the backend container:
+
+```powershell
+docker compose exec `
+  -e BOOTSTRAP_ADMIN_USERNAME="$env:BOOTSTRAP_ADMIN_USERNAME" `
+  -e BOOTSTRAP_ADMIN_NAME="$env:BOOTSTRAP_ADMIN_NAME" `
+  -e BOOTSTRAP_ADMIN_EMAIL="$env:BOOTSTRAP_ADMIN_EMAIL" `
+  -e BOOTSTRAP_ADMIN_PHONE="$env:BOOTSTRAP_ADMIN_PHONE" `
+  -e BOOTSTRAP_ADMIN_CNIC="$env:BOOTSTRAP_ADMIN_CNIC" `
+  -e BOOTSTRAP_ADMIN_PASSWORD="$env:BOOTSTRAP_ADMIN_PASSWORD" `
+  backend node dist/database/scripts/bootstrap-admin.js
+```
+
+Clear the temporary shell variables immediately afterward using the `Remove-Item Env:...` command shown in the XAMPP section.
+
+Stop without deleting data:
+
+```powershell
 docker compose down
 ```
 
-To intentionally erase Docker development data:
-
-```powershell
-docker compose down --volumes
-docker compose up --build
-```
-
-`down --volumes` permanently deletes the Docker database and attachment volumes. The Compose definition, multi-stage images, health checks, non-root API runtime, SPA fallback, persistent volumes, and startup ordering are present. `docker compose config --quiet` passes on the final workstation; the containers were not started during the final XAMPP-based verification, so Docker runtime is not reported as tested.
-
-## Method B: Windows + XAMPP
-
-Prerequisites: Node.js 22.12+, npm, Git, and XAMPP. Only XAMPP MySQL is required; Apache is optional for phpMyAdmin.
-
-1. Start MySQL in the XAMPP Control Panel.
-2. Create local configurations and install pinned dependencies:
-
-   ```powershell
-   Copy-Item backend\.env.example backend\.env
-   Copy-Item frontend\.env.example frontend\.env
-   npm.cmd run install:all
-   ```
-
-3. Create/migrate and seed the database:
-
-   ```powershell
-   npm.cmd run db:setup
-   npm.cmd run db:status
-   ```
-
-   The normal XAMPP defaults in `backend/.env.example` are host `localhost`, port `3306`, user `root`, and an empty password. `db:setup` creates the configured database if the account has permission.
-
-4. Start two terminals:
-
-   ```powershell
-   npm.cmd run dev:backend
-   ```
-
-   ```powershell
-   npm.cmd run dev:frontend
-   ```
-
-5. Open the application and Swagger URLs listed above.
-
-The frontend calls `/api/v1` through Vite's same-origin proxy. Open the app at
-`http://127.0.0.1:5173` (the URL printed by Vite); do not replace the frontend API
-setting with a different host name. Keeping the page and refresh-cookie origin
-identical allows the secure session to survive a browser refresh.
+`docker compose down --volumes` permanently deletes the Docker database and attachments and must not be used on a system containing required data.
 
 ## Database operations
 
 ```powershell
-npm.cmd run db:migrate   # apply unapplied SQL migrations
-npm.cmd run db:status    # report migration checksum/status
-npm.cmd run db:seed      # idempotently load complete reference/demo data
-npm.cmd run db:setup     # migrate, then seed
-npm.cmd run db:reset     # DROP all configured DB tables, migrate, and reseed
+npm.cmd run db:migrate           # apply pending migrations
+npm.cmd run db:status            # verify migration checksums/status
+npm.cmd run db:seed              # upsert reference data only
+npm.cmd run db:setup             # migrate, then seed references
+npm.cmd run db:bootstrap-admin   # create the first administrator once
+npm.cmd run db:reset             # destructive: drop all tables and rebuild references
 ```
 
-`db:reset` is destructive and is for development databases only.
+Legacy pre-release installations can remove the known sample identities and all records directly owned by them with:
 
-Backup and restore use the configured MySQL/XAMPP binaries and pass the password through the child-process environment rather than the command line:
+```powershell
+npm.cmd run db:purge-sample-data
+```
+
+Back up the database before running a cleanup command. The cleanup is transaction-based and does not delete reference catalogs.
 
 ```powershell
 npm.cmd run db:backup -- ..\backups\mepco-help-desk.sql
 npm.cmd run db:restore -- ..\backups\mepco-help-desk.sql
 ```
 
-The `..` is intentional: npm runs the database utility with `backend/` as its working directory, while this example keeps backups in the repository-level ignored `backups/` directory.
+Backups, `.env` files, uploaded evidence, and generated build output are excluded from Git. Every attachment download rechecks ticket authorization.
 
-Backups and uploads can contain private application data and are ignored by Git. Attachment bytes remain outside the public frontend in `backend/uploads/` locally or the Docker `attachment_data` volume; every download rechecks ticket access.
-
-## Development and verification
+## Verification
 
 ```powershell
 npm.cmd run lint
@@ -157,71 +164,50 @@ npm.cmd run test
 npm.cmd run test:integration --prefix backend
 npm.cmd run build
 npm.cmd run verify
+docker compose config --quiet
+git diff --check
 ```
 
-`verify` runs both linters, strict TypeScript checks, unit/component tests, and production builds. Backend integration tests recreate an isolated `mepco_help_desk_test` database, seed it, and execute authentication, RBAC, master-data, user, ticket, workflow, privacy, upload, notification, reporting, announcement, scope, and audit acceptance scenarios. Never point the integration command at a database containing data you need.
+`verify` runs both linters, strict TypeScript checks, unit/component tests, and production builds. Integration tests recreate only `mepco_help_desk_test`; never point that command at a database containing required information.
 
-The final verified automated baseline is:
-
-- 28 backend unit/foundation tests.
-- 7 frontend component tests, including dashboard, notifications, profile hierarchy/save confirmation, and Reports & SLA export filters.
-- 40 isolated MySQL integration tests across 11 suites.
-- 10 applied live migrations with matching recorded checksums.
-- OpenAPI 3.1 JSON serving 52 documented paths.
-- Backend and frontend production dependency trees resolve locally without missing packages.
-- Passing backend/frontend production builds.
-
-The production build currently emits Vite's non-blocking warning that the main JavaScript chunk is larger than 500 kB. It does not fail the build; route-level code splitting is a future performance optimization.
-
-The external npm advisory lookup is intentionally not part of `verify`. Run it manually when network and repository policy permit; npm sends dependency metadata to its advisory service:
+Dependency advisory checks require network access and are intentionally separate:
 
 ```powershell
 npm.cmd audit --prefix backend --omit=dev
 npm.cmd audit --prefix frontend --omit=dev
 ```
 
-### Before pushing to `develop`
+## API and Swagger
 
-```powershell
-git status --short
-npm.cmd run verify
-npm.cmd run test:integration --prefix backend
-npm.cmd run db:status
-docker compose config --quiet
-git diff --check
-```
+Application routes are versioned under `/api/v1`. Success envelopes use `{ success, data, message?, meta? }`; errors use `{ success: false, error, requestId }`.
 
-Review the status/diff before staging so local `.env`, uploads, backups, generated `dist` files, and temporary verification artifacts are not included. The integration suite uses only `mepco_help_desk_test`; it must never target the working XAMPP database.
+`ENABLE_API_DOCS=true` enables Swagger UI at `/api-docs` and OpenAPI JSON at `/api-docs.json`. It defaults to enabled for development/test and disabled for production. Do not expose interactive API documentation publicly without an explicit access-control decision.
 
-## API conventions and Swagger
+`ENABLE_SELF_REGISTRATION=true` exposes consumer/employee registration. It defaults to disabled in production. Enable it publicly only after integrating authoritative identity verification; otherwise administrators should provision or import verified identities through an approved process.
 
-All application routes are versioned below `/api/v1`. Success responses use `{ success, data, message?, meta }`; errors use `{ success: false, error: { code, message, details? }, requestId }`. Lists use bounded pagination. Protected Swagger operations accept the access token through the `bearerAuth` control.
+## Environment and security
 
-Swagger UI: <http://localhost:5000/api-docs>. The machine-readable OpenAPI 3.1 document is at <http://localhost:5000/api-docs.json> and describes all implemented authentication, suspended-account support, user, master-data, ticket, workflow, collaboration, private internal-messaging, notification, report, and administration paths.
+The full variable templates are `.env.example`, `backend/.env.example`, and `frontend/.env.example`.
 
-## Environment reference
+- Use different high-entropy `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` values.
+- Use HTTPS and `REFRESH_COOKIE_SECURE=true` outside local HTTP development.
+- Restrict `CORS_ORIGIN` to exact trusted frontend origins.
+- Use a least-privileged database account; do not run the application as MySQL root in production.
+- Keep Swagger disabled in production unless deliberately protected.
+- Store secrets in a deployment secret manager, not Git or images.
+- Put uploads on durable private storage, add malware scanning, and define retention rules.
+- Schedule encrypted backups and test restoration.
+- Connect registration and identity verification to authoritative MEPCO systems before accepting live public data.
+- Add centralized monitoring, TLS termination, rate-limit review, privacy approval, and an incident-response process before organizational deployment.
 
-Backend variables are documented in `backend/.env.example`; frontend variables are in `frontend/.env.example`; Compose host/database/JWT defaults are in the root `.env.example`. Important settings include:
+## Release checklist
 
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_CONNECTION_LIMIT`
-- `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, access/refresh TTLs, refresh cookie name, and `REFRESH_COOKIE_SECURE`
-- `CORS_ORIGIN`, `HOST`, `PORT`, and `LOG_LEVEL`
-- `UPLOAD_DIR`, `MAX_UPLOAD_BYTES`, and `REOPEN_WINDOW_DAYS`
-- `VITE_API_URL` (normally `/api/v1`, routed by Vite or Nginx)
+1. Run migrations and `db:status` against a backed-up staging database.
+2. Run `verify`, isolated integration tests, dependency audits, `docker compose config --quiet`, and `git diff --check`.
+3. Confirm no `.env`, backup, upload, log, or generated build file is staged.
+4. Confirm no shared/sample account exists and bootstrap credentials have been cleared.
+5. Confirm production secrets, HTTPS, secure cookies, CORS, storage, backups, monitoring, and identity integration.
+6. Perform role-by-role acceptance testing in staging.
+7. Obtain business, security, privacy, and operations approval before serving real MEPCO data.
 
-JWT secrets must be different and at least 32 characters. `REFRESH_COOKIE_SECURE` is false only for the local HTTP examples; it defaults to true in production and must remain true behind HTTPS. Replace every example password/secret before any non-local deployment. Never commit `.env` files.
-
-## Troubleshooting
-
-- Port conflict: XAMPP normally owns `3306`; Docker defaults to `3307`. Change only `MYSQL_HOST_PORT` for the Docker host mapping.
-- API live but not ready: check XAMPP/MySQL state and backend DB variables, then run `npm.cmd run db:status`.
-- CORS: use an origin listed exactly in `CORS_ORIGIN`; `localhost` and `127.0.0.1` are distinct origins.
-- Session disappears after refresh: keep `VITE_API_URL=/api/v1`, restart the frontend after changing `.env`, and use the exact frontend URL printed by Vite.
-- PowerShell blocks `npm.ps1`: use `npm.cmd` as shown.
-- XAMPP failure: inspect its MySQL error log; never delete `C:\xampp\mysql\data` as a shortcut.
-- Docker failure: start Docker Desktop, confirm `docker compose version`, then inspect `docker compose ps` and backend logs.
-- Upload rejected: use JPG/JPEG, PNG, PDF, TXT, DOC, or DOCX within `MAX_UPLOAD_BYTES`.
-
-## Security and production boundary
-
-This is an internship/local-demonstration system. A real deployment additionally requires verified MEPCO identity sources, HTTPS and secure-cookie policy review, managed secrets, malware scanning, backup/restore drills, retention and privacy rules, monitoring, infrastructure review, and stakeholder approval. Do not import real consumer or employee data into the demo seeds.
+For a beginner-friendly local startup sequence, see [RUN_GUIDE.md](RUN_GUIDE.md).

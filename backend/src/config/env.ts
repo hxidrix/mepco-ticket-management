@@ -40,8 +40,15 @@ function readNodeEnvironment(): NodeEnvironment {
 }
 
 function readSecret(name: string, fallback: string): string {
-  const value = readString(name, fallback);
+  const configured = process.env[name]?.trim();
+  if ((configured === undefined || configured === '') && nodeEnv === 'production') {
+    throw new Error(`${name} is required when NODE_ENV=production`);
+  }
+  const value = configured === undefined || configured === '' ? fallback : configured;
   if (value.length < 32) throw new Error(`${name} must contain at least 32 characters`);
+  if (nodeEnv === 'production' && /change|replace|example|development|local|generate/i.test(value)) {
+    throw new Error(`${name} must be replaced with a strong deployment-specific secret`);
+  }
   return value;
 }
 
@@ -73,5 +80,7 @@ export const env = Object.freeze({
   refreshTokenTtlDays: readInteger('REFRESH_TOKEN_TTL_DAYS', 7, 1, 90),
   refreshCookieName: readString('REFRESH_COOKIE_NAME', 'mepco_refresh'),
   refreshCookieSecure: readBoolean('REFRESH_COOKIE_SECURE', nodeEnv === 'production'),
+  enableApiDocs: readBoolean('ENABLE_API_DOCS', nodeEnv !== 'production'),
+  enableSelfRegistration: readBoolean('ENABLE_SELF_REGISTRATION', nodeEnv !== 'production'),
   reopenWindowDays: readInteger('REOPEN_WINDOW_DAYS', 7, 1, 90),
 });

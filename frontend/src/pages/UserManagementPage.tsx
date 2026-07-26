@@ -37,6 +37,7 @@ export function UserManagementPage() {
   const [status, setStatus] = useState('');
   const [filters, setFilters] = useState({ search: '', role: '', status: '' });
   const [showCreate, setShowCreate] = useState(false);
+  const [resetTarget, setResetTarget] = useState<UserProfile | null>(null);
   const [circleId, setCircleId] = useState('');
   const [divisionId, setDivisionId] = useState('');
   const [subdivisionId, setSubdivisionId] = useState('');
@@ -163,12 +164,17 @@ export function UserManagementPage() {
     }
   };
 
-  const resetPassword = async (profile: UserProfile) => {
-    if (!window.confirm(`Reset ${profile.displayName}'s password to the documented demo password?`)) return;
+  const resetPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (resetTarget === null) return;
+    const profile = resetTarget;
+    const password = formValue(new FormData(event.currentTarget), 'password');
+    if (!window.confirm(`Reset the password for ${profile.displayName} and revoke existing sessions?`)) return;
     setBusyId(profile.id); setError(null); setMessage(null);
     try {
-      await resetPasswordRequest(profile.id, 'Demo@12345');
+      await resetPasswordRequest(profile.id, password);
       setMessage(`Password reset for ${profile.displayName}; their sessions were revoked.`);
+      setResetTarget(null);
     } catch (caught) {
       setError(getApiErrorMessage(caught));
     } finally {
@@ -232,7 +238,7 @@ export function UserManagementPage() {
               title="Enter exactly 13 digits without dashes"
             />
           </label>
-          <PasswordInput name="password" label="Temporary password" autoComplete="new-password" defaultValue="Demo@12345" minLength={10} />
+          <PasswordInput name="password" label="Temporary password" autoComplete="new-password" minLength={10} hint="10+ characters with uppercase, lowercase, number, and symbol." />
           <label className="form-grid__wide"><span>Department</span><select name="departmentId"><option value="">No department</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
           <label><span>Designation</span><input name="designation" required /></label>
           <OperationalLocationFields
@@ -247,6 +253,30 @@ export function UserManagementPage() {
             }}
           />
           <button className="button button--primary form-grid__wide" type="submit" disabled={busyId === 0}>Create account</button>
+        </form>
+      )}
+
+      {resetTarget !== null && (
+        <form className="panel form-grid admin-create" onSubmit={(event) => void resetPassword(event)}>
+          <div className="panel__heading form-grid__wide">
+            <div>
+              <span>Security action</span>
+              <h2>Reset password for {resetTarget.displayName}</h2>
+              <p>Choose a unique temporary password and deliver it through an approved secure channel.</p>
+            </div>
+            <button className="button button--secondary" type="button" onClick={() => setResetTarget(null)}>Cancel</button>
+          </div>
+          <PasswordInput
+            className="form-grid__wide"
+            name="password"
+            label="New temporary password"
+            autoComplete="new-password"
+            minLength={10}
+            hint="10+ characters with uppercase, lowercase, number, and symbol."
+          />
+          <button className="button button--primary form-grid__wide" type="submit" disabled={busyId === resetTarget.id}>
+            Reset password and revoke sessions
+          </button>
         </form>
       )}
 
@@ -275,7 +305,7 @@ export function UserManagementPage() {
                   {profile.status === 'suspended' && (profile.role === 'consumer' || profile.role === 'employee') && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.referenceNumber ?? profile.employeeId ?? profile.displayName)}`}>Review suspension</Link>}
                   {profile.status === 'active' && !['consumer', 'employee'].includes(profile.role) && <button type="button" disabled={busyId === profile.id} onClick={() => void suspendStaffAccount(profile)}>Suspend staff</button>}
                   {profile.status !== 'active' && !['consumer', 'employee'].includes(profile.role) && <button type="button" disabled={busyId === profile.id} onClick={() => void activateAccount(profile)}>Activate</button>}
-                  <button type="button" disabled={busyId === profile.id} onClick={() => void resetPassword(profile)}>Reset password</button>
+                  <button type="button" disabled={busyId === profile.id} onClick={() => setResetTarget(profile)}>Reset password</button>
                   <button className="is-danger" type="button" disabled={busyId === profile.id} onClick={() => void deleteAccount(profile)}>Delete</button>
                 </div></td>
               </tr>

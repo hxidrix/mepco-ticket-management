@@ -35,6 +35,7 @@ vi.mock('../lib/users-api', () => ({
 import { ProfilePage } from './ProfilePage';
 
 const options: RegistrationOptions = {
+  selfRegistrationEnabled: true,
   departments: [{ id: 1, name: 'Information Technology' }],
   circles: [{
     id: 10,

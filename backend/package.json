@@ -14,6 +14,8 @@
     "db:migrate": "tsx src/database/scripts/migrate.ts",
     "db:status": "tsx src/database/scripts/status.ts",
     "db:seed": "tsx src/database/scripts/seed.ts",
+    "db:bootstrap-admin": "tsx src/database/scripts/bootstrap-admin.ts",
+    "db:purge-sample-data": "tsx src/database/scripts/purge-legacy-sample-data.ts",
     "db:reset": "tsx src/database/scripts/reset.ts",
     "db:setup": "npm run db:migrate && npm run db:seed",
     "db:backup": "tsx src/database/scripts/backup.ts",
@@ -22,7 +24,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:integration": "cross-env DB_NAME=mepco_help_desk_test tsx src/test/prepare-test-db.ts && cross-env DB_NAME=mepco_help_desk_test vitest run --config vitest.integration.config.ts"
+    "test:integration": "cross-env NODE_ENV=test DB_NAME=mepco_help_desk_test tsx src/test/prepare-test-db.ts && cross-env NODE_ENV=test DB_NAME=mepco_help_desk_test vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

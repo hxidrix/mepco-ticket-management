@@ -15,6 +15,7 @@ export interface AuthPayload {
 }
 
 export interface RegistrationOptions {
+  selfRegistrationEnabled: boolean;
   departments: Array<{ id: number; name: string }>;
   circles: Array<{
     id: number;

@@ -104,7 +104,7 @@ export function NewTicketPage() {
           ? <div className="ticket-form__auto-priority"><strong>Priority is assigned automatically</strong><p>We use the selected issue type and your description to identify routine, important, urgent, and safety-critical complaints. Support staff can review it later.</p></div>
           : <label><span>Priority</span><select name="priorityId" required value={priorityId} onChange={(event) => setPriorityId(event.target.value)}>{catalog?.priorities.map((priority) => <option key={priority.id} value={priority.id}>{priority.name}</option>)}</select></label>}
         <label><span>Location / context</span><input name="locationDetails" placeholder="Office, feeder, landmark, or room" /></label>
-        <div className="ticket-form__note form-grid__wide"><strong>Before submitting</strong><p>Use only fictional or demonstration information in this local environment. A unique ticket number and complete history will be created.</p></div>
+        <div className="ticket-form__note form-grid__wide"><strong>Before submitting</strong><p>Check the issue details and location. A unique ticket number and traceable history will be created.</p></div>
         <button className="button button--primary form-grid__wide" type="submit" disabled={busy || catalog === null}>{busy ? 'Submitting...' : 'Submit ticket'}</button>
       </form>
     </main>

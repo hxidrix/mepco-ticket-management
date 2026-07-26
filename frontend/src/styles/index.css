@@ -439,32 +439,6 @@ textarea:focus-visible {
   line-height: 1.55;
 }
 
-.status-panel__link {
-  grid-column: 2;
-  width: fit-content;
-  margin-top: 0.45rem;
-  color: #dcecff;
-  font-size: 0.78rem;
-  font-weight: 650;
-  text-decoration: none;
-  transition: color 180ms ease;
-}
-
-.status-panel__link span {
-  display: inline-block;
-  margin-left: 0.2rem;
-  color: var(--brand-cyan);
-  transition: transform 180ms var(--ease-out);
-}
-
-.status-panel__link:hover {
-  color: var(--brand-cyan);
-}
-
-.status-panel__link:hover span {
-  transform: translate(2px, -2px);
-}
-
 .foundation-card__architecture {
   margin-top: 1rem;
   padding: 1.2rem 1.4rem;
@@ -579,10 +553,6 @@ textarea:focus-visible {
   .status-panel {
     grid-template-columns: 1fr;
     padding: 1.25rem;
-  }
-
-  .status-panel__link {
-    grid-column: 1;
   }
 
   .foundation-card__architecture div {
@@ -1538,33 +1508,6 @@ textarea:focus-visible {
   background: #eafaf2;
 }
 
-.auth-card__demo {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 0.6rem;
-  align-items: center;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eaecf0;
-  color: #98a2b3;
-  font-size: 0.63rem;
-}
-
-.auth-card__demo span {
-  margin-right: auto;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.auth-card__demo code {
-  padding: 0.28rem 0.4rem;
-  border-radius: 0.35rem;
-  color: #475467;
-  background: #f2f4f7;
-  font-size: 0.62rem;
-}
-
 .app-loading {
   display: grid;
   min-height: 100vh;
@@ -1761,10 +1704,6 @@ textarea:focus-visible {
 
   .auth-form__wide {
     grid-column: 1;
-  }
-
-  .auth-card__demo span {
-    flex-basis: 100%;
   }
 
   .app-preview__nav > div > span {
@@ -2799,8 +2738,7 @@ time,
 }
 .auth-card__heading h2 { color: var(--text-primary); font-weight: 590; }
 .auth-card__heading > span,
-.auth-switch,
-.auth-card__demo { color: var(--text-secondary); }
+.auth-switch { color: var(--text-secondary); }
 .auth-tabs { border-color: var(--border); background: var(--surface-soft); }
 .auth-tabs button { color: var(--text-secondary); }
 .auth-tabs button:hover { color: var(--text-primary); }
@@ -2819,8 +2757,6 @@ time,
 .auth-form select:hover { border-color: color-mix(in srgb, var(--brand-blue) 45%, var(--border-strong)); background: var(--control-hover); }
 .auth-form input:focus,
 .auth-form select:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 4px var(--focus); }
-.auth-card__demo { border-top-color: var(--border); }
-.auth-card__demo code { color: var(--text-secondary); background: var(--surface-soft); }
 .auth-message--error { color: #d95f64; background: rgba(217, 83, 91, 0.12); }
 .auth-message--success { color: #1a9b6a; background: rgba(18, 183, 106, 0.12); }
 
@@ -3280,7 +3216,6 @@ time,
   .auth-page--login .auth-form { gap: clamp(0.72rem, 1.7vh, 0.95rem); }
   .auth-page--login .auth-form input { min-height: clamp(2.65rem, 6vh, 3rem); }
   .auth-page--login .auth-submit { min-height: clamp(2.9rem, 6.5vh, 3.2rem); }
-  .auth-page--login .auth-card__demo { margin-top: clamp(0.8rem, 2vh, 1.2rem); padding-top: clamp(0.7rem, 1.7vh, 0.95rem); }
 }
 
 /* Site-wide liquid glass system. The layered gradients emulate the supplied
@@ -3698,7 +3633,6 @@ time,
   .auth-page--login .auth-card .glass-surface__content { padding: 1.4rem 1.5rem; }
   .auth-page--login .auth-card__heading > span { margin-top: 0.5rem; line-height: 1.45; }
   .auth-page--login .auth-tabs { margin-block: 1rem; }
-  .auth-page--login .auth-card__demo { margin-top: 0.8rem; padding-top: 0.7rem; }
 }
 
 @media (max-width: 820px) {
@@ -3803,14 +3737,6 @@ time,
 .auth-password-field__toggle:hover,
 .auth-switch:hover:not(:disabled) {
   color: color-mix(in srgb, var(--brand-cyan) 72%, white);
-}
-
-.auth-card__demo code {
-  padding: 0;
-  border: 0;
-  color: var(--text-secondary);
-  background: transparent;
-  box-shadow: none;
 }
 
 /* A glass panel owns the surface. Its repeated content stays flat, using

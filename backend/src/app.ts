@@ -24,7 +24,7 @@ export const app = express();
 
 app.disable('x-powered-by');
 app.use(httpLogger);
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(env.enableApiDocs ? helmet({ contentSecurityPolicy: false }) : helmet());
 app.use(
   cors({
     origin: env.corsOrigin.split(',').map((origin) => origin.trim()),
@@ -36,12 +36,17 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(cookieParser());
 
 app.get('/', (_request, response) => {
-  response.redirect('/api-docs');
+  response.status(200).json({
+    success: true,
+    data: { service: 'MEPCO Help Desk API', status: 'online' },
+  });
 });
-app.get('/api-docs.json', (_request, response) => {
-  response.json(openApiDocument);
-});
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+if (env.enableApiDocs) {
+  app.get('/api-docs.json', (_request, response) => {
+    response.json(openApiDocument);
+  });
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+}
 app.use('/api/v1/health', healthRouter);
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/account-governance', accountGovernanceRouter);

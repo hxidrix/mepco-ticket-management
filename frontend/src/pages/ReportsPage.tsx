@@ -227,7 +227,7 @@ export function ReportsPage() {
       </section>
 
       <section className="panel report-sla-catalogue">
-        <div className="panel__heading"><div><span>Reference catalogue</span><h2>Complaint SLA targets</h2><p>Configurable demo targets currently stored in master data—not approved MEPCO policy.</p></div><strong>{slaTargets.length} targets</strong></div>
+        <div className="panel__heading"><div><span>Reference catalogue</span><h2>Complaint SLA targets</h2><p>Configured operational targets from master data. Administrators can update them when policy changes.</p></div><strong>{slaTargets.length} targets</strong></div>
         <div className="report-sla-filters"><label><span>Search targets</span><input value={slaSearch} onChange={(event) => { setSlaSearch(event.target.value); setShowAllTargets(false); }} placeholder="Complaint type or category" /></label><label><span>Catalogue domain</span><select value={slaDomain} onChange={(event) => { setSlaDomain(event.target.value); setShowAllTargets(false); }}><option value="">All domains</option><option value="consumer">Consumer</option><option value="employee">Employee</option></select></label></div>
         <div className="report-sla-table" role="table" aria-label="Complaint SLA targets">
           <div className="report-sla-table__head" role="row"><span role="columnheader">Complaint type</span><span role="columnheader">Category</span><span role="columnheader">Domain</span><span role="columnheader">Normal target</span></div>

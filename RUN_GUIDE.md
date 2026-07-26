@@ -1,526 +1,154 @@
-# Simple Step-by-Step Run Guide
+# Simple Windows Run Guide
 
-This guide explains how to run the MEPCO Help Desk on Windows in simple terms.
+This guide runs the MEPCO Help Desk with XAMPP MySQL, one backend terminal, and one frontend terminal.
 
-The recommended method is:
+## First-time setup
 
-- XAMPP runs the MySQL database.
-- One terminal runs the backend API.
-- A second terminal runs the frontend website.
+1. Install Node.js 22.12 or newer, Git, and XAMPP.
+2. Open PowerShell in the project:
 
-You must keep all three running while using the application.
+   ```powershell
+   cd "C:\Users\micro\Desktop\Ticket Management System"
+   ```
 
-## 1. Programs you need
+3. Create local configuration files:
 
-Install these programs before continuing:
+   ```powershell
+   Copy-Item backend\.env.example backend\.env
+   Copy-Item frontend\.env.example frontend\.env
+   ```
 
-1. Node.js version 22.12 or newer.
-2. XAMPP for Windows.
-3. Git.
-4. A browser such as Chrome, Edge, or Firefox.
+4. Install packages:
 
-To check Node.js and npm, open PowerShell and run:
+   ```powershell
+   npm.cmd run install:all
+   ```
 
-```powershell
-node --version
-npm.cmd --version
-```
+5. Open XAMPP and start **MySQL**. Apache is optional.
+6. Create the database tables and required reference lists:
 
-Both commands should print a version number.
+   ```powershell
+   npm.cmd run db:setup
+   npm.cmd run db:status
+   ```
 
-## 2. Open the correct project folder
+7. Create the first administrator once:
 
-Open PowerShell and move into the project folder:
+   ```powershell
+   $env:BOOTSTRAP_ADMIN_USERNAME = Read-Host "Administrator username"
+   $env:BOOTSTRAP_ADMIN_NAME = Read-Host "Administrator full name"
+   $env:BOOTSTRAP_ADMIN_EMAIL = Read-Host "Administrator email"
+   $env:BOOTSTRAP_ADMIN_PHONE = Read-Host "Phone (11 digits beginning 03)"
+   $env:BOOTSTRAP_ADMIN_CNIC = Read-Host "CNIC (13 digits)"
+   $securePassword = Read-Host "Strong initial password" -AsSecureString
+   $env:BOOTSTRAP_ADMIN_PASSWORD = [Net.NetworkCredential]::new('', $securePassword).Password
+   npm.cmd run db:bootstrap-admin
+   Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_EMAIL,Env:BOOTSTRAP_ADMIN_PHONE,Env:BOOTSTRAP_ADMIN_CNIC,Env:BOOTSTRAP_ADMIN_PASSWORD
+   ```
 
-```powershell
-cd "C:\Users\micro\OneDrive\Desktop\Ticket Management System"
-```
+   The password must have at least 10 characters and include uppercase, lowercase, a number, and a symbol. The command stops if an administrator already exists.
 
-You can check that you are in the correct folder by running:
+## Start the application each day
 
-```powershell
-Get-ChildItem
-```
+1. Start **MySQL** in XAMPP.
+2. Open PowerShell terminal 1:
 
-You should see folders named `backend`, `frontend`, and `docs`.
+   ```powershell
+   cd "C:\Users\micro\Desktop\Ticket Management System"
+   npm.cmd run dev:backend
+   ```
 
-You should also see `package.json`, `README.md`, and `docker-compose.yml`.
+3. Open <http://127.0.0.1:5000/api/v1/health/ready>. Continue only when it says the database is connected.
+4. Open PowerShell terminal 2:
 
-## 3. First-time environment setup
+   ```powershell
+   cd "C:\Users\micro\Desktop\Ticket Management System"
+   npm.cmd run dev:frontend
+   ```
 
-You normally do this only once.
-
-From the project root, run:
-
-```powershell
-Copy-Item backend\.env.example backend\.env
-Copy-Item frontend\.env.example frontend\.env
-```
-
-If PowerShell says the files already exist, do not overwrite them unless you intentionally want to reset your local settings.
-
-The normal local settings are:
-
-```text
-Frontend: http://localhost:5173
-Backend:  http://127.0.0.1:5000
-MySQL:    localhost:3306
-Database: mepco_help_desk
-```
-
-The normal XAMPP database account is:
-
-```text
-Username: root
-Password: empty
-```
-
-If your XAMPP MySQL account has a password, put that password in `backend/.env` as `DB_PASSWORD`.
-
-## 4. Install project packages
-
-You normally do this only once, or after `package.json` changes.
-
-From the project root, run:
-
-```powershell
-npm.cmd run install:all
-```
-
-Wait for the command to finish. Do not close the terminal while packages are installing.
-
-## 5. Start the XAMPP database
-
-1. Open the XAMPP Control Panel.
-2. Find the row named **MySQL**.
-3. Click **Start**.
-4. Wait until MySQL becomes green and shows that it is running.
-
-Apache is not needed for this React and Express application.
-
-You only need Apache if you want to open phpMyAdmin.
-
-If MySQL does not start, another database program may already be using port `3306`.
-
-## 6. Prepare the database
-
-Return to PowerShell in the project root.
-
-Run:
-
-```powershell
-npm.cmd run db:setup
-```
-
-This command does two things:
-
-1. It creates/applies the database tables.
-2. It adds the complete fictional demo data.
-
-Check the migration status with:
-
-```powershell
-npm.cmd run db:status
-```
-
-You should see `001_initial_schema.sql` in the result.
-
-You do not need to run `db:setup` every time you start the application. Run it during first-time setup or after receiving new database migrations.
-
-## 7. Start the backend server
-
-Open a new PowerShell terminal.
-
-Move to the project root:
-
-```powershell
-cd "C:\Users\micro\OneDrive\Desktop\Ticket Management System"
-```
-
-Start the backend:
-
-```powershell
-npm.cmd run dev:backend
-```
-
-Keep this terminal open.
-
-The backend uses port `5000`. It connects the website to MySQL and handles login, tickets, files, reports and administration.
-
-Check that the backend and database are ready by opening this URL in your browser:
-
-<http://127.0.0.1:5000/api/v1/health/ready>
-
-You should see a response containing:
-
-```json
-{
-  "status": "ready",
-  "database": "connected"
-}
-```
-
-The complete response also contains `success`, service, timestamp, and metadata fields.
-
-Do not start the frontend until this readiness URL works.
-
-## 8. Start the frontend server
-
-Open another PowerShell terminal. Do not close the backend terminal.
-
-Move to the project root:
-
-```powershell
-cd "C:\Users\micro\OneDrive\Desktop\Ticket Management System"
-```
-
-Start the frontend:
-
-```powershell
-npm.cmd run dev:frontend
-```
-
-Keep this terminal open too.
-
-The frontend uses port `5173`.
-
-Open the application at:
-
-<http://localhost:5173>
-
-## 9. Correct daily startup order
-
-After the first-time setup, use this order every day:
-
-1. Start XAMPP MySQL.
-2. Run `npm.cmd run dev:backend` in the first terminal.
-3. Open the backend readiness URL and confirm it says `ready` and `connected`.
-4. Run `npm.cmd run dev:frontend` in the second terminal.
 5. Open <http://localhost:5173>.
-6. Sign in using a fictional demo account.
 
-Do not run only the frontend. Login cannot work without the backend and MySQL.
+Keep XAMPP and both terminals open while using the website.
 
-## 10. Demo login accounts
+## Create users
 
-All active demo accounts use this password:
+- Consumers and employees register from the sign-in page with their own identity details.
+- The first administrator creates technicians, supervisors, and additional administrators from **User accounts**.
+- Never reuse one password for multiple accounts.
 
-```text
-Demo@12345
-```
+## Stop the application
 
-### Consumer login
+1. Press `Ctrl+C` in the frontend terminal.
+2. Press `Ctrl+C` in the backend terminal.
+3. Stop MySQL in XAMPP.
 
-Select **Consumer** on the login page.
+## If login says Network Error
 
-```text
-MEPCO Reference Number: 10000000000001
-Password: Demo@12345
-```
+1. Confirm XAMPP MySQL is green/running.
+2. Confirm the backend terminal has no error.
+3. Open <http://127.0.0.1:5000/api/v1/health/ready>.
+4. Confirm the frontend terminal is running.
+5. Use exactly <http://localhost:5173>.
+6. Keep `VITE_API_URL=/api/v1` in `frontend/.env`.
+7. Restart both development servers after changing an `.env` file.
 
-### Employee login
-
-Select **Employee** on the login page.
-
-```text
-Employee ID: EMP-DEMO-001
-Password: Demo@12345
-```
-
-### Technician login
-
-Select **Staff** on the login page.
-
-```text
-Username: tech.it
-Password: Demo@12345
-```
-
-Another technician is available:
-
-```text
-Username: tech.ops
-Password: Demo@12345
-```
-
-### Supervisor login
-
-Select **Staff** on the login page.
-
-```text
-Username: supervisor.demo
-Password: Demo@12345
-```
-
-### Administrator login
-
-Select **Staff** on the login page.
-
-```text
-Username: admin.demo
-Password: Demo@12345
-```
-
-These accounts and passwords are only for local development.
-
-## 11. Useful application URLs
-
-Use these URLs while the servers are running:
-
-| Purpose | URL |
-| --- | --- |
-| Website | <http://localhost:5173> |
-| Backend liveness | <http://127.0.0.1:5000/api/v1/health/live> |
-| Backend and database readiness | <http://127.0.0.1:5000/api/v1/health/ready> |
-| Swagger API documentation | <http://127.0.0.1:5000/api-docs> |
-| OpenAPI JSON | <http://127.0.0.1:5000/api-docs.json> |
-
-## 12. How to stop everything
-
-### Stop the frontend
-
-Open the frontend terminal and press:
-
-```text
-Ctrl+C
-```
-
-If PowerShell asks whether to terminate the batch job, type `Y` and press Enter.
-
-### Stop the backend
-
-Open the backend terminal and press:
-
-```text
-Ctrl+C
-```
-
-### Stop MySQL
-
-Return to the XAMPP Control Panel and click **Stop** beside MySQL.
-
-## 13. How to run tests
-
-Keep XAMPP MySQL running for integration tests.
-
-From the project root, run the normal quality checks:
-
-```powershell
-npm.cmd run verify
-```
-
-This runs:
-
-1. Backend and frontend lint checks.
-2. Strict TypeScript checks.
-3. Unit and frontend component tests.
-4. Backend and frontend production builds.
-
-Run the MySQL integration tests separately:
-
-```powershell
-npm.cmd run test:integration --prefix backend
-```
-
-The integration tests recreate a database named `mepco_help_desk_test`.
-
-Never change the integration-test database name to a database containing information you need.
-
-## 14. Database commands
-
-Run these commands from the project root.
-
-### Apply migrations
+## Database commands
 
 ```powershell
 npm.cmd run db:migrate
-```
-
-### Show migration status
-
-```powershell
 npm.cmd run db:status
-```
-
-### Add/update fictional seed data
-
-```powershell
 npm.cmd run db:seed
-```
-
-### Apply migrations and seed data together
-
-```powershell
-npm.cmd run db:setup
-```
-
-### Completely reset the development database
-
-```powershell
-npm.cmd run db:reset
-```
-
-Warning: `db:reset` deletes all tables and data in the configured database before rebuilding it. Use it only with a local development database.
-
-## 15. Database backup and restore
-
-Create a backup from the project root:
-
-```powershell
 npm.cmd run db:backup -- ..\backups\mepco-help-desk.sql
-```
-
-Restore that backup:
-
-```powershell
 npm.cmd run db:restore -- ..\backups\mepco-help-desk.sql
 ```
 
-The `..` is required because npm runs the database script from inside the `backend` folder.
+`db:seed` adds or updates reference lists only. It does not create accounts or tickets.
 
-Keep backups private. They are ignored by Git.
+`npm.cmd run db:reset` deletes every table in the configured database. Use it only on a disposable local database after making a backup.
 
-## 16. Fixing a login "Network Error"
+## Tests before a release
 
-A login **Network Error** normally does not mean the password is incorrect. It means the browser could not contact the backend.
-
-Check these items in order:
-
-1. Confirm XAMPP MySQL is running.
-2. Confirm the backend terminal is still open.
-3. Open <http://127.0.0.1:5000/api/v1/health/ready>.
-4. Confirm the response says `ready` and `connected`.
-5. Confirm the frontend terminal is still open.
-6. Open the website at exactly <http://localhost:5173>.
-7. Refresh the page with `Ctrl+F5`.
-8. Restart the frontend if you changed `frontend/.env`.
-
-To restart the frontend:
-
-1. Press `Ctrl+C` in the frontend terminal.
-2. Run `npm.cmd run dev:frontend` again.
-
-To restart the backend:
-
-1. Press `Ctrl+C` in the backend terminal.
-2. Run `npm.cmd run dev:backend` again.
-
-The expected frontend environment value is:
-
-```env
-VITE_API_URL=http://localhost:5000/api/v1
-```
-
-The backend CORS list should contain both local frontend addresses:
-
-```env
-CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
-```
-
-## 17. Fixing "port already in use"
-
-If the backend says port `5000` is already in use, another backend process may already be running.
-
-If the frontend says port `5173` is already in use, another Vite process may already be running. Vite may also choose another port. Always use the URL printed in the frontend terminal.
-
-Check the normal ports with:
+Keep XAMPP MySQL running, then run:
 
 ```powershell
-Get-NetTCPConnection -State Listen -LocalPort 3306,5000,5173 -ErrorAction SilentlyContinue
+npm.cmd run verify
+npm.cmd run test:integration --prefix backend
+npm.cmd run db:status
+git diff --check
 ```
 
-Close the old terminal or stop the old process before starting another copy.
+The integration command recreates `mepco_help_desk_test`. Never rename it to your working or production database.
 
-## 18. Fixing database connection errors
+## Swagger for development
 
-Open `backend/.env` and check:
+With `ENABLE_API_DOCS=true` in `backend/.env`:
 
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=mepco_help_desk
-MYSQL_BIN_DIR=C:\xampp\mysql\bin
-```
+- Swagger UI: <http://127.0.0.1:5000/api-docs>
+- OpenAPI JSON: <http://127.0.0.1:5000/api-docs.json>
 
-If your XAMPP MySQL uses a different port, username, or password, update these values and restart the backend.
+Production defaults to `ENABLE_API_DOCS=false`.
 
-## 19. Optional Docker method
+## Docker alternative
 
-Use this method only if Docker Desktop is installed and running.
+Docker does not use XAMPP.
 
-You do not need XAMPP when using Docker.
+1. Copy `.env.example` to `.env`.
+2. Replace all database passwords and JWT secrets in `.env`.
+3. Run:
 
-From the project root:
+   ```powershell
+   docker compose config --quiet
+   docker compose up --build -d
+   docker compose ps
+   ```
 
-```powershell
-Copy-Item .env.example .env
-docker compose up --build
-```
+4. Open <http://localhost:5173>.
+5. Follow the Docker administrator-bootstrap command in [README.md](README.md).
 
-Docker starts:
-
-1. MySQL.
-2. The backend API.
-3. The frontend website.
-
-Open:
-
-<http://localhost:5173>
-
-Check the containers:
-
-```powershell
-docker compose ps
-```
-
-View backend logs:
-
-```powershell
-docker compose logs --follow backend
-```
-
-Stop Docker services without deleting data:
+Stop without deleting data:
 
 ```powershell
 docker compose down
 ```
 
-Delete all Docker development database and attachment volumes only when you intentionally want a complete reset:
-
-```powershell
-docker compose down --volumes
-```
-
-This Docker reset is destructive.
-
-## 20. Short version for normal daily use
-
-Use three running windows:
-
-### Window 1: XAMPP
-
-Start MySQL.
-
-### Window 2: backend
-
-```powershell
-cd "C:\Users\micro\OneDrive\Desktop\Ticket Management System"
-npm.cmd run dev:backend
-```
-
-### Window 3: frontend
-
-```powershell
-cd "C:\Users\micro\OneDrive\Desktop\Ticket Management System"
-npm.cmd run dev:frontend
-```
-
-Then open:
-
-<http://localhost:5173>
-
-If login fails with a Network Error, check this URL first:
-
-<http://127.0.0.1:5000/api/v1/health/ready>
+Do not add `--volumes` unless you intentionally want to delete the Docker database and attachments.

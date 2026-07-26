@@ -34,9 +34,9 @@ export const openApiDocument = {
   paths: {
     '/api/v1/health/live': { get: operation('Health', 'Check API liveness', { security: false }) },
     '/api/v1/health/ready': { get: operation('Health', 'Check API and MySQL readiness', { security: false }) },
-    '/api/v1/auth/registration-options': { get: operation('Authentication', 'List registration departments and the Circle → Division → Sub-division hierarchy', { security: false }) },
-    '/api/v1/auth/register/consumer': { post: { ...operation('Authentication', 'Register a consumer account', { security: false, created: true }), requestBody: jsonRequest({ $ref: '#/components/schemas/ConsumerRegistrationRequest' }) } },
-    '/api/v1/auth/register/employee': { post: { ...operation('Authentication', 'Register an employee account', { security: false, created: true }), requestBody: jsonRequest({ $ref: '#/components/schemas/EmployeeRegistrationRequest' }) } },
+    '/api/v1/auth/registration-options': { get: operation('Authentication', 'Read self-registration availability, departments, and the Circle → Division → Sub-division hierarchy', { security: false }) },
+    '/api/v1/auth/register/consumer': { post: { ...operation('Authentication', 'Register a consumer account when self-registration is enabled', { security: false, created: true }), requestBody: jsonRequest({ $ref: '#/components/schemas/ConsumerRegistrationRequest' }) } },
+    '/api/v1/auth/register/employee': { post: { ...operation('Authentication', 'Register an employee account when self-registration is enabled', { security: false, created: true }), requestBody: jsonRequest({ $ref: '#/components/schemas/EmployeeRegistrationRequest' }) } },
     '/api/v1/auth/login': { post: { ...operation('Authentication', 'Sign in and issue access/refresh credentials', { security: false, body: true }), requestBody: jsonRequest({ $ref: '#/components/schemas/LoginRequest' }) } },
     '/api/v1/auth/refresh': { post: operation('Authentication', 'Rotate the HttpOnly refresh session', { security: false }) },
     '/api/v1/auth/logout': { post: operation('Authentication', 'Revoke the refresh session', { security: false }) },
@@ -102,7 +102,7 @@ export const openApiDocument = {
     schemas: {
       SuccessResponse: { type: 'object', required: ['success', 'data', 'meta'], properties: { success: { type: 'boolean', const: true }, data: {}, message: { type: 'string' }, meta: { type: ['object', 'null'] } } },
       ErrorResponse: { type: 'object', required: ['success', 'error', 'requestId'], properties: { success: { type: 'boolean', const: false }, error: { type: 'object', required: ['code', 'message'], properties: { code: { type: 'string' }, message: { type: 'string' }, details: {} } }, requestId: { type: 'string', format: 'uuid' } } },
-      ConsumerReferenceNumber: { type: 'string', pattern: '^[0-9]{14}$', minLength: 14, maxLength: 14, example: '10000000000001' },
+      ConsumerReferenceNumber: { type: 'string', pattern: '^[0-9]{14}$', minLength: 14, maxLength: 14, example: '12345678901234' },
       EmployeeIdInput: { type: 'string', pattern: '^[0-9]{1,8}$', minLength: 1, maxLength: 8, example: '1234', description: 'Normalized and stored as exactly eight digits, for example 00001234.' },
       PhoneNumber: { type: 'string', pattern: '^03[0-9]{9}$', minLength: 11, maxLength: 11, example: '03001234567', description: 'Exactly 11 digits beginning with 03.' },
       Cnic: { type: 'string', pattern: '^[0-9]{13}$', minLength: 13, maxLength: 13, example: '3520212345671', description: 'Exactly 13 digits without dashes. Required for new accounts in every role and unique when provided.' },

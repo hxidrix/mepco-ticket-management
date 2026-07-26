@@ -6,6 +6,7 @@ import type { RegistrationOptions } from '../types/auth';
 import { OperationalLocationFields } from './OperationalLocationFields';
 
 const options: RegistrationOptions = {
+  selfRegistrationEnabled: true,
   departments: [],
   circles: [
     {

@@ -26,6 +26,5 @@ const { runSeed } = await import('../database/seeder.js');
 const { closeDatabasePool } = await import('../database/pool.js');
 
 await runMigrations();
-await runSeed();
+await runSeed({ includeTestFixtures: true });
 await closeDatabasePool();
-

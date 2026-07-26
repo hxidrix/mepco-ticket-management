@@ -70,7 +70,10 @@ function setRefreshCookie(response: Response, token: string): void {
 authRouter.get(
   '/registration-options',
   asyncHandler(async (_request, response) => {
-    sendSuccess(response, 200, await getRegistrationOptions());
+    sendSuccess(response, 200, {
+      ...await getRegistrationOptions(),
+      selfRegistrationEnabled: env.enableSelfRegistration,
+    });
   }),
 );
 

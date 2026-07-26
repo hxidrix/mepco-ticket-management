@@ -1,27 +1,28 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
-import { AppShell } from './components/AppShell';
 import { BorderGlowSystem } from './components/BorderGlowSystem';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleRoute } from './components/RoleRoute';
 import { AuthProvider } from './context/AuthProvider';
 import { ThemeProvider } from './context/ThemeProvider';
 import { useAuth } from './hooks/useAuth';
-import { AuthPage } from './pages/AuthPage';
-import { AdministrationPage } from './pages/AdministrationPage';
-import { AccountGovernancePage } from './pages/AccountGovernancePage';
-import { AnnouncementsPage } from './pages/AnnouncementsPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { MasterDataPage } from './pages/MasterDataPage';
-import { InternalMessagesPage } from './pages/InternalMessagesPage';
-import { NewTicketPage } from './pages/NewTicketPage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { ReportsPage } from './pages/ReportsPage';
-import { SuspendedAccountPage } from './pages/SuspendedAccountPage';
-import { TicketDetailPage } from './pages/TicketDetailPage';
-import { TicketsPage } from './pages/TicketsPage';
-import { UserManagementPage } from './pages/UserManagementPage';
+const AppShell = lazy(() => import('./components/AppShell').then((module) => ({ default: module.AppShell })));
+const AuthPage = lazy(() => import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })));
+const AdministrationPage = lazy(() => import('./pages/AdministrationPage').then((module) => ({ default: module.AdministrationPage })));
+const AccountGovernancePage = lazy(() => import('./pages/AccountGovernancePage').then((module) => ({ default: module.AccountGovernancePage })));
+const AnnouncementsPage = lazy(() => import('./pages/AnnouncementsPage').then((module) => ({ default: module.AnnouncementsPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const MasterDataPage = lazy(() => import('./pages/MasterDataPage').then((module) => ({ default: module.MasterDataPage })));
+const InternalMessagesPage = lazy(() => import('./pages/InternalMessagesPage').then((module) => ({ default: module.InternalMessagesPage })));
+const NewTicketPage = lazy(() => import('./pages/NewTicketPage').then((module) => ({ default: module.NewTicketPage })));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
+const SuspendedAccountPage = lazy(() => import('./pages/SuspendedAccountPage').then((module) => ({ default: module.SuspendedAccountPage })));
+const TicketDetailPage = lazy(() => import('./pages/TicketDetailPage').then((module) => ({ default: module.TicketDetailPage })));
+const TicketsPage = lazy(() => import('./pages/TicketsPage').then((module) => ({ default: module.TicketsPage })));
+const UserManagementPage = lazy(() => import('./pages/UserManagementPage').then((module) => ({ default: module.UserManagementPage })));
 
 function AppRoutes() {
   const { isLoading } = useAuth();
@@ -29,7 +30,8 @@ function AppRoutes() {
     return <div className="app-loading"><span /><p>Securing your workspace…</p></div>;
   }
   return (
-    <Routes>
+    <Suspense fallback={<div className="app-loading"><span /><p>Loading workspace...</p></div>}>
+      <Routes>
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<Navigate to="/login" replace />} />
       <Route path="/suspension" element={<SuspendedAccountPage />} />
@@ -49,7 +51,8 @@ function AppRoutes() {
         <Route path="admin/operations" element={<RoleRoute roles={['administrator']}><AdministrationPage /></RoleRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/app" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 

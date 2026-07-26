@@ -1,6 +1,6 @@
 # Complaint SLA Targets
 
-This file lists the configurable **demo operational targets** used by the local MEPCO Help Desk project. The supplied SRS does not define official resolution times, so these values must not be represented as approved MEPCO policy. An administrator can change a complaint type's normal target in **Master data → Complaint types** after an authorised policy is provided.
+This file lists the configurable operational targets supplied with the MEPCO Help Desk. The SRS does not define official resolution times, so the configured values must be reviewed and approved by the responsible MEPCO authority before organizational deployment. An administrator can change a complaint type's normal target in **Master data → Complaint types** when policy changes.
 
 ## How the system calculates a ticket target
 

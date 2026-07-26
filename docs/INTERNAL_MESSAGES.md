@@ -36,4 +36,4 @@ Unread message counts appear beside the relevant conversation. Opening a thread 
 - `GET /api/v1/internal-messages/threads/{id}`
 - `POST /api/v1/internal-messages/threads/{id}/messages`
 
-The same endpoints are documented in Swagger at `http://localhost:5000/api-docs`.
+When `ENABLE_API_DOCS=true`, the same endpoints are documented in Swagger at `http://localhost:5000/api-docs`. API documentation is disabled by default in production.

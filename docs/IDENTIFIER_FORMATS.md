@@ -6,11 +6,11 @@ This document records confirmed formats enforced by the application and formats 
 
 | Field | Required format | Example | Behavior |
 | --- | --- | --- | --- |
-| Consumer reference number | Exactly 14 numeric digits | `10000000000001` | Rejected unless all 14 characters are digits. |
+| Consumer reference number | Exactly 14 numeric digits | `12345678901234` | Rejected unless all 14 characters are digits. |
 | Employee ID | Exactly 8 numeric digits when stored | `00001234` | Users may enter 1–8 digits. Leading zeroes are added automatically. |
 | Phone number | Exactly 11 numeric digits beginning with `03` | `03001234567` | Separators, spaces, country codes, and other prefixes are rejected. |
 | CNIC | Exactly 13 numeric digits | `3520212345671` | Required for new accounts in every role; unique when provided and editable from My profile. |
-| Password | 10–128 characters with uppercase, lowercase, number, and symbol | `Demo@12345` | Enforced during registration, password changes, and resets. |
+| Password | 10–128 characters with uppercase, lowercase, number, and symbol | Use a unique private value | Enforced during registration, password changes, and resets. |
 | Email | Valid email address | `employee@example.com` | Required for employee registration; optional for consumers. |
 
 The database also enforces the consumer reference-number and employee-ID formats. This prevents imports, scripts, or future API routes from inserting malformed identifiers.

@@ -12,7 +12,7 @@ server.listen(env.port, env.host, () => {
     {
       host: env.host,
       port: env.port,
-      swaggerUrl: `http://${env.host}:${env.port}/api-docs`,
+      ...(env.enableApiDocs ? { apiDocsUrl: `http://${env.host}:${env.port}/api-docs` } : {}),
     },
     'MEPCO Help Desk API started',
   );

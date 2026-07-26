@@ -50,9 +50,6 @@ export function StatusPanel() {
         <h2>{copy.title}</h2>
         <p>{copy.description}</p>
       </div>
-      <a href="http://localhost:5000/api-docs" className="status-panel__link">
-        Open API docs <span aria-hidden="true">↗</span>
-      </a>
     </section>
   );
 }

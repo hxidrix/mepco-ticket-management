@@ -28,11 +28,10 @@ try {
 
   const migrationResult = await runMigrations();
   await runSeed();
-  logger.info(migrationResult, 'Development database reset and seeded');
+  logger.info(migrationResult, 'Database reset and reference data seeded');
 } catch (error) {
   logger.error({ err: error }, 'Development database reset failed');
   process.exitCode = 1;
 } finally {
   await closeDatabasePool();
 }
-

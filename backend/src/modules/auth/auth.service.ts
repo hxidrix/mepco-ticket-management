@@ -1,5 +1,6 @@
 import { compare, hash } from 'bcryptjs';
 
+import { env } from '../../config/env.js';
 import { AppError } from '../../shared/app-error.js';
 import {
   normalizeEmployeeId,
@@ -115,6 +116,9 @@ export async function createConsumerAccount(
   input: ConsumerRegistrationInput,
   context: RequestContext,
 ) {
+  if (!env.enableSelfRegistration) {
+    throw new AppError(403, 'SELF_REGISTRATION_DISABLED', 'Self-registration is not available; contact an administrator');
+  }
   return registerConsumer(input, await hash(input.password, 12), context);
 }
 
@@ -122,6 +126,9 @@ export async function createEmployeeAccount(
   input: EmployeeRegistrationInput,
   context: RequestContext,
 ) {
+  if (!env.enableSelfRegistration) {
+    throw new AppError(403, 'SELF_REGISTRATION_DISABLED', 'Self-registration is not available; contact an administrator');
+  }
   return registerEmployee(
     { ...input, employeeId: normalizeEmployeeId(input.employeeId) },
     await hash(input.password, 12),

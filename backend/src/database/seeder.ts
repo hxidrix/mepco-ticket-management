@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { hash } from 'bcryptjs';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
+import { env } from '../config/env.js';
 import { databasePool } from './pool.js';
 import { effectiveSlaTargetHours } from '../shared/sla.js';
 import {
@@ -24,7 +25,7 @@ interface CountRow extends RowDataPacket {
   count: number;
 }
 
-interface DemoUserIds {
+interface TestUserIds {
   consumer: number;
   suspendedConsumer: number;
   employee: number;
@@ -35,7 +36,7 @@ interface DemoUserIds {
   administrator: number;
 }
 
-export const developmentCredentials = Object.freeze({
+const testCredentials = Object.freeze({
   consumer: { identifier: '10000000000001', password: 'Demo@12345' },
   employee: { identifier: '00000001', password: 'Demo@12345' },
   technician: { identifier: 'tech.it', password: 'Demo@12345' },
@@ -433,11 +434,11 @@ async function upsertEmployee(
   return userId;
 }
 
-async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
+async function seedUsers(connection: PoolConnection): Promise<TestUserIds> {
   const passwordHash = await hash('Demo@12345', 12);
   const consumer = await upsertConsumer(
     connection,
-    developmentCredentials.consumer.identifier,
+    testCredentials.consumer.identifier,
     'Ayesha Demo Consumer',
     passwordHash,
     'active',
@@ -451,7 +452,7 @@ async function seedUsers(connection: PoolConnection): Promise<DemoUserIds> {
   );
   const employee = await upsertEmployee(
     connection,
-    developmentCredentials.employee.identifier,
+    testCredentials.employee.identifier,
     'Hamza Demo Employee',
     passwordHash,
   );
@@ -733,7 +734,7 @@ async function ensureTicket(
   );
 }
 
-async function seedDemoActivity(connection: PoolConnection, users: DemoUserIds): Promise<void> {
+async function seedTestActivity(connection: PoolConnection, users: TestUserIds): Promise<void> {
   const itDepartment = 'Information Technology (IT) Directorate';
   const tickets: TicketSeed[] = [
     {
@@ -837,13 +838,22 @@ async function seedDemoActivity(connection: PoolConnection, users: DemoUserIds):
   );
 }
 
-export async function runSeed(): Promise<void> {
+interface SeedOptions {
+  includeTestFixtures?: boolean;
+}
+
+export async function runSeed(options: SeedOptions = {}): Promise<void> {
+  if (options.includeTestFixtures === true && env.nodeEnv !== 'test') {
+    throw new Error('Test fixtures can only be seeded when NODE_ENV=test');
+  }
   const connection = await databasePool.getConnection();
   try {
     await connection.beginTransaction();
     await upsertMasterData(connection);
-    const users = await seedUsers(connection);
-    await seedDemoActivity(connection, users);
+    if (options.includeTestFixtures === true) {
+      const users = await seedUsers(connection);
+      await seedTestActivity(connection, users);
+    }
     await connection.commit();
   } catch (error) {
     await connection.rollback();

@@ -32,9 +32,9 @@ type AuthView = 'login' | 'register';
 type RegistrationMode = 'consumer' | 'employee';
 
 const loginLabels: Record<LoginMode, { label: string; identifier: string; placeholder: string }> = {
-  consumer: { label: 'Consumer', identifier: 'MEPCO Reference Number', placeholder: '10000000000001' },
-  employee: { label: 'Employee', identifier: 'Employee ID', placeholder: '00000001' },
-  staff: { label: 'Staff', identifier: 'Username', placeholder: 'tech.it' },
+  consumer: { label: 'Consumer', identifier: 'MEPCO Reference Number', placeholder: 'Enter 14-digit reference number' },
+  employee: { label: 'Employee', identifier: 'Employee ID', placeholder: 'Enter employee ID' },
+  staff: { label: 'Staff', identifier: 'Username', placeholder: 'Enter username' },
 };
 
 function fieldValue(formData: FormData, name: string): string {
@@ -177,7 +177,7 @@ export function AuthPage() {
           <div className="auth-hero__trust">
             <span>Five-role access</span>
             <span>Traceable workflows</span>
-            <span>Local-first demonstration</span>
+            <span>Secure account access</span>
           </div>
         </div>
       </section>
@@ -187,7 +187,6 @@ export function AuthPage() {
           <span>Secure portal</span>
           <div className="auth-form-side__actions">
             <ThemeToggle compact />
-            <a href="http://localhost:5000/api-docs">API docs <span aria-hidden="true">↗</span></a>
           </div>
         </div>
 
@@ -207,7 +206,7 @@ export function AuthPage() {
             <span>
               {view === 'login'
                 ? 'Choose the identity type that matches your MEPCO account.'
-                : 'Consumer and employee self-registration uses fictional local data.'}
+                : 'Register with the identity details associated with your MEPCO account.'}
             </span>
           </div>
 
@@ -288,7 +287,7 @@ export function AuthPage() {
                   {isSubmitting ? 'Signing in…' : `Continue as ${loginLabels[loginMode].label}`}
                   <span aria-hidden="true">→</span>
                 </button>
-                {loginMode !== 'staff' && (
+                {loginMode !== 'staff' && options?.selfRegistrationEnabled === true && (
                   <button className="auth-switch" type="button" onClick={() => setView('register')}>
                     Need an account? <strong>Register here</strong>
                   </button>
@@ -315,7 +314,7 @@ export function AuthPage() {
                         pattern="[0-9]{14}"
                         minLength={CONSUMER_REFERENCE_LENGTH}
                         maxLength={CONSUMER_REFERENCE_LENGTH}
-                        placeholder="10000000000001"
+                        placeholder="14-digit reference number"
                         title="Enter exactly 14 digits"
                       />
                     </label>
@@ -392,7 +391,7 @@ export function AuthPage() {
                         inputMode="numeric"
                         pattern="[0-9]{1,8}"
                         maxLength={EMPLOYEE_ID_LENGTH}
-                        placeholder="00000001"
+                        placeholder="Up to 8 digits"
                         title="Enter up to 8 digits; leading zeroes are added automatically"
                         onBlur={(event) => {
                           event.currentTarget.value = normalizeEmployeeId(event.currentTarget.value);
@@ -466,11 +465,6 @@ export function AuthPage() {
             )}
           </AnimatePresence>
 
-          <div className="auth-card__demo">
-            <span>Development demo</span>
-            <code>{loginLabels[loginMode].placeholder}</code>
-            <code>Demo@12345</code>
-          </div>
           </GlassSurface>
         </motion.div>
       </section>
