@@ -9,16 +9,17 @@ All records and credentials in this repository are fictional. The application ha
 - Consumer, employee, technician, supervisor, and administrator roles with backend-enforced RBAC.
 - Database-enforced identity formats: consumer reference numbers are exactly 14 digits, employee codes are normalized to exactly 8 digits with leading zeroes, phone numbers contain exactly 11 digits beginning with `03`, and every role supports a unique 13-digit CNIC in its profile. See [the identifier format catalogue](docs/IDENTIFIER_FORMATS.md).
 - Consumer/employee registration; three login modes; bcrypt password hashes; lockout; short-lived JWT access tokens; HttpOnly refresh rotation, reuse detection, revocation, and logout.
-- Role-specific profiles and accountable suspension governance: technicians can submit ticket-linked requester suspension cases, supervisors/administrators record structured decisions, managers can directly suspend with full details, sessions are revoked, and the restricted portal shows the account holder the recorded reason and evidence. Supervisors and administrators manage and reply to account-holder appeals/support requests from the Account governance page.
+- Role-specific profiles with inline save confirmation, show/hide password controls, CNIC/phone validation, and structured work-location editing. Accountable suspension governance lets technicians submit ticket-linked requester suspension cases, lets managers record structured decisions or suspend directly with full details, revokes sessions, and lets restricted account holders review the reason/evidence and submit appeals or support requests.
 - Structured Circle → Division → Sub-division work locations for employee, technician, supervisor, and administrator profiles, employee registration, and staff-account creation; selections are validated as an active matching hierarchy by the backend.
 - Complete reference catalog: 14 departments, 11 circles, 55 divisions, 169 sub-divisions, 18 categories, 154 complaint types, priorities, statuses, and protected fallback values. See [the operational location hierarchy](docs/LOCATION_HIERARCHY.md).
 - Requester ticket submission with dependent catalog fields, automatic issue-based priority and department-based staff assignment, idempotency, immutable snapshots, role-scoped lists/detail, search, pagination, and advanced filters.
 - Scoped technician eligibility, assignment/reassignment, optimistic version checks, priority changes, SLA aging, requester closure reviews and satisfaction ratings, administrator ticket soft deletion, and controlled status transitions through New, Assigned, In Progress, Pending User, Resolved, Closed, Reopened, and Cancelled.
-- Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications.
+- Public comments, staff-only internal notes, protected evidence attachments, authenticated downloads, complete history, and in-app notifications with explicit read state, mark-one/mark-all actions, and direct ticket/message/governance links.
 - Private technician-to-manager messaging: either side can start an immutable thread with a valid active recipient, both participants can reply from the Messages panel, and unread replies generate direct-link notifications. Thread access is participant-only and message bodies are never copied into audit metadata.
-- Live role-scoped dashboards, status/priority/workload metrics, SLA reporting, and manager-scoped CSV/PDF exports.
+- Live role-scoped dashboards with awaiting-response queues and actionable metric cards. The manager Reports & SLA workspace includes total/open/overdue/resolution KPIs, open-queue SLA health, status/priority/workload visualizations, recent-ticket SLA watch, live complaint-target search, priority-cap explanations, and Circle/Division/Sub-division/date/status/priority/domain-filtered CSV/PDF exports.
 - Complaint-specific SLA targets from 4 hours to 90 days, with priority urgency caps and configurable master-data values; see [the SLA catalogue](docs/SLA_TARGETS.md).
-- Administrator master data, announcements/audiences, Circle → Division → Sub-division staff routing scopes, users, and immutable audit-log views.
+- Administrator master data, announcements/audiences, Circle → Division → Sub-division staff routing scopes, users, suspension review queues, expandable immutable audit-log views, and detailed search/filter controls.
+- Responsive Silk-backed light/dark themes, a minimal liquid-glass component system, accessible action states, confirmation prompts, compact mobile navigation, and self-hosted Geist typography.
 - Structured Pino logs, request IDs, safe error envelopes, Helmet/CORS, parameterized SQL, transactions, foreign keys, and soft deactivation.
 - OpenAPI 3.1 / Swagger for the complete API surface.
 
@@ -52,6 +53,8 @@ Every active account uses the development-only password `Demo@12345`.
 
 The suspended consumer uses the same development-only password. It can sign in only to the restricted account portal, read the recorded suspension reason, submit an appeal or support request, and see account-support responses. All ticket and operational APIs recheck the current database status and remain blocked until a supervisor or administrator approves the appeal or otherwise reactivates the account. The seed also includes an inactive account and eight fictional tickets covering all important workflow states.
 
+The table describes a freshly seeded database. Demo-account status is intentionally mutable through account governance, so a long-lived local XAMPP database may differ after testing. `db:seed` is idempotent and does not undo governance decisions; use the destructive `db:reset` command only when you deliberately want the original fictional baseline back.
+
 ## Method A: Docker Compose
 
 Prerequisites: Docker Desktop/Engine with Compose. Docker uses host port `3307` for MySQL so it can coexist with XAMPP on `3306`.
@@ -81,7 +84,7 @@ docker compose down --volumes
 docker compose up --build
 ```
 
-`down --volumes` permanently deletes the Docker database and attachment volumes. The Compose definition, multi-stage images, health checks, non-root API runtime, SPA fallback, persistent volumes, and startup ordering are present. Docker runtime execution could not be tested on the delivery workstation because Docker is not installed; this limitation is not reported as a pass.
+`down --volumes` permanently deletes the Docker database and attachment volumes. The Compose definition, multi-stage images, health checks, non-root API runtime, SPA fallback, persistent volumes, and startup ordering are present. `docker compose config --quiet` passes on the final workstation; the containers were not started during the final XAMPP-based verification, so Docker runtime is not reported as tested.
 
 ## Method B: Windows + XAMPP
 
@@ -161,10 +164,34 @@ npm.cmd run verify
 The final verified automated baseline is:
 
 - 28 backend unit/foundation tests.
-- 5 frontend component tests.
+- 7 frontend component tests, including dashboard, notifications, profile hierarchy/save confirmation, and Reports & SLA export filters.
 - 40 isolated MySQL integration tests across 11 suites.
-- Zero reported npm vulnerabilities in the installed dependency trees.
+- 10 applied live migrations with matching recorded checksums.
+- OpenAPI 3.1 JSON serving 52 documented paths.
+- Backend and frontend production dependency trees resolve locally without missing packages.
 - Passing backend/frontend production builds.
+
+The production build currently emits Vite's non-blocking warning that the main JavaScript chunk is larger than 500 kB. It does not fail the build; route-level code splitting is a future performance optimization.
+
+The external npm advisory lookup is intentionally not part of `verify`. Run it manually when network and repository policy permit; npm sends dependency metadata to its advisory service:
+
+```powershell
+npm.cmd audit --prefix backend --omit=dev
+npm.cmd audit --prefix frontend --omit=dev
+```
+
+### Before pushing to `develop`
+
+```powershell
+git status --short
+npm.cmd run verify
+npm.cmd run test:integration --prefix backend
+npm.cmd run db:status
+docker compose config --quiet
+git diff --check
+```
+
+Review the status/diff before staging so local `.env`, uploads, backups, generated `dist` files, and temporary verification artifacts are not included. The integration suite uses only `mepco_help_desk_test`; it must never target the working XAMPP database.
 
 ## API conventions and Swagger
 
