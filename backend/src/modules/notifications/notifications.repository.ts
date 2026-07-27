@@ -2,6 +2,7 @@ import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
+import { sqlPagination } from '../../shared/sql-pagination.js';
 
 interface NotificationRow extends RowDataPacket {
   id: number; type: string; title: string; message: string; targetType: string | null;
@@ -15,8 +16,8 @@ export async function listNotifications(userId: number, page: number, pageSize: 
     `SELECT id, type, title, message, target_type AS targetType, target_id AS targetId,
       read_at AS readAt, created_at AS createdAt
      FROM notifications WHERE recipient_id=? ${unreadFilter}
-     ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
-    [userId, pageSize, (page - 1) * pageSize],
+     ORDER BY created_at DESC, id DESC ${sqlPagination(page, pageSize)}`,
+    [userId],
   );
   const [totals] = await databasePool.execute<CountRow[]>(
     `SELECT COUNT(*) AS count FROM notifications WHERE recipient_id=? ${unreadFilter}`, [userId],

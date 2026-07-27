@@ -37,16 +37,13 @@ This guide runs the MEPCO Help Desk with XAMPP MySQL, one backend terminal, and 
    ```powershell
    $env:BOOTSTRAP_ADMIN_USERNAME = Read-Host "Administrator username"
    $env:BOOTSTRAP_ADMIN_NAME = Read-Host "Administrator full name"
-   $env:BOOTSTRAP_ADMIN_EMAIL = Read-Host "Administrator email"
-   $env:BOOTSTRAP_ADMIN_PHONE = Read-Host "Phone (11 digits beginning 03)"
-   $env:BOOTSTRAP_ADMIN_CNIC = Read-Host "CNIC (13 digits)"
    $securePassword = Read-Host "Strong initial password" -AsSecureString
    $env:BOOTSTRAP_ADMIN_PASSWORD = [Net.NetworkCredential]::new('', $securePassword).Password
    npm.cmd run db:bootstrap-admin
-   Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_EMAIL,Env:BOOTSTRAP_ADMIN_PHONE,Env:BOOTSTRAP_ADMIN_CNIC,Env:BOOTSTRAP_ADMIN_PASSWORD
+   Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_PASSWORD
    ```
 
-   The password must have at least 10 characters and include uppercase, lowercase, a number, and a symbol. The command stops if an administrator already exists.
+   Only username, display name, and password are required initially. The password must have at least 10 characters and include uppercase, lowercase, a number, and a symbol. The command stops if an administrator already exists.
 
 ## Start the application each day
 

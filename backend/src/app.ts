@@ -24,6 +24,10 @@ import { openApiDocument } from './openapi/document.js';
 export const app = express();
 
 app.disable('x-powered-by');
+if (process.env.VERCEL === '1') {
+  // Vercel places exactly one trusted proxy hop in front of the function.
+  app.set('trust proxy', 1);
+}
 app.use(httpLogger);
 app.use(env.enableApiDocs ? helmet({ contentSecurityPolicy: false }) : helmet());
 app.use(

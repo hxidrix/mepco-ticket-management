@@ -24,6 +24,7 @@ const messageLimiter = rateLimit({
   limit: 120,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  validate: { forwardedHeader: false },
 });
 
 internalMessagesRouter.get(

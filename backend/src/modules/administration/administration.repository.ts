@@ -3,6 +3,7 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
 import { writeAudit } from '../../shared/audit.js';
+import { sqlPagination } from '../../shared/sql-pagination.js';
 import type { RequestContext, UserRole } from '../auth/auth.types.js';
 
 interface CountRow extends RowDataPacket { count: number }
@@ -116,10 +117,10 @@ export async function listAuditLogs(input: { page: number; pageSize: number; sea
   const [rows] = await databasePool.execute<AuditRow[]>(
     `SELECT al.id,al.actor_id AS actorId,u.display_name AS actorName,r.name AS actorRole,al.action,
       al.entity_type AS entityType,al.entity_id AS entityId,al.result,al.request_id AS requestId,
-      al.ip_address AS ipAddress,al.before_data AS beforeData,al.after_data AS afterData,
+     al.ip_address AS ipAddress,al.before_data AS beforeData,al.after_data AS afterData,
       al.metadata,al.created_at AS createdAt
      FROM audit_logs al LEFT JOIN users u ON u.id=al.actor_id LEFT JOIN roles r ON r.id=u.role_id WHERE ${where}
-     ORDER BY al.created_at DESC,al.id DESC LIMIT ? OFFSET ?`, [...values,input.pageSize,(input.page-1)*input.pageSize],
+     ORDER BY al.created_at DESC,al.id DESC ${sqlPagination(input.page, input.pageSize)}`, values,
   );
   return { items: rows, totalItems: counts[0]?.count ?? 0 };
 }

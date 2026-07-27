@@ -74,17 +74,14 @@ Create the first administrator once:
 ```powershell
 $env:BOOTSTRAP_ADMIN_USERNAME = Read-Host "Administrator username"
 $env:BOOTSTRAP_ADMIN_NAME = Read-Host "Administrator full name"
-$env:BOOTSTRAP_ADMIN_EMAIL = Read-Host "Administrator email"
-$env:BOOTSTRAP_ADMIN_PHONE = Read-Host "Phone (11 digits beginning 03)"
-$env:BOOTSTRAP_ADMIN_CNIC = Read-Host "CNIC (13 digits)"
 $securePassword = Read-Host "Strong initial password" -AsSecureString
 $env:BOOTSTRAP_ADMIN_PASSWORD = [Net.NetworkCredential]::new('', $securePassword).Password
 npm.cmd run db:bootstrap-admin
-Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_EMAIL,Env:BOOTSTRAP_ADMIN_PHONE,Env:BOOTSTRAP_ADMIN_CNIC,Env:BOOTSTRAP_ADMIN_PASSWORD,Env:DOTENV_CONFIG_PATH
+Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_PASSWORD,Env:DOTENV_CONFIG_PATH
 Remove-Item -LiteralPath .env.vercel
 ```
 
-The bootstrap command refuses to create a second administrator. The temporary environment file is ignored by Git, but it should still be deleted immediately.
+Only username, display name, and password are required for the initial administrator; the remaining profile details can be added later. The bootstrap command refuses to create a second administrator. The temporary environment file is ignored by Git, but it should still be deleted immediately.
 
 ## 5. Deploy and verify
 

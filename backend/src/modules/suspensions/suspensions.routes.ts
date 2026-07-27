@@ -23,6 +23,7 @@ const submissionLimiter = rateLimit({
   limit: 8,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  validate: { forwardedHeader: false },
 });
 
 suspensionsRouter.get('/me', asyncHandler(async (request, response) => {

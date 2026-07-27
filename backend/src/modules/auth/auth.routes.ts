@@ -33,6 +33,7 @@ const authenticationLimiter = rateLimit({
   limit: 40,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
+  validate: { forwardedHeader: false },
   handler: (_request, _response, next) => {
     next(new AppError(429, 'RATE_LIMITED', 'Too many authentication requests; try again later'));
   },

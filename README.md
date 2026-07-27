@@ -58,18 +58,15 @@ npm.cmd run db:setup
 npm.cmd run db:status
 ```
 
-Create the first administrator once. The command refuses to run if an administrator already exists.
+Create the first administrator once. Only username, display name, and password are required; contact and identity details can be completed later from the profile. The command refuses to run if an administrator already exists.
 
 ```powershell
 $env:BOOTSTRAP_ADMIN_USERNAME = Read-Host "Administrator username"
 $env:BOOTSTRAP_ADMIN_NAME = Read-Host "Administrator full name"
-$env:BOOTSTRAP_ADMIN_EMAIL = Read-Host "Administrator email"
-$env:BOOTSTRAP_ADMIN_PHONE = Read-Host "Phone (11 digits beginning 03)"
-$env:BOOTSTRAP_ADMIN_CNIC = Read-Host "CNIC (13 digits)"
 $securePassword = Read-Host "Strong initial password" -AsSecureString
 $env:BOOTSTRAP_ADMIN_PASSWORD = [Net.NetworkCredential]::new('', $securePassword).Password
 npm.cmd run db:bootstrap-admin
-Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_EMAIL,Env:BOOTSTRAP_ADMIN_PHONE,Env:BOOTSTRAP_ADMIN_CNIC,Env:BOOTSTRAP_ADMIN_PASSWORD
+Remove-Item Env:BOOTSTRAP_ADMIN_USERNAME,Env:BOOTSTRAP_ADMIN_NAME,Env:BOOTSTRAP_ADMIN_PASSWORD
 ```
 
 Start the API and web application in separate terminals:
@@ -108,15 +105,12 @@ docker compose ps
 docker compose logs --follow backend
 ```
 
-Docker applies migrations and reference data automatically. Create the first administrator by supplying the six bootstrap values to the built script inside the backend container:
+Docker applies migrations and reference data automatically. Create the first administrator by supplying the three bootstrap values to the built script inside the backend container:
 
 ```powershell
 docker compose exec `
   -e BOOTSTRAP_ADMIN_USERNAME="$env:BOOTSTRAP_ADMIN_USERNAME" `
   -e BOOTSTRAP_ADMIN_NAME="$env:BOOTSTRAP_ADMIN_NAME" `
-  -e BOOTSTRAP_ADMIN_EMAIL="$env:BOOTSTRAP_ADMIN_EMAIL" `
-  -e BOOTSTRAP_ADMIN_PHONE="$env:BOOTSTRAP_ADMIN_PHONE" `
-  -e BOOTSTRAP_ADMIN_CNIC="$env:BOOTSTRAP_ADMIN_CNIC" `
   -e BOOTSTRAP_ADMIN_PASSWORD="$env:BOOTSTRAP_ADMIN_PASSWORD" `
   backend node dist/database/scripts/bootstrap-admin.js
 ```

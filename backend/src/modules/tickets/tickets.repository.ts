@@ -9,6 +9,7 @@ import { AppError } from '../../shared/app-error.js';
 import { deleteAttachment, storeAttachment } from '../../shared/attachment-storage.js';
 import { writeAudit } from '../../shared/audit.js';
 import { effectiveSlaTargetHours } from '../../shared/sla.js';
+import { sqlPagination } from '../../shared/sql-pagination.js';
 import type { RequestContext } from '../auth/auth.types.js';
 import type {
   TicketActor, TicketClosureReviewInput, TicketCreateInput, TicketDomain, TicketListInput,
@@ -415,8 +416,8 @@ export async function listTickets(actor: TicketActor, input: TicketListInput) {
     values,
   );
   const [items] = await databasePool.execute<TicketRow[]>(
-    `${ticketSelect} WHERE ${where} ORDER BY ${sortColumn} ${sortOrder}, t.id ${sortOrder} LIMIT ? OFFSET ?`,
-    [...values, input.pageSize, (input.page - 1) * input.pageSize],
+    `${ticketSelect} WHERE ${where} ORDER BY ${sortColumn} ${sortOrder}, t.id ${sortOrder} ${sqlPagination(input.page, input.pageSize)}`,
+    values,
   );
   return { items, totalItems: counts[0]?.count ?? 0 };
 }

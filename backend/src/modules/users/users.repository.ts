@@ -7,6 +7,7 @@ import {
   resolveActiveOperationalLocation,
   type OperationalLocation,
 } from '../../shared/operational-location.js';
+import { sqlPagination } from '../../shared/sql-pagination.js';
 import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext, UserRole } from '../auth/auth.types.js';
 import type {
@@ -315,10 +316,9 @@ export async function listUsers(input: {
      LEFT JOIN employee_profiles ep ON ep.user_id = u.id WHERE ${where}`,
     params,
   );
-  const offset = (input.page - 1) * input.pageSize;
   const [rows] = await databasePool.execute<ProfileRow[]>(
-    `${profileSelect} WHERE ${where} ORDER BY u.created_at DESC LIMIT ? OFFSET ?`,
-    [...params, input.pageSize, offset],
+    `${profileSelect} WHERE ${where} ORDER BY u.created_at DESC ${sqlPagination(input.page, input.pageSize)}`,
+    params,
   );
   return { items: rows.map(mapProfile), totalItems: counts[0]?.count ?? 0 };
 }

@@ -33,7 +33,13 @@ const caseFields = () => [
   body('reasonSummary').trim().isLength({ min: 10, max: 255 }),
   body('details').trim().isLength({ min: 20, max: 4000 }),
 ];
-const requestLimiter = rateLimit({ windowMs: 60 * 60 * 1_000, limit: 12, standardHeaders: 'draft-8', legacyHeaders: false });
+const requestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1_000,
+  limit: 12,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  validate: { forwardedHeader: false },
+});
 
 accountGovernanceRouter.get(
   '/requests',

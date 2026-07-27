@@ -4,7 +4,6 @@ import { hash } from 'bcryptjs';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { logger } from '../../config/logger.js';
-import { isCnic, isPhoneNumber } from '../../shared/identity-format.js';
 import { closeDatabasePool, databasePool } from '../pool.js';
 
 interface IdRow extends RowDataPacket {
@@ -38,21 +37,13 @@ function validatePassword(password: string): void {
 try {
   const username = required('BOOTSTRAP_ADMIN_USERNAME');
   const displayName = required('BOOTSTRAP_ADMIN_NAME');
-  const phone = required('BOOTSTRAP_ADMIN_PHONE');
-  const cnic = required('BOOTSTRAP_ADMIN_CNIC');
   const password = required('BOOTSTRAP_ADMIN_PASSWORD');
-  const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim() || null;
 
   if (!/^[a-zA-Z0-9._-]{3,80}$/u.test(username)) {
     throw new Error('BOOTSTRAP_ADMIN_USERNAME must be 3-80 letters, numbers, dots, dashes, or underscores');
   }
   if (displayName.length < 2 || displayName.length > 140) {
     throw new Error('BOOTSTRAP_ADMIN_NAME must be 2-140 characters');
-  }
-  if (!isPhoneNumber(phone)) throw new Error('BOOTSTRAP_ADMIN_PHONE must be 11 digits beginning with 03');
-  if (!isCnic(cnic)) throw new Error('BOOTSTRAP_ADMIN_CNIC must be exactly 13 digits');
-  if (email !== null && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) {
-    throw new Error('BOOTSTRAP_ADMIN_EMAIL must be a valid email address');
   }
   validatePassword(password);
 
@@ -76,9 +67,9 @@ try {
 
     const [result] = await connection.execute<ResultSetHeader>(
       `INSERT INTO users
-         (role_id, display_name, username, email, phone, cnic, password_hash, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'active')`,
-      [roleId, displayName, username, email, phone, cnic, await hash(password, 12)],
+         (role_id, display_name, username, password_hash, status)
+       VALUES (?, ?, ?, ?, 'active')`,
+      [roleId, displayName, username, await hash(password, 12)],
     );
     const userId = result.insertId;
     await connection.execute(
