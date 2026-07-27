@@ -39,3 +39,8 @@ Thumbs.db
 # Docker/local state
 .docker/
 mysql-data/
+
+.vercel
+.env*
+!.env.example
+!**/.env.example
