@@ -1,7 +1,7 @@
-import type { RegistrationOptions } from '../types/auth';
+import type { LocationCatalogOptions } from '../types/auth';
 
 interface OperationalLocationFieldsProps {
-  options: RegistrationOptions | null;
+  options: LocationCatalogOptions | null;
   circleId: string;
   divisionId: string;
   subdivisionId: string;

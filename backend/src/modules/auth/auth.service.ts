@@ -1,6 +1,7 @@
-import { compare, hash } from 'bcryptjs';
+import { timingSafeEqual } from 'node:crypto';
 
-import { env } from '../../config/env.js';
+import { compare } from 'bcryptjs';
+
 import { AppError } from '../../shared/app-error.js';
 import {
   normalizeEmployeeId,
@@ -8,10 +9,9 @@ import {
 } from '../../shared/identity-format.js';
 import {
   findLoginCandidate,
+  findEmployeeVerificationCandidate,
   recordLoginFailure,
   recordLoginSuccess,
-  registerConsumer,
-  registerEmployee,
   revokeRefreshSession,
   rotateRefreshSession,
 } from './auth.repository.js';
@@ -23,8 +23,6 @@ import {
   verifyRefreshToken,
 } from './auth.tokens.js';
 import type {
-  ConsumerRegistrationInput,
-  EmployeeRegistrationInput,
   LoginMode,
   NewRefreshSession,
   RequestContext,
@@ -74,6 +72,79 @@ export async function login(
   await recordLoginSuccess(user, toNewSession(user.id, tokens.refreshSession), context);
   return { user, tokens };
 }
+function safeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function maskValue(value: string | null, visibleEnd = 2): string {
+  if (value === null || value === '') return 'Not recorded';
+  if (value.length <= visibleEnd) return '*'.repeat(value.length);
+  return `${'*'.repeat(Math.max(3, value.length - visibleEnd))}${value.slice(-visibleEnd)}`;
+}
+
+function maskName(value: string): string {
+  return value.split(/\s+/u).map((part) => part.length <= 1
+    ? '*'
+    : `${part[0]}${'*'.repeat(Math.max(2, part.length - 1))}`).join(' ');
+}
+
+function maskEmail(value: string | null): string {
+  if (value === null) return 'Not recorded';
+  const [local, domain] = value.split('@');
+  if (domain === undefined) return maskValue(value);
+  return `${(local ?? '').slice(0, 1)}***@${domain}`;
+}
+
+async function verifiedEmployee(employeeId: string, cnicLastFour: string, context: RequestContext) {
+  const normalizedEmployeeId = normalizeEmployeeId(employeeId);
+  const candidate = await findEmployeeVerificationCandidate(normalizedEmployeeId);
+  const expectedSuffix = candidate?.cnic?.slice(-4) ?? '0000';
+  const matches = safeEqual(cnicLastFour, expectedSuffix);
+  const unavailable = candidate === null
+    || !matches
+    || (candidate.lockedUntil !== null && candidate.lockedUntil.getTime() > Date.now())
+    || candidate.status === 'inactive';
+  if (unavailable) {
+    await recordLoginFailure(candidate, normalizedEmployeeId, 'employee', context);
+    throw new AppError(401, 'EMPLOYEE_VERIFICATION_FAILED', 'The employee details could not be verified');
+  }
+  return candidate;
+}
+
+export async function verifyEmployeeIdentity(
+  employeeId: string,
+  cnicLastFour: string,
+  context: RequestContext,
+) {
+  const candidate = await verifiedEmployee(employeeId, cnicLastFour, context);
+  return {
+    employeeId: maskValue(candidate.employeeId, 4),
+    name: maskName(candidate.displayName),
+    email: maskEmail(candidate.email),
+    phone: maskValue(candidate.phone, 2),
+    department: candidate.departmentName,
+    office: candidate.office,
+  };
+}
+
+export async function continueEmployeeLogin(
+  employeeId: string,
+  cnicLastFour: string,
+  context: RequestContext,
+) {
+  const candidate = await verifiedEmployee(employeeId, cnicLastFour, context);
+  const user = {
+    id: candidate.id,
+    role: candidate.role,
+    displayName: candidate.displayName,
+    status: candidate.status === 'suspended' ? 'suspended' as const : 'active' as const,
+  };
+  const tokens = issueTokens(user);
+  await recordLoginSuccess(user, toNewSession(user.id, tokens.refreshSession), context);
+  return { user, tokens };
+}
 
 export async function refresh(refreshToken: string, context: RequestContext) {
   const claims = verifyRefreshToken(refreshToken);
@@ -110,28 +181,4 @@ export async function logout(refreshToken: string | null, context: RequestContex
   } catch (error) {
     if (!(error instanceof AppError) || error.code !== 'INVALID_REFRESH_TOKEN') throw error;
   }
-}
-
-export async function createConsumerAccount(
-  input: ConsumerRegistrationInput,
-  context: RequestContext,
-) {
-  if (!env.enableSelfRegistration) {
-    throw new AppError(403, 'SELF_REGISTRATION_DISABLED', 'Self-registration is not available; contact an administrator');
-  }
-  return registerConsumer(input, await hash(input.password, 12), context);
-}
-
-export async function createEmployeeAccount(
-  input: EmployeeRegistrationInput,
-  context: RequestContext,
-) {
-  if (!env.enableSelfRegistration) {
-    throw new AppError(403, 'SELF_REGISTRATION_DISABLED', 'Self-registration is not available; contact an administrator');
-  }
-  return registerEmployee(
-    { ...input, employeeId: normalizeEmployeeId(input.employeeId) },
-    await hash(input.password, 12),
-    context,
-  );
 }

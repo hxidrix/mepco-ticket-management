@@ -1,21 +1,24 @@
 # MEPCO Integrated Help Desk
 
-A role-based ticket management system for MEPCO consumer complaints and internal employee support. The application provides one traceable workflow while preserving separate identities, catalogs, routing rules, privacy boundaries, and dashboards.
+A ticket management system for accountless MEPCO consumer complaints and authenticated internal employee support. The application provides one traceable workflow while preserving separate verification, routing, privacy, and reporting boundaries.
 
 ## Capabilities
 
-- Consumer, employee, technician, supervisor, and administrator access with backend-enforced RBAC.
-- Secure login with bcrypt password hashes, account lockout, short-lived JWT access tokens, rotating HttpOnly refresh sessions, reuse detection, revocation, and logout.
-- Fixed identity formats: 14-digit consumer reference number, 8-digit employee ID, 11-digit phone beginning with `03`, and unique 13-digit CNIC.
+- Public consumer complaint submission and read-only tracking without consumer accounts, passwords, JWTs, cookies, or browser persistence.
+- Consumer verification using a 14-digit Reference Number plus 10-digit Consumer ID, with only masked details returned before submission.
+- Employee verification using an 8-digit Employee ID plus the last four CNIC digits; staff retain username/password authentication.
+- Secure employee/staff sessions with short-lived JWT access tokens, rotating HttpOnly refresh cookies, reuse detection, revocation, and logout.
+- Fixed identity formats: 14-digit consumer Reference Number, 10-digit Consumer ID, 8-digit Employee ID, 11-digit phone beginning with `03`, and unique 13-digit CNIC for accounts.
 - Circle → Division → Sub-division profiles, ticket locations, staff scopes, reporting filters, and automatic routing.
 - Consumer priority classification and department/location-based staff assignment.
-- Full ticket workflow, requester closure review, satisfaction rating, comments, internal notes, evidence attachments, history, notifications, and administrator soft deletion.
+- Public complaint attachments at initial submission (up to three approved files), read-only tracking using all three identifiers, and SMS outbox notifications.
+- Full employee ticket workflow, requester closure review, satisfaction rating, comments, internal notes, evidence attachments, history, notifications, and administrator soft deletion.
 - Suspension requests, manager decisions, restricted account portal, appeals, support requests, and secure technician/manager messaging.
 - Role-scoped dashboards, announcements, audit logs, SLA monitoring, and CSV/PDF reports.
 - Responsive light/dark liquid-glass interface with self-hosted Geist typography.
 - OpenAPI 3.1 documentation for the complete versioned API.
 
-See [identifier formats](docs/IDENTIFIER_FORMATS.md), [location hierarchy](docs/LOCATION_HIERARCHY.md), [SLA targets](docs/SLA_TARGETS.md), and [internal messaging](docs/INTERNAL_MESSAGES.md).
+See [public complaint portal](docs/PUBLIC_COMPLAINT_PORTAL.md), [SMS delivery](docs/SMS_DELIVERY.md), [identifier formats](docs/IDENTIFIER_FORMATS.md), [location hierarchy](docs/LOCATION_HIERARCHY.md), [SLA targets](docs/SLA_TARGETS.md), and [internal messaging](docs/INTERNAL_MESSAGES.md).
 
 ## Technology
 
@@ -36,7 +39,7 @@ RUN_GUIDE.md
 
 ## Important data behavior
 
-`db:seed` installs required reference data only: roles, departments, locations, categories, complaint types, priorities, statuses, and SLA values. It does not create users, tickets, announcements, messages, or credentials.
+`db:seed` installs required reference data: roles, departments, locations, categories, complaint types, priorities, statuses, and SLA values. In development it also installs a small fictional-but-realistic consumer verification directory for local public-portal testing. Production seeding does not install these local consumer records. Normal seeding never creates users, passwords, tickets, announcements, or messages.
 
 Integration-test identities and scenarios are created only inside the isolated database whose name ends in `_test`. They are never installed by normal setup, reset, Docker startup, or production seeding.
 
@@ -96,7 +99,7 @@ Copy-Item .env.example .env
 
 Edit `.env` before starting. Replace both database passwords and both JWT secrets. JWT secrets must be different, deployment-specific, and at least 32 characters. The production backend intentionally rejects missing or example secrets.
 
-For a local HTTP-only Compose run, keep `REFRESH_COOKIE_SECURE=false`. Set it to `true` behind production HTTPS. Set `CORS_ORIGIN` to the exact public frontend origin. Keep `ENABLE_API_DOCS=false` unless protected documentation is intentionally required. Keep `ENABLE_SELF_REGISTRATION=false` until consumer and employee identity claims are verified against an authoritative source.
+For a local HTTP-only Compose run, keep `REFRESH_COOKIE_SECURE=false`. Set it to `true` behind production HTTPS. Set `CORS_ORIGIN` to the exact public frontend origin. Keep `ENABLE_API_DOCS=false` unless protected documentation is intentionally required. Keep `SMS_DRIVER=local-log` until an approved provider webhook is configured.
 
 ```powershell
 docker compose config --quiet
@@ -187,7 +190,7 @@ Application routes are versioned under `/api/v1`. Success envelopes use `{ succe
 
 `ENABLE_API_DOCS=true` enables Swagger UI at `/api-docs` and OpenAPI JSON at `/api-docs.json`. It defaults to enabled for development/test and disabled for production. Do not expose interactive API documentation publicly without an explicit access-control decision.
 
-`ENABLE_SELF_REGISTRATION=true` exposes consumer/employee registration. It defaults to disabled in production. Enable it publicly only after integrating authoritative identity verification; otherwise administrators should provision or import verified identities through an approved process.
+There are no consumer accounts or self-registration endpoints. Administrators provision employee accounts; only staff accounts use passwords. Public consumer verification is deliberately request-scoped and never creates an authenticated session.
 
 ## Environment and security
 
@@ -201,7 +204,8 @@ The variable templates are `.env.example`, `backend/.env.example`, `frontend/.en
 - Store secrets in a deployment secret manager, not Git or images.
 - Put uploads on durable private storage, add malware scanning, and define retention rules.
 - Schedule encrypted backups and test restoration.
-- Connect registration and identity verification to authoritative MEPCO systems before accepting live public data.
+- Replace the local fictional consumer directory with an authoritative read-only MEPCO consumer lookup before accepting live public data.
+- Configure an approved SMS gateway or keep `SMS_DRIVER=local-log`; local-log mode does not send real messages.
 - Add centralized monitoring, TLS termination, rate-limit review, privacy approval, and an incident-response process before organizational deployment.
 
 ## Release checklist
@@ -210,7 +214,7 @@ The variable templates are `.env.example`, `backend/.env.example`, `frontend/.en
 2. Run `verify`, isolated integration tests, dependency audits, `docker compose config --quiet`, and `git diff --check`.
 3. Confirm no `.env`, backup, upload, log, or generated build file is staged.
 4. Confirm no shared/sample account exists and bootstrap credentials have been cleared.
-5. Confirm production secrets, HTTPS, secure cookies, CORS, storage, backups, monitoring, and identity integration.
+5. Confirm production secrets, HTTPS, secure cookies, CORS, storage, backups, monitoring, consumer-directory integration, and SMS-provider approval.
 6. Perform role-by-role acceptance testing in staging.
 7. Obtain business, security, privacy, and operations approval before serving real MEPCO data.
 

@@ -1,12 +1,10 @@
-import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 
 import { databasePool } from '../../database/pool.js';
 import { AppError } from '../../shared/app-error.js';
-import { resolveActiveOperationalLocation } from '../../shared/operational-location.js';
 import type {
   AuthenticatedUser,
-  ConsumerRegistrationInput,
-  EmployeeRegistrationInput,
+  EmployeeVerificationCandidate,
   LoginCandidate,
   LoginMode,
   NewRefreshSession,
@@ -33,37 +31,6 @@ interface SessionRow extends RowDataPacket {
   status: 'active' | 'suspended' | 'inactive';
   expiresAt: Date;
   revokedAt: Date | null;
-}
-
-interface IdRow extends RowDataPacket {
-  id: number;
-}
-
-interface DepartmentOptionRow extends RowDataPacket {
-  id: number;
-  name: string;
-}
-
-interface LocationOptionRow extends RowDataPacket {
-  circleId: number;
-  circleName: string;
-  divisionId: number;
-  divisionName: string;
-  subdivisionId: number;
-  subdivisionName: string;
-}
-
-export interface RegistrationOptions {
-  departments: Array<{ id: number; name: string }>;
-  circles: Array<{
-    id: number;
-    name: string;
-    divisions: Array<{
-      id: number;
-      name: string;
-      subdivisions: Array<{ id: number; name: string }>;
-    }>;
-  }>;
 }
 
 async function writeAudit(
@@ -93,73 +60,40 @@ async function writeAudit(
   );
 }
 
-export async function getRegistrationOptions(): Promise<RegistrationOptions> {
-  const [departments] = await databasePool.query<DepartmentOptionRow[]>(
-    `SELECT id, name FROM departments
-     WHERE is_active = TRUE
-     ORDER BY sort_order, name`,
-  );
-  const [locations] = await databasePool.query<LocationOptionRow[]>(
-    `SELECT c.id AS circleId, c.name AS circleName,
-       d.id AS divisionId, d.name AS divisionName,
-       sd.id AS subdivisionId, sd.name AS subdivisionName
-     FROM circles c
-     JOIN divisions d ON d.circle_id = c.id AND d.is_active = TRUE
-     JOIN subdivisions sd ON sd.division_id = d.id AND sd.is_active = TRUE
-     WHERE c.is_active = TRUE
-     ORDER BY c.sort_order, c.name, d.sort_order, d.name, sd.sort_order, sd.name`,
-  );
-  const circleMap = new Map<number, RegistrationOptions['circles'][number]>();
-  for (const location of locations) {
-    let circle = circleMap.get(location.circleId);
-    if (circle === undefined) {
-      circle = { id: location.circleId, name: location.circleName, divisions: [] };
-      circleMap.set(location.circleId, circle);
-    }
-    let division = circle.divisions.find((item) => item.id === location.divisionId);
-    if (division === undefined) {
-      division = {
-        id: location.divisionId,
-        name: location.divisionName,
-        subdivisions: [],
-      };
-      circle.divisions.push(division);
-    }
-    division.subdivisions.push({
-      id: location.subdivisionId,
-      name: location.subdivisionName,
-    });
-  }
-  return {
-    departments: departments.map((department) => ({ id: department.id, name: department.name })),
-    circles: [...circleMap.values()],
-  };
-}
-
 export async function findLoginCandidate(
   mode: LoginMode,
   identifier: string,
 ): Promise<LoginCandidate | null> {
-  const joins = {
-    consumer: 'JOIN consumer_profiles profile ON profile.user_id = u.id',
-    employee: 'JOIN employee_profiles profile ON profile.user_id = u.id',
-    staff: '',
-  } as const;
-  const filters = {
-    consumer: 'profile.reference_number = ? AND r.name = \'consumer\'',
-    employee: 'profile.employee_id = ? AND r.name = \'employee\'',
-    staff: "u.username = ? AND r.name IN ('technician', 'supervisor', 'administrator')",
-  } as const;
+  if (mode !== 'staff') return null;
 
   const [rows] = await databasePool.execute<LoginRow[]>(
     `SELECT u.id, r.name AS role, u.display_name AS displayName,
             u.password_hash AS passwordHash, u.status, u.locked_until AS lockedUntil
      FROM users u
      JOIN roles r ON r.id = u.role_id
-     ${joins[mode]}
-     WHERE ${filters[mode]} AND u.deleted_at IS NULL
+     WHERE u.username = ? AND r.name IN ('technician', 'supervisor', 'administrator')
+       AND u.deleted_at IS NULL
      LIMIT 1`,
     [identifier],
+  );
+  return rows[0] ?? null;
+}
+export async function findEmployeeVerificationCandidate(
+  employeeId: string,
+): Promise<EmployeeVerificationCandidate | null> {
+  const [rows] = await databasePool.execute<Array<RowDataPacket & EmployeeVerificationCandidate>>(
+    `SELECT u.id, r.name AS role, u.display_name AS displayName,
+            u.password_hash AS passwordHash, u.status, u.locked_until AS lockedUntil,
+            profile.employee_id AS employeeId, u.cnic, u.email, u.phone,
+            department.name AS departmentName,
+            profile.work_location AS office
+     FROM users u
+     JOIN roles r ON r.id = u.role_id AND r.name = 'employee'
+     JOIN employee_profiles profile ON profile.user_id = u.id
+     JOIN departments department ON department.id = profile.department_id
+     WHERE profile.employee_id = ? AND u.deleted_at IS NULL
+     LIMIT 1`,
+    [employeeId],
   );
   return rows[0] ?? null;
 }
@@ -203,7 +137,6 @@ export async function recordLoginFailure(
     connection.release();
   }
 }
-
 export async function recordLoginSuccess(
   user: AuthenticatedUser,
   session: NewRefreshSession,
@@ -386,167 +319,6 @@ export async function revokeRefreshSession(
       );
     }
     await connection.commit();
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
-export async function registerConsumer(
-  input: ConsumerRegistrationInput,
-  passwordHash: string,
-  context: RequestContext,
-): Promise<AuthenticatedUser> {
-  const connection = await databasePool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [roleRows] = await connection.execute<IdRow[]>("SELECT id FROM roles WHERE name = 'consumer'");
-    const roleId = roleRows[0]?.id;
-    if (roleId === undefined) throw new Error('Consumer role is not configured');
-    const [locationRows] = await connection.execute<IdRow[]>(
-      `SELECT sd.id
-       FROM subdivisions sd
-       JOIN divisions d ON d.id = sd.division_id
-       JOIN circles c ON c.id = d.circle_id
-       WHERE c.id = ? AND d.id = ? AND sd.id = ?
-         AND c.is_active = TRUE AND d.is_active = TRUE AND sd.is_active = TRUE`,
-      [input.circleId, input.divisionId, input.subdivisionId],
-    );
-    if (locationRows[0] === undefined) {
-      throw new AppError(422, 'INVALID_LOCATION', 'The selected circle, division and sub-division do not match');
-    }
-    const [legacyCities] = await connection.execute<IdRow[]>(
-      `SELECT id FROM cities WHERE circle_id = ? ORDER BY is_active DESC, sort_order, id LIMIT 1`,
-      [input.circleId],
-    );
-    const legacyCityId = legacyCities[0]?.id;
-    if (legacyCityId === undefined) throw new Error('Legacy location placeholder is not configured');
-    const [duplicateRows] = await connection.execute<IdRow[]>(
-      'SELECT user_id AS id FROM consumer_profiles WHERE reference_number = ?',
-      [input.referenceNumber],
-    );
-    if (duplicateRows[0] !== undefined) {
-      throw new AppError(409, 'IDENTITY_ALREADY_REGISTERED', 'This Reference Number is already registered');
-    }
-    const [cnicRows] = await connection.execute<IdRow[]>(
-      'SELECT id FROM users WHERE cnic = ? LIMIT 1',
-      [input.cnic],
-    );
-    if (cnicRows[0] !== undefined) {
-      throw new AppError(409, 'CNIC_ALREADY_REGISTERED', 'This CNIC is already registered');
-    }
-    const [result] = await connection.execute<ResultSetHeader>(
-      `INSERT INTO users (role_id, display_name, email, phone, cnic, password_hash, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
-      [roleId, input.name, input.email ?? null, input.phone, input.cnic, passwordHash],
-    );
-    await connection.execute(
-      `INSERT INTO consumer_profiles
-         (user_id, reference_number, address, circle_id, division_id, subdivision_id, city_id,
-          service_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        result.insertId,
-        input.referenceNumber,
-        input.address,
-        input.circleId,
-        input.divisionId,
-        input.subdivisionId,
-        legacyCityId,
-        input.serviceAddress ?? null,
-      ],
-    );
-    await writeAudit(
-      connection,
-      result.insertId,
-      'auth.consumer.registered',
-      'user',
-      String(result.insertId),
-      'success',
-      context,
-    );
-    await connection.commit();
-    return { id: result.insertId, role: 'consumer', displayName: input.name, status: 'active' };
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
-}
-
-export async function registerEmployee(
-  input: EmployeeRegistrationInput,
-  passwordHash: string,
-  context: RequestContext,
-): Promise<AuthenticatedUser> {
-  const connection = await databasePool.getConnection();
-  try {
-    await connection.beginTransaction();
-    const [roleRows] = await connection.execute<IdRow[]>("SELECT id FROM roles WHERE name = 'employee'");
-    const roleId = roleRows[0]?.id;
-    if (roleId === undefined) throw new Error('Employee role is not configured');
-    const [departmentRows] = await connection.execute<IdRow[]>(
-      'SELECT id FROM departments WHERE id = ? AND is_active = TRUE',
-      [input.departmentId],
-    );
-    if (departmentRows[0] === undefined) {
-      throw new AppError(422, 'INVALID_DEPARTMENT', 'The selected department is unavailable');
-    }
-    const workLocation = await resolveActiveOperationalLocation(
-      connection,
-      input.circleId,
-      input.divisionId,
-      input.subdivisionId,
-    );
-    const [duplicateRows] = await connection.execute<IdRow[]>(
-      'SELECT user_id AS id FROM employee_profiles WHERE employee_id = ?',
-      [input.employeeId],
-    );
-    if (duplicateRows[0] !== undefined) {
-      throw new AppError(409, 'IDENTITY_ALREADY_REGISTERED', 'This Employee ID is already registered');
-    }
-    const [cnicRows] = await connection.execute<IdRow[]>(
-      'SELECT id FROM users WHERE cnic = ? LIMIT 1',
-      [input.cnic],
-    );
-    if (cnicRows[0] !== undefined) {
-      throw new AppError(409, 'CNIC_ALREADY_REGISTERED', 'This CNIC is already registered');
-    }
-    const [result] = await connection.execute<ResultSetHeader>(
-      `INSERT INTO users (role_id, display_name, email, phone, cnic, password_hash, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
-      [roleId, input.name, input.email, input.phone, input.cnic, passwordHash],
-    );
-    await connection.execute(
-      `INSERT INTO employee_profiles
-         (user_id, employee_id, department_id, designation, work_location,
-          circle_id, division_id, subdivision_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        result.insertId,
-        input.employeeId,
-        input.departmentId,
-        input.designation,
-        workLocation.label,
-        input.circleId,
-        input.divisionId,
-        input.subdivisionId,
-      ],
-    );
-    await writeAudit(
-      connection,
-      result.insertId,
-      'auth.employee.registered',
-      'user',
-      String(result.insertId),
-      'success',
-      context,
-    );
-    await connection.commit();
-    return { id: result.insertId, role: 'employee', displayName: input.name, status: 'active' };
   } catch (error) {
     await connection.rollback();
     throw error;

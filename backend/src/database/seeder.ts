@@ -237,6 +237,53 @@ async function demoWorkLocation(connection: PoolConnection): Promise<{
   };
 }
 
+const realisticConsumerRecords = [
+  ['10012345678901', '0123456789', 'Muhammad Ahmad', '03011234567', 'A-1a Residential', 'Multan Circle', 'Multan Cantt Division', 'Cantt'],
+  ['10012345678902', '0123456790', 'Fatima Zahra', null, 'A-1b Residential', 'Multan Circle', 'Mumtazabad Division', 'Mumtazabad'],
+  ['10012345678903', '0123456791', 'Ali Raza', '03021234567', 'A-2 Commercial', 'Khanewal Circle', 'Khanewal Division', 'Civil Lines'],
+  ['10012345678904', '0123456792', 'Ayesha Siddiqua', '03031234567', 'A-1a Residential', 'Vehari Circle', 'Vehari Division', 'Vehari City'],
+  ['10012345678905', '0123456793', 'Usman Tariq', null, 'A-3 General Services', 'Sahiwal Circle', 'Sahiwal 1st Division', 'Farid Town'],
+  ['10012345678906', '0123456794', 'Maryam Iqbal', '03041234567', 'A-1b Residential', 'Dera Ghazi Khan (D.G. Khan) Circle', 'D.G. Khan Division', 'D.G. Khan-I'],
+  ['10012345678907', '0123456795', 'Hassan Mehmood', '03051234567', 'A-1a Residential', 'Muzaffargarh Circle', 'Muzaffargarh Division', 'Muzaffargarh City'],
+  ['10012345678908', '0123456796', 'Zainab Noor', null, 'A-1b Residential', 'Layyah Circle', 'Layyah Division', 'Layyah City'],
+  ['10012345678909', '0123456797', 'Bilal Hussain', '03061234567', 'A-2 Commercial', 'Bahawalpur Circle', 'Bahawalpur Division (Model Town)', 'Satellite Town'],
+  ['10012345678910', '0123456798', 'Sana Khalid', '03071234567', 'A-1a Residential', 'Bahawalnagar Circle', 'Bahawalnagar Division', 'Bahawalnagar City'],
+  ['10012345678911', '0123456799', 'Hamza Nadeem', null, 'A-3 General Services', 'Rahim Yar Khan Circle', 'Rahim Yar Khan Division', 'RYK City'],
+] as const;
+
+async function seedConsumerRecords(connection: PoolConnection): Promise<void> {
+  for (const [referenceNumber, consumerId, fullName, phone, tariff, circleName,
+    divisionName, subdivisionName] of realisticConsumerRecords) {
+    const circleId = await idBy(connection, 'circles', 'name', circleName);
+    const [divisionRows] = await connection.execute<IdRow[]>(
+      'SELECT id FROM divisions WHERE circle_id = ? AND name = ? LIMIT 1',
+      [circleId, divisionName],
+    );
+    const divisionId = divisionRows[0]?.id;
+    if (divisionId === undefined) throw new Error(`Missing seed division: ${divisionName}`);
+    const [subdivisionRows] = await connection.execute<IdRow[]>(
+      'SELECT id FROM subdivisions WHERE division_id = ? AND name = ? LIMIT 1',
+      [divisionId, subdivisionName],
+    );
+    const subdivisionId = subdivisionRows[0]?.id;
+    if (subdivisionId === undefined) throw new Error(`Missing seed sub-division: ${subdivisionName}`);
+    await connection.execute(
+      `INSERT INTO consumer_records
+        (reference_number, consumer_id, full_name, registered_phone, tariff,
+         circle_id, division_id, subdivision_id, service_address, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
+       ON DUPLICATE KEY UPDATE
+         consumer_id = VALUES(consumer_id), full_name = VALUES(full_name),
+         registered_phone = VALUES(registered_phone), tariff = VALUES(tariff),
+         circle_id = VALUES(circle_id), division_id = VALUES(division_id),
+         subdivision_id = VALUES(subdivision_id), service_address = VALUES(service_address),
+         is_active = TRUE`,
+      [referenceNumber, consumerId, fullName, phone, tariff, circleId, divisionId,
+        subdivisionId, `${subdivisionName}, ${divisionName}`],
+    );
+  }
+}
+
 async function upsertStaffUser(
   connection: PoolConnection,
   roleName: 'technician' | 'supervisor' | 'administrator',
@@ -850,6 +897,7 @@ export async function runSeed(options: SeedOptions = {}): Promise<void> {
   try {
     await connection.beginTransaction();
     await upsertMasterData(connection);
+    if (env.nodeEnv !== 'production') await seedConsumerRecords(connection);
     if (options.includeTestFixtures === true) {
       const users = await seedUsers(connection);
       await seedTestActivity(connection, users);

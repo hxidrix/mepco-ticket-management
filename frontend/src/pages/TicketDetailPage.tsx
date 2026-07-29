@@ -53,7 +53,7 @@ export function TicketDetailPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [suspensionFormOpen, setSuspensionFormOpen] = useState(false);
   const manager = user?.role === 'supervisor' || user?.role === 'administrator';
-  const requester = user?.role === 'consumer' || user?.role === 'employee';
+  const requester = user?.role === 'employee';
 
   const load = useCallback(async () => {
     if (!Number.isSafeInteger(ticketId)) { setError('The ticket identifier is invalid.'); return; }

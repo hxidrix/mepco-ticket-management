@@ -120,8 +120,8 @@ async function targetRequester(
   );
   const target = targets[0];
   if (target === undefined) throw new AppError(404, 'USER_NOT_FOUND', 'The account was not found');
-  if (target.role !== 'consumer' && target.role !== 'employee') {
-    throw new AppError(422, 'REQUESTER_ACCOUNT_REQUIRED', 'Only consumer or employee accounts can use this workflow');
+  if (target.role !== 'employee') {
+    throw new AppError(422, 'REQUESTER_ACCOUNT_REQUIRED', 'Only employee accounts can use this workflow');
   }
   return target;
 }
@@ -228,15 +228,14 @@ export async function listSuspensionCases(
 
 export async function listRequesterOptions(search?: string): Promise<RequesterOptionRow[]> {
   const searchCondition = search === undefined ? '' : `AND (u.display_name LIKE ? OR
-    consumer.reference_number LIKE ? OR employee.employee_id LIKE ?)`;
-  const values = search === undefined ? [] : [`%${search}%`, `%${search}%`, `%${search}%`];
+    employee.employee_id LIKE ?)`;
+  const values = search === undefined ? [] : [`%${search}%`, `%${search}%`];
   const [rows] = await databasePool.execute<RequesterOptionRow[]>(
     `SELECT u.id,u.display_name AS displayName,role.name AS role,u.status,
-       COALESCE(consumer.reference_number,employee.employee_id,CONCAT('#',u.id)) AS identifier
+       COALESCE(employee.employee_id,CONCAT('#',u.id)) AS identifier
      FROM users u JOIN roles role ON role.id=u.role_id
-     LEFT JOIN consumer_profiles consumer ON consumer.user_id=u.id
      LEFT JOIN employee_profiles employee ON employee.user_id=u.id
-     WHERE role.name IN ('consumer','employee') AND u.deleted_at IS NULL ${searchCondition}
+     WHERE role.name = 'employee' AND u.deleted_at IS NULL ${searchCondition}
      ORDER BY u.display_name LIMIT 50`,
     values,
   );

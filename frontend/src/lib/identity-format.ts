@@ -1,6 +1,7 @@
 import type { LoginMode } from '../types/auth';
 
 export const CONSUMER_REFERENCE_LENGTH = 14;
+export const CONSUMER_ID_LENGTH = 10;
 export const EMPLOYEE_ID_LENGTH = 8;
 export const PHONE_NUMBER_LENGTH = 11;
 export const PHONE_NUMBER_PATTERN = '03[0-9]{9}';

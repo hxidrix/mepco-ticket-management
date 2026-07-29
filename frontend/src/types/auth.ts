@@ -1,5 +1,14 @@
 export type UserRole = 'consumer' | 'employee' | 'technician' | 'supervisor' | 'administrator';
-export type LoginMode = 'consumer' | 'employee' | 'staff';
+export type LoginMode = 'employee' | 'staff';
+
+export interface EmployeeVerificationPreview {
+  employeeId: string;
+  name: string;
+  email: string;
+  phone: string;
+  department: string;
+  office: string;
+}
 
 export interface AuthUser {
   id: number;
@@ -14,8 +23,7 @@ export interface AuthPayload {
   expiresIn: number;
 }
 
-export interface RegistrationOptions {
-  selfRegistrationEnabled: boolean;
+export interface LocationCatalogOptions {
   departments: Array<{ id: number; name: string }>;
   circles: Array<{
     id: number;

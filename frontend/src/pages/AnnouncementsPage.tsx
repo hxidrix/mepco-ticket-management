@@ -10,7 +10,7 @@ import {
 import type { Announcement } from '../lib/administration-api';
 import type { UserRole } from '../types/auth';
 
-const audienceRoles = ['consumer', 'employee', 'technician', 'supervisor', 'administrator'] as const satisfies readonly UserRole[];
+const audienceRoles = ['employee', 'technician', 'supervisor', 'administrator'] as const satisfies readonly UserRole[];
 
 function formValue(data: FormData, name: string): string {
   const entry = data.get(name);

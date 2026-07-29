@@ -1,5 +1,5 @@
 export type UserRole = 'consumer' | 'employee' | 'technician' | 'supervisor' | 'administrator';
-export type LoginMode = 'consumer' | 'employee' | 'staff';
+export type LoginMode = 'employee' | 'staff';
 
 export interface AuthenticatedUser {
   id: number;
@@ -17,38 +17,19 @@ export interface LoginCandidate {
   lockedUntil: Date | null;
 }
 
+export interface EmployeeVerificationCandidate extends LoginCandidate {
+  employeeId: string;
+  cnic: string | null;
+  email: string | null;
+  phone: string | null;
+  departmentName: string;
+  office: string;
+}
+
 export interface RequestContext {
   requestId: string;
   ipAddress: string | null;
   userAgent: string | null;
-}
-
-export interface ConsumerRegistrationInput {
-  referenceNumber: string;
-  name: string;
-  email?: string;
-  phone: string;
-  cnic: string;
-  password: string;
-  address: string;
-  circleId: number;
-  divisionId: number;
-  subdivisionId: number;
-  serviceAddress?: string;
-}
-
-export interface EmployeeRegistrationInput {
-  employeeId: string;
-  name: string;
-  email: string;
-  phone: string;
-  cnic: string;
-  password: string;
-  departmentId: number;
-  designation: string;
-  circleId: number;
-  divisionId: number;
-  subdivisionId: number;
 }
 
 export interface RefreshSessionRecord {

@@ -188,9 +188,9 @@ export function AccountGovernancePage() {
 
       {manager && (
         <section className="panel governance-direct">
-          <div className="panel__heading"><div><span>Manager action</span><h2>Suspend an account with details</h2></div><small>Consumer or employee only</small></div>
+          <div className="panel__heading"><div><span>Manager action</span><h2>Suspend an account with details</h2></div><small>Employee accounts</small></div>
           <form className="governance-search" onSubmit={(event) => { event.preventDefault(); setAppliedSearch(search); }}>
-            <label><span>Find account</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, reference number or employee ID" /></label>
+            <label><span>Find account</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name or employee ID" /></label>
             <button className="button button--secondary" type="submit">Search accounts</button>
           </form>
           <form className="governance-decision-form" onSubmit={(event) => void suspendDirectly(event)}>
@@ -250,7 +250,7 @@ export function AccountGovernancePage() {
         <section className="panel governance-support">
           <div className="panel__heading"><div><span>Account holder communication</span><h2>Suspension appeals and support</h2></div><small>{supportRequests.length} shown</small></div>
           <div className="governance-support__intro">
-            <p>Suspended consumers and employees submit appeals or questions from their restricted portal. Approving an appeal reactivates the account.</p>
+            <p>Suspended employees submit appeals or questions from their restricted portal. Approving an appeal reactivates the account.</p>
             <label><span>Request status</span><select value={supportStatus} onChange={(event) => { setSupportStatus(event.target.value); setExpandedSupportId(null); }}><option value="">All requests</option><option value="submitted">Submitted</option><option value="under-review">Under review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="resolved">Resolved</option></select></label>
           </div>
           {supportRequests.length === 0 ? <p className="empty-state">No appeals or support requests match this view.</p> : (

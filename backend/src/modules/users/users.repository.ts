@@ -12,6 +12,7 @@ import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext, UserRole } from '../auth/auth.types.js';
 import type {
   AdminUserUpdateInput,
+  EmployeeCreateInput,
   ProfileUpdateInput,
   StaffCreateInput,
   UserProfile,
@@ -50,6 +51,63 @@ interface ProfileRow extends RowDataPacket {
   workDivisionName: string | null;
   workSubdivisionId: number | null;
   workSubdivisionName: string | null;
+}
+
+export async function createEmployeeUser(
+  input: EmployeeCreateInput,
+  passwordHash: string,
+  actorId: number,
+  context: RequestContext,
+): Promise<UserProfile> {
+  const connection = await databasePool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [roles] = await connection.execute<IdRow[]>(
+      "SELECT id FROM roles WHERE name = 'employee' AND is_active = TRUE",
+    );
+    const roleId = roles[0]?.id;
+    if (roleId === undefined) throw new Error('Employee role is unavailable');
+    await activeDepartment(connection, input.departmentId);
+    const workLocation = await resolveActiveOperationalLocation(
+      connection, input.circleId, input.divisionId, input.subdivisionId,
+    );
+    const [existing] = await connection.execute<IdRow[]>(
+      'SELECT user_id AS id FROM employee_profiles WHERE employee_id = ? LIMIT 1',
+      [input.employeeId],
+    );
+    if (existing[0] !== undefined) {
+      throw new AppError(409, 'EMPLOYEE_ID_EXISTS', 'This Employee ID is already in use');
+    }
+    await ensureCnicAvailable(connection, input.cnic);
+    const [result] = await connection.execute<ResultSetHeader>(
+      `INSERT INTO users
+        (role_id, display_name, email, phone, cnic, password_hash, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'active')`,
+      [roleId, input.displayName, input.email, normalizeOptionalPhoneNumber(input.phone),
+        input.cnic, passwordHash],
+    );
+    await connection.execute(
+      `INSERT INTO employee_profiles
+        (user_id, employee_id, department_id, designation, work_location,
+         circle_id, division_id, subdivision_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [result.insertId, input.employeeId, input.departmentId, input.designation,
+        workLocation.label, input.circleId, input.divisionId, input.subdivisionId],
+    );
+    await writeAudit(connection, {
+      actorId, action: 'admin.employee.created', entityType: 'user',
+      entityId: String(result.insertId), context, metadata: { employeeId: input.employeeId },
+    });
+    await connection.commit();
+    const profile = await findUserProfile(result.insertId);
+    if (profile === null) throw new Error('Created employee could not be loaded');
+    return profile;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 interface IdRow extends RowDataPacket { id: number }
@@ -299,7 +357,7 @@ export async function listUsers(input: {
   role?: UserRole;
   status?: UserStatus;
 }): Promise<{ items: UserProfile[]; totalItems: number }> {
-  const conditions = ['u.deleted_at IS NULL'];
+  const conditions = ["u.deleted_at IS NULL", "r.name <> 'consumer'"];
   const params: Array<string | number> = [];
   if (input.search !== undefined) {
     conditions.push(`(u.display_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?
@@ -405,7 +463,7 @@ export async function updateUserAsAdmin(
     const currentTarget = targetRows[0];
     if (currentTarget === undefined) throw new AppError(404, 'USER_NOT_FOUND', 'The user was not found');
     const currentRole = currentTarget.role;
-    if ((currentRole === 'consumer' || currentRole === 'employee') && currentTarget.status !== input.status) {
+    if (currentRole === 'employee' && currentTarget.status !== input.status) {
       throw new AppError(
         422,
         'ACCOUNT_GOVERNANCE_REQUIRED',

@@ -46,6 +46,11 @@ export async function createStaffRequest(input: Record<string, unknown>): Promis
   return unwrap<{ profile: UserProfile }>(response.data).profile;
 }
 
+export async function createEmployeeRequest(input: Record<string, unknown>): Promise<UserProfile> {
+  const response = await apiClient.post('/users/admin/employees', input);
+  return unwrap<{ profile: UserProfile }>(response.data).profile;
+}
+
 export async function updateUserRequest(
   id: number,
   input: Record<string, unknown>,

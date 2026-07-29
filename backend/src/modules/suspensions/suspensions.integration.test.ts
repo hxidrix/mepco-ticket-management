@@ -2,12 +2,11 @@ import request from 'supertest';
 import type { Response as SupertestResponse } from 'supertest';
 
 import { app } from '../../app.js';
-
-function accessToken(response: SupertestResponse): string {
-  const token = (response.body as { data?: { accessToken?: unknown } }).data?.accessToken;
-  if (typeof token !== 'string') throw new Error('Expected an access token');
-  return token;
-}
+import {
+  integrationAccessToken,
+  loginStaff,
+  provisionEmployee,
+} from '../../test/integration-auth.js';
 
 function refreshCookie(response: SupertestResponse): string {
   const value = response.headers['set-cookie']?.[0]?.split(';')[0];
@@ -15,15 +14,22 @@ function refreshCookie(response: SupertestResponse): string {
   return value;
 }
 
-async function login(mode: 'consumer' | 'staff', identifier: string) {
-  return request(app).post('/api/v1/auth/login')
-    .send({ mode, identifier, password: 'Demo@12345' }).expect(200);
-}
-
-describe('suspended account support portal', () => {
+describe('suspended employee support portal', () => {
   it('permits only the restricted portal, stores an appeal, and supports supervisor review', async () => {
-    const suspendedLogin = await login('consumer', '10000000000099');
-    const suspendedToken = accessToken(suspendedLogin);
+    const employee = await provisionEmployee('Suspension Portal');
+    const supervisorToken = await loginStaff('supervisor.demo');
+    await request(app).post(`/api/v1/account-governance/users/${employee.id}/suspend`)
+      .set('Authorization', `Bearer ${supervisorToken}`)
+      .send({
+        category: 'other',
+        reasonSummary: 'Fictional suspended-account acceptance scenario',
+        details: 'This isolated employee account is suspended solely to exercise the restricted appeal and support workflow.',
+      }).expect(201);
+
+    const suspendedLogin = await request(app).post('/api/v1/auth/employee/continue')
+      .send({ employeeId: employee.employeeId, cnicLastFour: employee.cnicLastFour })
+      .expect(200);
+    const suspendedToken = integrationAccessToken(suspendedLogin);
     const suspendedCookie = refreshCookie(suspendedLogin);
 
     const portal = await request(app).get('/api/v1/suspensions/me')
@@ -44,17 +50,21 @@ describe('suspended account support portal', () => {
 
     const created = await request(app).post('/api/v1/suspensions/me/requests')
       .set('Authorization', `Bearer ${suspendedToken}`)
-      .send({ requestType: 'appeal', contactPreference: 'portal', message: 'Please review this fictional suspension because the account details are now verified.' })
-      .expect(201);
+      .send({
+        requestType: 'appeal',
+        contactPreference: 'portal',
+        message: 'Please review this fictional suspension because the account details are now verified.',
+      }).expect(201);
     const requestId = (created.body as { data: { id: number } }).data.id;
 
     await request(app).post('/api/v1/suspensions/me/requests')
       .set('Authorization', `Bearer ${suspendedToken}`)
-      .send({ requestType: 'appeal', contactPreference: 'portal', message: 'This duplicate fictional appeal must be prevented while the first remains open.' })
-      .expect(409);
+      .send({
+        requestType: 'appeal',
+        contactPreference: 'portal',
+        message: 'This duplicate fictional appeal must be prevented while the first remains open.',
+      }).expect(409);
 
-    const supervisorLogin = await login('staff', 'supervisor.demo');
-    const supervisorToken = accessToken(supervisorLogin);
     const queue = await request(app).get('/api/v1/suspensions/management/requests?status=submitted')
       .set('Authorization', `Bearer ${supervisorToken}`).expect(200);
     expect((queue.body as { data: Array<{ id: number; status: string }> }).data)

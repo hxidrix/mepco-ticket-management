@@ -2,11 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 
-import type { RegistrationOptions } from '../types/auth';
+import type { LocationCatalogOptions } from '../types/auth';
 import { OperationalLocationFields } from './OperationalLocationFields';
 
-const options: RegistrationOptions = {
-  selfRegistrationEnabled: true,
+const options: LocationCatalogOptions = {
   departments: [],
   circles: [
     {

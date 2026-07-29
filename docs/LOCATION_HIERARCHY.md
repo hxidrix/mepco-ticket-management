@@ -4,7 +4,7 @@ The active operational location model is:
 
 **Circle → Division → Sub-division**
 
-Consumer and employee registration, every role-specific profile, consumer ticket submission and filters, ticket details, automatic staff routing, staff access boundaries, reports, master-data administration, and Swagger use this hierarchy. Consumer profiles represent the service/request location. Employee, technician, supervisor, and administrator profiles use the same hierarchy for their work location.
+Public consumer verification records, complaint submission and filters, employee/staff profiles, ticket details, automatic staff routing, staff access boundaries, reports, master-data administration, and Swagger use this hierarchy. A consumer record supplies the locked service/request location after verification. Employee, technician, supervisor, and administrator profiles use the same hierarchy for their work location.
 
 Existing records created under the earlier Circle/City model are preserved. Where an exact new location cannot be safely inferred, the migration assigns the record to **Other Division → Other Sub-division** inside its existing circle. Administrators can then correct it without losing history. The old city fields remain only as migration history and are not exposed by active APIs or forms.
 

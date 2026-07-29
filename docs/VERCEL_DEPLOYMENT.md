@@ -47,7 +47,8 @@ Required application values:
 - `CORS_ORIGIN`: final HTTPS application origin.
 - `REFRESH_COOKIE_SECURE=true`.
 - `ENABLE_API_DOCS=false`.
-- `ENABLE_SELF_REGISTRATION=false` until authoritative identity verification is available.
+- `SMS_DRIVER=local-log` unless an approved HTTPS SMS gateway webhook is configured.
+- `SMS_WEBHOOK_URL`, `SMS_WEBHOOK_TOKEN`, and `SMS_SENDER_ID` only when using the webhook driver.
 
 Do not add `VITE_API_URL`; the frontend intentionally defaults to the same-origin `/api/v1` path for secure refresh cookies and preview deployments.
 
@@ -89,13 +90,16 @@ Push the configured files, then redeploy from Vercel. Every service is built ind
 
 Verify these URLs on the deployment:
 
-- `/` loads the sign-in page.
-- `/tickets` refreshes without a Vercel 404.
+- `/` loads the public complaint portal.
+- `/complaints/verify`, `/complaints/track`, `/login`, and `/app` refresh without a Vercel 404.
 - `/api/v1/health/live` returns HTTP 200.
 - `/api/v1/health/ready` reports `database: connected`.
 - `/api-docs` returns 404 in production.
 
-Then perform an authenticated smoke test: sign in, create a ticket, add a private attachment, download it, refresh the page, and sign out.
+Then perform both smoke tests:
+
+1. Verify a non-production consumer record, submit a complaint with an attachment, and track it using tracking number + Reference Number + Consumer ID.
+2. Sign in as an employee/staff member, create or process a ticket, add/download a private attachment, refresh the page, and sign out.
 
 ## Operational notes
 

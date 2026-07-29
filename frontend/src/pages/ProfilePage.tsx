@@ -4,7 +4,7 @@ import type { FormEvent } from 'react';
 import { PasswordInput } from '../components/PasswordInput';
 import { OperationalLocationFields } from '../components/OperationalLocationFields';
 import { useAuth } from '../hooks/useAuth';
-import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
+import { getApiErrorMessage, locationCatalogRequest } from '../lib/auth-api';
 import {
   CNIC_LENGTH,
   CNIC_PATTERN,
@@ -12,7 +12,7 @@ import {
   PHONE_NUMBER_PATTERN,
 } from '../lib/identity-format';
 import { changePasswordRequest, profileRequest, updateProfileRequest } from '../lib/users-api';
-import type { RegistrationOptions } from '../types/auth';
+import type { LocationCatalogOptions } from '../types/auth';
 import type { UserProfile } from '../types/users';
 
 function value(data: FormData, name: string): string {
@@ -23,7 +23,7 @@ function value(data: FormData, name: string): string {
 export function ProfilePage() {
   const { logout, updateDisplayName } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [options, setOptions] = useState<RegistrationOptions | null>(null);
+  const [options, setOptions] = useState<LocationCatalogOptions | null>(null);
   const [circleId, setCircleId] = useState('');
   const [divisionId, setDivisionId] = useState('');
   const [subdivisionId, setSubdivisionId] = useState('');
@@ -33,7 +33,7 @@ export function ProfilePage() {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([profileRequest(), registrationOptionsRequest()])
+    void Promise.all([profileRequest(), locationCatalogRequest()])
       .then(([nextProfile, nextOptions]) => {
         if (!active) return;
         setProfile(nextProfile);
@@ -195,14 +195,14 @@ export function ProfilePage() {
           </div>
         </form>
 
-        <form className="panel form-grid form-grid--single" onSubmit={(event) => void submitPassword(event)}>
+        {profile.role !== 'employee' && <form className="panel form-grid form-grid--single" onSubmit={(event) => void submitPassword(event)}>
           <div className="panel__heading"><div><span>Security</span><h2>Change password</h2></div></div>
           <p className="panel__copy">Changing your password revokes every active session, including this one.</p>
           <PasswordInput name="currentPassword" label="Current password" autoComplete="current-password" />
           <PasswordInput name="newPassword" label="New password" autoComplete="new-password" minLength={10} />
           <PasswordInput name="confirmPassword" label="Confirm new password" autoComplete="new-password" minLength={10} />
           <button className="button button--danger" type="submit" disabled={saving}>Change password</button>
-        </form>
+        </form>}
       </div>
     </main>
   );

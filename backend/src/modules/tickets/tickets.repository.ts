@@ -35,7 +35,7 @@ interface TicketRow extends RowDataPacket {
   priorityId: number; priorityName: string; prioritySlug: string; priorityColor: string;
   complaintSlaTargetHours: number; slaTargetHours: number; slaDueAt: Date; isOverdue: number;
   statusId: number; statusName: string; statusSlug: string; assigneeId: number | null;
-  assigneeName: string | null; requesterId: number; requesterName: string; resolutionSummary: string | null;
+  assigneeName: string | null; requesterId: number | null; requesterName: string; resolutionSummary: string | null;
   version: number; createdAt: Date; updatedAt: Date; resolvedAt: Date | null; closedAt: Date | null;
 }
 interface DetailChildRow extends RowDataPacket { id: number }
@@ -44,7 +44,7 @@ interface TicketReviewRow extends RowDataPacket {
   requesterId: number; requesterName: string; createdAt: Date;
 }
 interface WorkflowRow extends RowDataPacket {
-  id: number; requesterId: number; domain: TicketDomain; departmentId: number | null;
+  id: number; requesterId: number | null; domain: TicketDomain; departmentId: number | null;
   categoryId: number; circleId: number | null; divisionId: number | null;
   subdivisionId: number | null; assigneeId: number | null;
   statusId: number; statusSlug: string; version: number; complaintSlaTargetHours: number;
@@ -90,16 +90,18 @@ const ticketSelect = `
       AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)) AS isOverdue,
     s.id AS statusId, s.name AS statusName, s.slug AS statusSlug,
     t.current_assignee_id AS assigneeId, assignee.display_name AS assigneeName,
-    t.requester_id AS requesterId, requester.display_name AS requesterName,
+    t.requester_id AS requesterId,
+    COALESCE(requester.display_name, consumer.full_name) AS requesterName,
     t.resolution_summary AS resolutionSummary, t.version, t.created_at AS createdAt,
     t.updated_at AS updatedAt, t.resolved_at AS resolvedAt, t.closed_at AS closedAt
   FROM tickets t
   JOIN priorities p ON p.id = t.priority_id
   JOIN ticket_statuses s ON s.id = t.status_id
-  JOIN users requester ON requester.id = t.requester_id
+  LEFT JOIN users requester ON requester.id = t.requester_id
+  LEFT JOIN consumer_records consumer ON consumer.id = t.consumer_record_id
   LEFT JOIN users assignee ON assignee.id = t.current_assignee_id`;
 
-function ticketNumber(): string {
+export function ticketNumber(): string {
   return `MEPCO-${new Date().getUTCFullYear()}-${String(randomInt(0, 1_000_000)).padStart(6, '0')}`;
 }
 
@@ -118,7 +120,7 @@ function scopeCondition(actor: TicketActor): { sql: string; values: SqlValue[] }
   };
 }
 
-async function validateCreation(
+export async function validateCreation(
   connection: PoolConnection,
   domain: TicketDomain,
   input: TicketCreateInput,
@@ -227,7 +229,7 @@ async function validateCreation(
   };
 }
 
-async function leastBusyTechnician(
+export async function leastBusyTechnician(
   connection: PoolConnection,
   input: {
     domain: TicketDomain;
@@ -562,10 +564,16 @@ export async function assignTicket(
     );
     await connection.execute(
       `INSERT INTO notifications (recipient_id, type, title, message, target_type, target_id)
-       VALUES (?, 'ticket_assigned', 'Ticket assigned', 'A ticket was assigned to you', 'ticket', ?),
-              (?, 'ticket_updated', 'Ticket assigned', 'Your ticket has been assigned', 'ticket', ?)`,
-      [technicianId, ticketId, ticket.requesterId, ticketId],
+       VALUES (?, 'ticket_assigned', 'Ticket assigned', 'A ticket was assigned to you', 'ticket', ?)`,
+      [technicianId, ticketId],
     );
+    if (ticket.requesterId !== null) {
+      await connection.execute(
+        `INSERT INTO notifications (recipient_id, type, title, message, target_type, target_id)
+         VALUES (?, 'ticket_updated', 'Ticket assigned', 'Your ticket has been assigned', 'ticket', ?)`,
+        [ticket.requesterId, ticketId],
+      );
+    }
     await writeAudit(connection, { actorId: actor.id, action: 'ticket.assigned', entityType: 'ticket', entityId: String(ticketId), context, metadata: { technicianId } });
     await connection.commit();
   } catch (error) { await connection.rollback(); throw error; }
@@ -640,7 +648,9 @@ export async function transitionTicket(
        VALUES (?, 'status_changed', ?, ?, ?, ?)`,
       [ticketId, actor.id, JSON.stringify({ status: ticket.statusSlug }), JSON.stringify({ status: targetStatus, resolutionSummary }), reason],
     );
-    const recipients = new Set([ticket.requesterId]); if (ticket.assigneeId !== null) recipients.add(ticket.assigneeId);
+    const recipients = new Set<number>();
+    if (ticket.requesterId !== null) recipients.add(ticket.requesterId);
+    if (ticket.assigneeId !== null) recipients.add(ticket.assigneeId);
     for (const recipientId of recipients) {
       if (recipientId === actor.id) continue;
       await connection.execute(
@@ -838,7 +848,7 @@ export async function addTicketComment(
       [ticketId, actor.id, JSON.stringify({ commentId: result.insertId, visibility }), visibility === 'internal' ? 'Internal note added' : 'Public comment added'],
     );
     const recipients = new Set<number>();
-    if (visibility === 'public') recipients.add(ticket.requesterId);
+    if (visibility === 'public' && ticket.requesterId !== null) recipients.add(ticket.requesterId);
     if (ticket.assigneeId !== null) recipients.add(ticket.assigneeId);
     for (const recipientId of recipients) {
       if (recipientId === actor.id) continue;

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   isConsumerReferenceNumber,
+  isConsumerId,
+  isCnicLastFour,
   isCnic,
   isEmployeeIdInput,
   isPhoneNumber,
@@ -31,10 +33,16 @@ describe('identity formats', () => {
     expect(normalizeEmployeeId('EMP-1')).toBe('EMP-1');
   });
 
-  it('normalizes employee login identifiers without changing other login modes', () => {
+  it('normalizes employee login identifiers without changing staff identifiers', () => {
     expect(normalizeLoginIdentifier('employee', '42')).toBe('00000042');
-    expect(normalizeLoginIdentifier('consumer', ' 10000000000001 ')).toBe('10000000000001');
     expect(normalizeLoginIdentifier('staff', ' tech.it ')).toBe('tech.it');
+  });
+
+  it('validates public consumer IDs and CNIC suffixes', () => {
+    expect(isConsumerId('0123456789')).toBe(true);
+    expect(isConsumerId('123456789')).toBe(false);
+    expect(isCnicLastFour('0003')).toBe(true);
+    expect(isCnicLastFour('003')).toBe(false);
   });
 
   it('accepts only 11-digit phone numbers beginning with 03', () => {

@@ -10,21 +10,17 @@ import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
 import {
-  isConsumerReferenceNumber,
-  isCnic,
+  isCnicLastFour,
   isEmployeeIdInput,
-  isPhoneNumber,
 } from '../../shared/identity-format.js';
 import { authenticate } from './auth.middleware.js';
-import { getRegistrationOptions } from './auth.repository.js';
 import {
-  createConsumerAccount,
-  createEmployeeAccount,
+  continueEmployeeLogin,
   login,
   logout,
   refresh,
+  verifyEmployeeIdentity,
 } from './auth.service.js';
-import type { ConsumerRegistrationInput, EmployeeRegistrationInput, LoginMode } from './auth.types.js';
 
 export const authRouter = Router();
 
@@ -39,18 +35,16 @@ const authenticationLimiter = rateLimit({
   },
 });
 
-const passwordValidation = body('password')
-  .isString()
-  .isLength({ min: 10, max: 128 })
-  .withMessage('Password must contain 10 to 128 characters')
-  .matches(/[a-z]/u)
-  .withMessage('Password must include a lowercase letter')
-  .matches(/[A-Z]/u)
-  .withMessage('Password must include an uppercase letter')
-  .matches(/[0-9]/u)
-  .withMessage('Password must include a number')
-  .matches(/[^A-Za-z0-9]/u)
-  .withMessage('Password must include a symbol');
+const identityVerificationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1_000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  validate: { forwardedHeader: false },
+  handler: (_request, _response, next) => {
+    next(new AppError(429, 'RATE_LIMITED', 'Too many verification attempts; try again later'));
+  },
+});
 
 function getRefreshCookie(request: Request): string | null {
   const cookies = request.cookies as Record<string, unknown>;
@@ -68,109 +62,63 @@ function setRefreshCookie(response: Response, token: string): void {
   });
 }
 
-authRouter.get(
-  '/registration-options',
-  asyncHandler(async (_request, response) => {
-    sendSuccess(response, 200, {
-      ...await getRegistrationOptions(),
-      selfRegistrationEnabled: env.enableSelfRegistration,
-    });
-  }),
-);
-
-authRouter.post(
-  '/register/consumer',
-  authenticationLimiter,
-  body('referenceNumber')
-    .trim()
-    .custom(isConsumerReferenceNumber)
-    .withMessage('MEPCO Reference Number must contain exactly 14 digits'),
-  body('name').trim().isLength({ min: 2, max: 140 }).withMessage('Name is required'),
-  body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
-  body('phone')
-    .trim()
-    .custom(isPhoneNumber)
-    .withMessage('Phone number must contain exactly 11 digits and begin with 03'),
-  body('cnic')
-    .trim()
-    .custom(isCnic)
-    .withMessage('CNIC must contain exactly 13 digits'),
-  passwordValidation,
-  body('address').trim().isLength({ min: 5, max: 500 }).withMessage('Address is required'),
-  body('circleId').isInt({ min: 1 }).toInt(),
-  body('divisionId').isInt({ min: 1 }).toInt(),
-  body('subdivisionId').isInt({ min: 1 }).toInt(),
-  body('serviceAddress').optional({ values: 'falsy' }).trim().isLength({ max: 500 }),
-  validateRequest,
-  asyncHandler(async (request, response) => {
-    const user = await createConsumerAccount(
-      request.body as ConsumerRegistrationInput,
-      requestContext(request),
-    );
-    sendSuccess(response, 201, { user }, 'Consumer account created successfully');
-  }),
-);
-
-authRouter.post(
-  '/register/employee',
-  authenticationLimiter,
-  body('employeeId')
-    .trim()
-    .custom(isEmployeeIdInput)
-    .withMessage('Employee ID must contain 1 to 8 digits'),
-  body('name').trim().isLength({ min: 2, max: 140 }).withMessage('Name is required'),
-  body('email').isEmail().normalizeEmail(),
-  body('phone')
-    .trim()
-    .custom(isPhoneNumber)
-    .withMessage('Phone number must contain exactly 11 digits and begin with 03'),
-  body('cnic')
-    .trim()
-    .custom(isCnic)
-    .withMessage('CNIC must contain exactly 13 digits'),
-  passwordValidation,
-  body('departmentId').isInt({ min: 1 }).toInt(),
-  body('designation').trim().isLength({ min: 2, max: 140 }),
-  body('circleId').isInt({ min: 1 }).toInt(),
-  body('divisionId').isInt({ min: 1 }).toInt(),
-  body('subdivisionId').isInt({ min: 1 }).toInt(),
-  validateRequest,
-  asyncHandler(async (request, response) => {
-    const user = await createEmployeeAccount(
-      request.body as EmployeeRegistrationInput,
-      requestContext(request),
-    );
-    sendSuccess(response, 201, { user }, 'Employee account created successfully');
-  }),
-);
-
 authRouter.post(
   '/login',
   authenticationLimiter,
-  body('mode').isIn(['consumer', 'employee', 'staff']),
-  body('identifier')
-    .trim()
-    .custom((value: string, { req }) => {
-      const requestBody: unknown = req.body;
-      const mode = typeof requestBody === 'object'
-        && requestBody !== null
-        && 'mode' in requestBody
-        ? (requestBody as { mode?: unknown }).mode
-        : undefined;
-      if (mode === 'consumer') return isConsumerReferenceNumber(value);
-      if (mode === 'employee') return isEmployeeIdInput(value);
-      return mode === 'staff' && value.length >= 3 && value.length <= 80;
-    })
-    .withMessage('Enter a valid identifier for the selected login type'),
+  body('mode').equals('staff'),
+  body('identifier').trim().isLength({ min: 3, max: 80 }),
   body('password').isString().isLength({ min: 1, max: 128 }),
   validateRequest,
   asyncHandler(async (request, response) => {
-    const { mode, identifier, password } = request.body as {
-      mode: LoginMode;
+    const { identifier, password } = request.body as {
       identifier: string;
       password: string;
     };
-    const result = await login(mode, identifier, password, requestContext(request));
+    const result = await login('staff', identifier, password, requestContext(request));
+    setRefreshCookie(response, result.tokens.refreshToken);
+    sendSuccess(response, 200, {
+      user: result.user,
+      accessToken: result.tokens.accessToken,
+      expiresIn: result.tokens.accessExpiresInSeconds,
+    }, 'Signed in successfully');
+  }),
+);
+
+const employeeIdentityValidation = [
+  body('employeeId').trim().custom(isEmployeeIdInput)
+    .withMessage('Employee ID must contain 1 to 8 digits'),
+  body('cnicLastFour').trim().custom(isCnicLastFour)
+    .withMessage('Enter the last four digits of the CNIC'),
+];
+
+authRouter.post(
+  '/employee/verify',
+  identityVerificationLimiter,
+  ...employeeIdentityValidation,
+  validateRequest,
+  asyncHandler(async (request, response) => {
+    const input = request.body as { employeeId: string; cnicLastFour: string };
+    const employee = await verifyEmployeeIdentity(
+      input.employeeId,
+      input.cnicLastFour,
+      requestContext(request),
+    );
+    sendSuccess(response, 200, { employee }, 'Employee details verified');
+  }),
+);
+
+authRouter.post(
+  '/employee/continue',
+  identityVerificationLimiter,
+  ...employeeIdentityValidation,
+  validateRequest,
+  asyncHandler(async (request, response) => {
+    const input = request.body as { employeeId: string; cnicLastFour: string };
+    const result = await continueEmployeeLogin(
+      input.employeeId,
+      input.cnicLastFour,
+      requestContext(request),
+    );
     setRefreshCookie(response, result.tokens.refreshToken);
     sendSuccess(response, 200, {
       user: result.user,

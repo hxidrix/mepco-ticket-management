@@ -29,6 +29,12 @@ describe('application foundation', () => {
     expect(body.paths).toHaveProperty('/api/v1/health/live');
     expect(body.paths).toHaveProperty('/api/v1/health/ready');
     expect(body.paths).toHaveProperty('/api/v1/auth/login');
+    expect(body.paths).toHaveProperty('/api/v1/auth/employee/verify');
+    expect(body.paths).toHaveProperty('/api/v1/public/complaints/verify');
+    expect(body.paths).toHaveProperty('/api/v1/public/complaints/submit');
+    expect(body.paths).toHaveProperty('/api/v1/public/complaints/track');
+    expect(body.paths).not.toHaveProperty('/api/v1/auth/register/consumer');
+    expect(body.paths).not.toHaveProperty('/api/v1/auth/register/employee');
     expect(body.paths).toHaveProperty('/api/v1/tickets/{id}/attachments');
     expect(body.paths).toHaveProperty('/api/v1/tickets/reports/export.csv');
     expect(body.paths).toHaveProperty('/api/v1/tickets/reports/export.pdf');

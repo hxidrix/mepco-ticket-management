@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 
 import { PasswordInput } from '../components/PasswordInput';
 import { OperationalLocationFields } from '../components/OperationalLocationFields';
-import { getApiErrorMessage, registrationOptionsRequest } from '../lib/auth-api';
+import { getApiErrorMessage, locationCatalogRequest } from '../lib/auth-api';
 import {
+  createEmployeeRequest,
   createStaffRequest,
   deleteUserRequest,
   resetPasswordRequest,
@@ -18,7 +19,7 @@ import {
   PHONE_NUMBER_LENGTH,
   PHONE_NUMBER_PATTERN,
 } from '../lib/identity-format';
-import type { RegistrationOptions, UserRole } from '../types/auth';
+import type { LocationCatalogOptions, UserRole } from '../types/auth';
 import type { PaginationMeta, UserProfile } from '../types/users';
 
 function formValue(data: FormData, name: string): string {
@@ -31,12 +32,13 @@ const emptyMeta: PaginationMeta = { page: 1, pageSize: 20, totalItems: 0, totalP
 export function UserManagementPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [meta, setMeta] = useState(emptyMeta);
-  const [options, setOptions] = useState<RegistrationOptions | null>(null);
+  const [options, setOptions] = useState<LocationCatalogOptions | null>(null);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
   const [filters, setFilters] = useState({ search: '', role: '', status: '' });
   const [showCreate, setShowCreate] = useState(false);
+  const [createRole, setCreateRole] = useState<'employee' | 'technician' | 'supervisor' | 'administrator'>('employee');
   const [resetTarget, setResetTarget] = useState<UserProfile | null>(null);
   const [circleId, setCircleId] = useState('');
   const [divisionId, setDivisionId] = useState('');
@@ -62,7 +64,7 @@ export function UserManagementPage() {
 
   useEffect(() => { void loadUsers(); }, [loadUsers]);
   useEffect(() => {
-    void registrationOptionsRequest().then((result) => {
+    void locationCatalogRequest().then((result) => {
       setOptions(result);
       const firstCircle = result.circles[0];
       const firstDivision = firstCircle?.divisions[0];
@@ -79,23 +81,22 @@ export function UserManagementPage() {
     setError(null); setMessage(null); setBusyId(0);
     const data = new FormData(event.currentTarget);
     try {
-      await createStaffRequest({
-        role: formValue(data, 'role'),
-        username: formValue(data, 'username'),
-        displayName: formValue(data, 'displayName'),
-        email: formValue(data, 'email'),
-        phone: formValue(data, 'phone'),
-        cnic: formValue(data, 'cnic'),
-        password: formValue(data, 'password'),
+      const common = {
+        displayName: formValue(data, 'displayName'), email: formValue(data, 'email'),
+        phone: formValue(data, 'phone'), cnic: formValue(data, 'cnic'),
         departmentId: Number(formValue(data, 'departmentId')) || undefined,
-        designation: formValue(data, 'designation'),
-        circleId: Number(formValue(data, 'circleId')),
-        divisionId: Number(formValue(data, 'divisionId')),
-        subdivisionId: Number(formValue(data, 'subdivisionId')),
-      });
+        designation: formValue(data, 'designation'), circleId: Number(formValue(data, 'circleId')),
+        divisionId: Number(formValue(data, 'divisionId')), subdivisionId: Number(formValue(data, 'subdivisionId')),
+      };
+      if (createRole === 'employee') {
+        await createEmployeeRequest({ ...common, employeeId: formValue(data, 'employeeId') });
+      } else {
+        await createStaffRequest({ ...common, role: createRole,
+          username: formValue(data, 'username'), password: formValue(data, 'password') });
+      }
       event.currentTarget.reset();
       setShowCreate(false);
-      setMessage('Staff account created.');
+      setMessage(createRole === 'employee' ? 'Employee account created.' : 'Staff account created.');
       await loadUsers();
     } catch (caught) {
       setError(getApiErrorMessage(caught));
@@ -200,15 +201,17 @@ export function UserManagementPage() {
     <main className="workspace-page">
       <div className="workspace-page__heading">
         <div><p>Administration / identity</p><h1>User accounts</h1></div>
-        <button className="button button--primary" type="button" onClick={() => setShowCreate((shown) => !shown)}>{showCreate ? 'Close form' : 'Add staff account'}</button>
+        <button className="button button--primary" type="button" onClick={() => setShowCreate((shown) => !shown)}>{showCreate ? 'Close form' : 'Add account'}</button>
       </div>
       {(message !== null || error !== null) && <p className={error === null ? 'page-message is-success' : 'page-message is-error'}>{error ?? message}</p>}
 
       {showCreate && (
         <form className="panel form-grid admin-create" onSubmit={(event) => void createAccount(event)}>
-          <div className="panel__heading form-grid__wide"><div><span>New identity</span><h2>Create staff account</h2></div></div>
-          <label><span>Role</span><select name="role" required><option value="technician">Technician</option><option value="supervisor">Supervisor</option><option value="administrator">Administrator</option></select></label>
-          <label><span>Username</span><input name="username" required /></label>
+          <div className="panel__heading form-grid__wide"><div><span>New identity</span><h2>Create employee or staff account</h2></div></div>
+          <label><span>Role</span><select name="role" required value={createRole} onChange={(event) => setCreateRole(event.target.value as typeof createRole)}><option value="employee">Employee</option><option value="technician">Technician</option><option value="supervisor">Supervisor</option><option value="administrator">Administrator</option></select></label>
+          {createRole === 'employee'
+            ? <label><span>Employee ID</span><input name="employeeId" required inputMode="numeric" pattern="[0-9]{1,8}" maxLength={8} placeholder="Up to 8 digits" /></label>
+            : <label><span>Username</span><input name="username" required /></label>}
           <label><span>Full name</span><input name="displayName" required /></label>
           <label><span>Email</span><input name="email" type="email" /></label>
           <label>
@@ -238,8 +241,8 @@ export function UserManagementPage() {
               title="Enter exactly 13 digits without dashes"
             />
           </label>
-          <PasswordInput name="password" label="Temporary password" autoComplete="new-password" minLength={10} hint="10+ characters with uppercase, lowercase, number, and symbol." />
-          <label className="form-grid__wide"><span>Department</span><select name="departmentId"><option value="">No department</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
+          {createRole !== 'employee' && <PasswordInput name="password" label="Temporary password" autoComplete="new-password" minLength={10} hint="10+ characters with uppercase, lowercase, number, and symbol." />}
+          <label className="form-grid__wide"><span>Department</span><select name="departmentId" required={createRole === 'employee'}><option value="">{createRole === 'employee' ? 'Select department' : 'No department'}</option>{options?.departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select></label>
           <label><span>Designation</span><input name="designation" required /></label>
           <OperationalLocationFields
             options={options}
@@ -285,8 +288,8 @@ export function UserManagementPage() {
           event.preventDefault();
           setFilters({ search, role, status });
         }}>
-          <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, username, email, CNIC, reference or employee ID" /></label>
-          <label><span>Role</span><select value={role} onChange={(event) => setRole(event.target.value)}><option value="">All roles</option>{(['consumer', 'employee', 'technician', 'supervisor', 'administrator'] as UserRole[]).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Name, username, email, CNIC, or employee ID" /></label>
+          <label><span>Role</span><select value={role} onChange={(event) => setRole(event.target.value)}><option value="">All roles</option>{(['employee', 'technician', 'supervisor', 'administrator'] as UserRole[]).map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="inactive">Inactive</option></select></label>
           <button className="button button--secondary" type="submit">Apply filters</button>
         </form>
@@ -301,11 +304,11 @@ export function UserManagementPage() {
                 <td>{profile.role}</td>
                 <td><span className={`status-pill status-pill--${profile.status}`}>{profile.status}</span></td>
                 <td><div className="row-actions">
-                  {profile.status === 'active' && (profile.role === 'consumer' || profile.role === 'employee') && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.referenceNumber ?? profile.employeeId ?? profile.displayName)}`}>Suspend with details</Link>}
-                  {profile.status === 'suspended' && (profile.role === 'consumer' || profile.role === 'employee') && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.referenceNumber ?? profile.employeeId ?? profile.displayName)}`}>Review suspension</Link>}
-                  {profile.status === 'active' && !['consumer', 'employee'].includes(profile.role) && <button type="button" disabled={busyId === profile.id} onClick={() => void suspendStaffAccount(profile)}>Suspend staff</button>}
-                  {profile.status !== 'active' && !['consumer', 'employee'].includes(profile.role) && <button type="button" disabled={busyId === profile.id} onClick={() => void activateAccount(profile)}>Activate</button>}
-                  <button type="button" disabled={busyId === profile.id} onClick={() => setResetTarget(profile)}>Reset password</button>
+                  {profile.status === 'active' && profile.role === 'employee' && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.employeeId ?? profile.displayName)}`}>Suspend with details</Link>}
+                  {profile.status === 'suspended' && profile.role === 'employee' && <Link to={`/app/account-governance?search=${encodeURIComponent(profile.employeeId ?? profile.displayName)}`}>Review suspension</Link>}
+                  {profile.status === 'active' && profile.role !== 'employee' && <button type="button" disabled={busyId === profile.id} onClick={() => void suspendStaffAccount(profile)}>Suspend staff</button>}
+                  {profile.status !== 'active' && profile.role !== 'employee' && <button type="button" disabled={busyId === profile.id} onClick={() => void activateAccount(profile)}>Activate</button>}
+                  {profile.role !== 'employee' && <button type="button" disabled={busyId === profile.id} onClick={() => setResetTarget(profile)}>Reset password</button>}
                   <button className="is-danger" type="button" disabled={busyId === profile.id} onClick={() => void deleteAccount(profile)}>Delete</button>
                 </div></td>
               </tr>

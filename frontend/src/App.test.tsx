@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import type * as FramerMotion from 'framer-motion';
 
@@ -16,18 +16,17 @@ vi.mock('./components/SilkBackground', () => ({
 
 vi.mock('./lib/auth-api', () => ({
   refreshRequest: vi.fn().mockRejectedValue(new Error('No existing session')),
-  registrationOptionsRequest: vi.fn().mockResolvedValue({ departments: [], circles: [] }),
+  locationCatalogRequest: vi.fn().mockResolvedValue({ departments: [], circles: [] }),
   getApiErrorMessage: vi.fn().mockReturnValue('Unable to sign in'),
   loginRequest: vi.fn(),
   logoutRequest: vi.fn(),
-  registerConsumerRequest: vi.fn(),
-  registerEmployeeRequest: vi.fn(),
+  verifyEmployeeRequest: vi.fn(),
 }));
 
 import App from './App';
 
-describe('authentication page', () => {
-  it('presents the branded identity modes after session discovery', async () => {
+describe('public portal', () => {
+  it('presents only the primary complaint actions after session discovery', async () => {
     await act(async () => {
       render(<App />);
       await Promise.resolve();
@@ -35,15 +34,9 @@ describe('authentication page', () => {
 
     expect(await screen.findByRole('heading', { name: /report\. track\. resolve\./i })).toBeVisible();
     expect(screen.getByAltText('MEPCO')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Consumer' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'Employee' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Staff' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Start complaint' })).toHaveAttribute('href', '/complaints/verify');
+    expect(screen.getByRole('link', { name: 'Track complaint' })).toHaveAttribute('href', '/complaints/track');
+    expect(screen.getByRole('link', { name: 'Employee / staff sign in' })).toHaveAttribute('href', '/login');
     expect(screen.getByTestId('silk-background')).toBeInTheDocument();
-
-    const password = screen.getByLabelText('Password');
-    expect(password).toHaveAttribute('type', 'password');
-    fireEvent.click(screen.getByRole('button', { name: 'Show password' }));
-    expect(password).toHaveAttribute('type', 'text');
-    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

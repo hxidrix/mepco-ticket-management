@@ -37,7 +37,7 @@ ticketsRouter.use(authenticate);
 ticketsRouter.use(requireActiveAccount);
 
 ticketsRouter.post(
-  '/', authorizeRoles('consumer', 'employee'),
+  '/', authorizeRoles('employee'),
   body('subject').trim().isLength({ min: 5, max: 180 }),
   body('description').trim().isLength({ min: 10, max: 10000 }),
   body('categoryId').isInt({ min: 1 }).toInt(), body('complaintTypeId').isInt({ min: 1 }).toInt(),
@@ -202,7 +202,7 @@ ticketsRouter.post(
 );
 
 ticketsRouter.post(
-  '/:id/close-review', authorizeRoles('consumer', 'employee'),
+  '/:id/close-review', authorizeRoles('employee'),
   param('id').isInt({ min: 1 }).toInt(),
   body('issueResolved').isBoolean().toBoolean(),
   body('satisfactionRating').isInt({ min: 1, max: 5 }).toInt(),

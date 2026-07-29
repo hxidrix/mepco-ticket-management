@@ -5,6 +5,7 @@ import { BorderGlowSystem } from './components/BorderGlowSystem';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RoleRoute } from './components/RoleRoute';
 import { AuthProvider } from './context/AuthProvider';
+import { PublicComplaintProvider } from './context/PublicComplaintProvider';
 import { ThemeProvider } from './context/ThemeProvider';
 import { useAuth } from './hooks/useAuth';
 const AppShell = lazy(() => import('./components/AppShell').then((module) => ({ default: module.AppShell })));
@@ -18,6 +19,9 @@ const InternalMessagesPage = lazy(() => import('./pages/InternalMessagesPage').t
 const NewTicketPage = lazy(() => import('./pages/NewTicketPage').then((module) => ({ default: module.NewTicketPage })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((module) => ({ default: module.NotificationsPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const PublicPortalPage = lazy(() => import('./pages/PublicPortalPage').then((module) => ({ default: module.PublicPortalPage })));
+const ConsumerVerificationPage = lazy(() => import('./pages/ConsumerVerificationPage').then((module) => ({ default: module.ConsumerVerificationPage })));
+const TrackComplaintPage = lazy(() => import('./pages/TrackComplaintPage').then((module) => ({ default: module.TrackComplaintPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SuspendedAccountPage = lazy(() => import('./pages/SuspendedAccountPage').then((module) => ({ default: module.SuspendedAccountPage })));
 const TicketDetailPage = lazy(() => import('./pages/TicketDetailPage').then((module) => ({ default: module.TicketDetailPage })));
@@ -32,13 +36,17 @@ function AppRoutes() {
   return (
     <Suspense fallback={<div className="app-loading"><span /><p>Loading workspace...</p></div>}>
       <Routes>
+      <Route path="/" element={<PublicPortalPage />} />
+      <Route path="/complaints/verify" element={<ConsumerVerificationPage />} />
+      <Route path="/complaints/new" element={<NewTicketPage />} />
+      <Route path="/complaints/track" element={<TrackComplaintPage />} />
       <Route path="/login" element={<AuthPage />} />
-      <Route path="/register" element={<Navigate to="/login" replace />} />
+      <Route path="/register" element={<Navigate to="/" replace />} />
       <Route path="/suspension" element={<SuspendedAccountPage />} />
       <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="tickets" element={<TicketsPage />} />
-        <Route path="tickets/new" element={<RoleRoute roles={['consumer', 'employee']}><NewTicketPage /></RoleRoute>} />
+        <Route path="tickets/new" element={<RoleRoute roles={['employee']}><NewTicketPage /></RoleRoute>} />
         <Route path="tickets/:id" element={<TicketDetailPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="messages" element={<RoleRoute roles={['technician', 'supervisor', 'administrator']}><InternalMessagesPage /></RoleRoute>} />
@@ -50,7 +58,7 @@ function AppRoutes() {
         <Route path="admin/master-data" element={<RoleRoute roles={['administrator']}><MasterDataPage /></RoleRoute>} />
         <Route path="admin/operations" element={<RoleRoute roles={['administrator']}><AdministrationPage /></RoleRoute>} />
       </Route>
-      <Route path="*" element={<Navigate to="/app" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
@@ -61,8 +69,10 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <BorderGlowSystem />
-          <AppRoutes />
+          <PublicComplaintProvider>
+            <BorderGlowSystem />
+            <AppRoutes />
+          </PublicComplaintProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

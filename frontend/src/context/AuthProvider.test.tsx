@@ -25,7 +25,7 @@ import { AuthProvider } from './AuthProvider';
 import { useAuth } from '../hooks/useAuth';
 
 const restoredSession: AuthPayload = {
-  user: { id: 1, role: 'consumer', displayName: 'Ayesha', status: 'active' },
+  user: { id: 1, role: 'employee', displayName: 'Ayesha', status: 'active' },
   accessToken: 'short-lived-access-token',
   expiresIn: 900,
 };

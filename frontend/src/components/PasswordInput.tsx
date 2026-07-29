@@ -7,6 +7,9 @@ interface PasswordInputProps {
   hint?: string;
   label?: string;
   minLength?: number;
+  maxLength?: number;
+  inputMode?: 'text' | 'numeric';
+  pattern?: string;
   name?: string;
   placeholder?: string;
   required?: boolean;
@@ -19,6 +22,9 @@ export function PasswordInput({
   hint,
   label = 'Password',
   minLength,
+  maxLength,
+  inputMode,
+  pattern,
   name = 'password',
   placeholder,
   required = true,
@@ -38,6 +44,9 @@ export function PasswordInput({
           required={required}
           defaultValue={defaultValue}
           minLength={minLength}
+          maxLength={maxLength}
+          inputMode={inputMode}
+          pattern={pattern}
           autoComplete={autoComplete}
           placeholder={placeholder}
         />

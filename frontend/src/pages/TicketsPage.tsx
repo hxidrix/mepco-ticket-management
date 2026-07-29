@@ -58,7 +58,7 @@ export function TicketsPage() {
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { void catalogRequest().then(setCatalog).catch((caught: unknown) => setError(getApiErrorMessage(caught))); }, []);
-  const canSubmit = user?.role === 'consumer' || user?.role === 'employee';
+  const canSubmit = user?.role === 'employee';
   const categoryDomain = canSubmit ? user.role : domain;
   const divisions = catalog?.circles.find((circle) => String(circle.id) === circleId)?.divisions ?? [];
   const subdivisions = divisions.find((division) => String(division.id) === divisionId)?.subdivisions ?? [];

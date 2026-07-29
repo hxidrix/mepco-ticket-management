@@ -1,21 +1,17 @@
 import request from 'supertest';
-import type { Response as SupertestResponse } from 'supertest';
-
 import { app } from '../../app.js';
-
-function token(response:SupertestResponse):string{const value=(response.body as {data?:{accessToken?:unknown}}).data?.accessToken;if(typeof value!=='string')throw new Error('Expected token');return value;}
-async function login(mode:'consumer'|'staff',identifier:string):Promise<string>{return token(await request(app).post('/api/v1/auth/login').send({mode,identifier,password:'Demo@12345'}).expect(200));}
+import { loginEmployee, loginStaff } from '../../test/integration-auth.js';
 
 describe('administration governance API',()=>{
   it('publishes role-targeted announcements and records the administrative audit event',async()=>{
-    const admin=await login('staff','admin.demo');const supervisor=await login('staff','supervisor.demo');const consumer=await login('consumer','10000000000001');
+    const admin=await loginStaff('admin.demo');const supervisor=await loginStaff('supervisor.demo');const employee=await loginEmployee();
     const create=await request(app).post('/api/v1/administration/announcements').set('Authorization',`Bearer ${supervisor}`).send({
-      title:'Fictional service bulletin',body:'A fictional acceptance announcement for consumers.',
+      title:'Fictional service bulletin',body:'A fictional acceptance announcement for employees.',
       startsAt:new Date(Date.now()-3_600_000).toISOString(),endsAt:new Date(Date.now()+86_400_000).toISOString(),
-      isActive:true,audiences:['consumer'],
+      isActive:true,audiences:['employee'],
     }).expect(201);
     const id=(create.body as {data:{id:number}}).data.id;
-    const visible=await request(app).get('/api/v1/administration/announcements').set('Authorization',`Bearer ${consumer}`).expect(200);
+    const visible=await request(app).get('/api/v1/administration/announcements').set('Authorization',`Bearer ${employee}`).expect(200);
     expect((visible.body as {data:Array<{id:number}>}).data).toEqual(expect.arrayContaining([expect.objectContaining({id})]));
     const audit=await request(app).get('/api/v1/administration/audit?search=announcement.created').set('Authorization',`Bearer ${admin}`).expect(200);
     const event=(audit.body as {data:Array<{action:string;actorRole:string|null;entityType:string;entityId:string|null;result:string;requestId:string|null;ipAddress:string|null}>}).data.find((item)=>item.action==='admin.announcement.created');
@@ -25,12 +21,12 @@ describe('administration governance API',()=>{
     await request(app).get(`/api/v1/administration/audit?search=${encodeURIComponent(event?.requestId??'missing')}`).set('Authorization',`Bearer ${admin}`).expect(200)
       .expect((response)=>{expect((response.body as {data:Array<{id:number}>}).data.length).toBeGreaterThan(0);});
     await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${supervisor}`).expect(200);
-    await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${consumer}`).expect(403);
+    await request(app).get('/api/v1/administration/announcements/all').set('Authorization',`Bearer ${employee}`).expect(403);
     await request(app).delete(`/api/v1/administration/announcements/${id}`).set('Authorization',`Bearer ${supervisor}`).expect(200);
   });
 
   it('lets only administrators replace technician and supervisor routing scopes',async()=>{
-    const admin=await login('staff','admin.demo');const technicianToken=await login('staff','tech.it');
+    const admin=await loginStaff('admin.demo');const technicianToken=await loginStaff('tech.it');
     const users=await request(app).get('/api/v1/users/admin?role=technician&pageSize=100').set('Authorization',`Bearer ${admin}`).expect(200);
     const technician=(users.body as {data:Array<{id:number;username:string}>}).data.find((item)=>item.username==='tech.it');
     if(technician===undefined)throw new Error('Technician missing');

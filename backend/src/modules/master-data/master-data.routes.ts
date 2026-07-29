@@ -15,12 +15,12 @@ export const masterDataRouter = Router();
 const resources: MasterResource[] = ['departments', 'circles', 'divisions', 'subdivisions', 'categories', 'complaint-types', 'priorities', 'statuses'];
 const resourceParam = param('resource').isIn(resources);
 
-masterDataRouter.use(authenticate);
-masterDataRouter.use(requireActiveAccount);
 masterDataRouter.get('/catalog', asyncHandler(async (_request, response) => {
   sendSuccess(response, 200, await getActiveCatalog());
 }));
 
+masterDataRouter.use(authenticate);
+masterDataRouter.use(requireActiveAccount);
 masterDataRouter.use('/admin', authorizeRoles('administrator'));
 masterDataRouter.get(
   '/admin/:resource', resourceParam,

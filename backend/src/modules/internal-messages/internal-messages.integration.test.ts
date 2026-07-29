@@ -1,29 +1,16 @@
 import request from 'supertest';
-import type { Response as SupertestResponse } from 'supertest';
-
 import { app } from '../../app.js';
-
-function accessToken(response: SupertestResponse): string {
-  const payload = response.body as { data?: { accessToken?: unknown } };
-  if (typeof payload.data?.accessToken !== 'string') throw new Error('Expected an access token');
-  return payload.data.accessToken;
-}
-
-async function login(mode: 'consumer' | 'staff', identifier: string): Promise<string> {
-  const response = await request(app).post('/api/v1/auth/login')
-    .send({ mode, identifier, password: 'Demo@12345' }).expect(200);
-  return accessToken(response);
-}
+import { loginEmployee, loginStaff } from '../../test/integration-auth.js';
 
 describe('internal technician-to-manager messages API', () => {
   it('keeps a technician thread private, notifies the manager, and supports replies', async () => {
-    const technician = await login('staff', 'tech.it');
-    const supervisor = await login('staff', 'supervisor.demo');
-    const administrator = await login('staff', 'admin.demo');
-    const consumer = await login('consumer', '10000000000001');
+    const technician = await loginStaff('tech.it');
+    const supervisor = await loginStaff('supervisor.demo');
+    const administrator = await loginStaff('admin.demo');
+    const employee = await loginEmployee();
 
     await request(app).get('/api/v1/internal-messages/threads')
-      .set('Authorization', `Bearer ${consumer}`).expect(403);
+      .set('Authorization', `Bearer ${employee}`).expect(403);
 
     const managerRecipientsResponse = await request(app).get('/api/v1/internal-messages/recipients')
       .set('Authorization', `Bearer ${supervisor}`).expect(200);
@@ -152,8 +139,8 @@ describe('internal technician-to-manager messages API', () => {
   });
 
   it('rejects invalid recipients and incomplete messages', async () => {
-    const technician = await login('staff', 'tech.it');
-    const supervisor = await login('staff', 'supervisor.demo');
+    const technician = await loginStaff('tech.it');
+    const supervisor = await loginStaff('supervisor.demo');
     const recipientsResponse = await request(app).get('/api/v1/internal-messages/recipients')
       .set('Authorization', `Bearer ${technician}`).expect(200);
     const recipients = (recipientsResponse.body as {

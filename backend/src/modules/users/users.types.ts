@@ -60,6 +60,19 @@ export interface StaffCreateInput {
   subdivisionId: number;
 }
 
+export interface EmployeeCreateInput {
+  employeeId: string;
+  displayName: string;
+  email: string;
+  phone: string;
+  cnic: string;
+  departmentId: number;
+  designation: string;
+  circleId: number;
+  divisionId: number;
+  subdivisionId: number;
+}
+
 export interface AdminUserUpdateInput {
   displayName: string;
   email?: string;

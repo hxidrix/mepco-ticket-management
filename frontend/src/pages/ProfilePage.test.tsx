@@ -1,14 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { RegistrationOptions } from '../types/auth';
+import type { LocationCatalogOptions } from '../types/auth';
 import type { UserProfile } from '../types/users';
 
 const mocks = vi.hoisted(() => ({
   profileRequest: vi.fn(),
   updateProfileRequest: vi.fn(),
   changePasswordRequest: vi.fn(),
-  registrationOptionsRequest: vi.fn(),
+  locationCatalogRequest: vi.fn(),
   updateDisplayName: vi.fn(),
   logout: vi.fn(),
 }));
@@ -23,7 +23,7 @@ vi.mock('../hooks/useAuth', () => ({
 
 vi.mock('../lib/auth-api', () => ({
   getApiErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Profile request failed',
-  registrationOptionsRequest: mocks.registrationOptionsRequest,
+  locationCatalogRequest: mocks.locationCatalogRequest,
 }));
 
 vi.mock('../lib/users-api', () => ({
@@ -34,8 +34,7 @@ vi.mock('../lib/users-api', () => ({
 
 import { ProfilePage } from './ProfilePage';
 
-const options: RegistrationOptions = {
-  selfRegistrationEnabled: true,
+const options: LocationCatalogOptions = {
   departments: [{ id: 1, name: 'Information Technology' }],
   circles: [{
     id: 10,
@@ -71,7 +70,7 @@ describe('My Profile', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.profileRequest.mockResolvedValue(legacyProfile);
-    mocks.registrationOptionsRequest.mockResolvedValue(options);
+    mocks.locationCatalogRequest.mockResolvedValue(options);
     mocks.updateProfileRequest.mockImplementation((input: Record<string, unknown>) => Promise.resolve({
       ...legacyProfile,
       ...input,

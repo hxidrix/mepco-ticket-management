@@ -1,11 +1,13 @@
 import type { LoginMode } from '../modules/auth/auth.types.js';
 
 export const CONSUMER_REFERENCE_LENGTH = 14;
+export const CONSUMER_ID_LENGTH = 10;
 export const EMPLOYEE_ID_LENGTH = 8;
 export const PHONE_NUMBER_LENGTH = 11;
 export const CNIC_LENGTH = 13;
 
 const consumerReferencePattern = /^\d{14}$/u;
+const consumerIdPattern = /^\d{10}$/u;
 const employeeIdInputPattern = /^\d{1,8}$/u;
 const employeeIdStoredPattern = /^\d{8}$/u;
 const phoneNumberPattern = /^03\d{9}$/u;
@@ -13,6 +15,14 @@ const cnicPattern = /^\d{13}$/u;
 
 export function isConsumerReferenceNumber(value: string): boolean {
   return consumerReferencePattern.test(value.trim());
+}
+
+export function isConsumerId(value: string): boolean {
+  return consumerIdPattern.test(value.trim());
+}
+
+export function isCnicLastFour(value: string): boolean {
+  return /^\d{4}$/u.test(value.trim());
 }
 
 export function isEmployeeIdInput(value: string): boolean {

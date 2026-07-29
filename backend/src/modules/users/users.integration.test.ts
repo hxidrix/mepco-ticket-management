@@ -1,32 +1,18 @@
 import request from 'supertest';
-import type { Response as SupertestResponse } from 'supertest';
-
 import { app } from '../../app.js';
-
-function token(response: SupertestResponse): string {
-  const body = response.body as { data?: { accessToken?: unknown } };
-  if (typeof body.data?.accessToken !== 'string') throw new Error('Expected an access token');
-  return body.data.accessToken;
-}
-
-async function login(mode: string, identifier: string): Promise<string> {
-  const response = await request(app)
-    .post('/api/v1/auth/login')
-    .send({ mode, identifier, password: 'Demo@12345' })
-    .expect(200);
-  return token(response);
-}
+import { integrationAccessToken, loginEmployee, loginStaff } from '../../test/integration-auth.js';
 
 describe('user profile and account administration API', () => {
   it('allows a requester to read and update only their own profile', async () => {
-    const accessToken = await login('consumer', '10000000000001');
+    const accessToken = await loginEmployee();
     const before = await request(app)
       .get('/api/v1/users/me/profile')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
     const profile = (before.body as { data: { profile: {
       circleId: number; divisionId: number; subdivisionId: number;
-      displayName: string; address: string; cnic: string;
+      displayName: string; cnic: string; email: string; phone: string;
+      departmentId: number; designation: string;
     } } }).data.profile;
 
     const response = await request(app)
@@ -34,30 +20,43 @@ describe('user profile and account administration API', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         displayName: profile.displayName,
-        email: 'consumer.profile@example.test',
-        phone: '03001111111',
+        email: 'employee.profile@example.test',
+        phone: '03002222222',
         cnic: profile.cnic,
-        address: profile.address,
+        departmentId: profile.departmentId,
+        designation: profile.designation,
         circleId: profile.circleId,
         divisionId: profile.divisionId,
         subdivisionId: profile.subdivisionId,
-        serviceAddress: 'Fictional updated service address',
       })
       .expect(200);
 
     expect(response.body).toMatchObject({
-      data: { profile: { role: 'consumer', serviceAddress: 'Fictional updated service address' } },
+      data: { profile: { role: 'employee', email: 'employee.profile@example.test' } },
     });
     await request(app)
       .get('/api/v1/users/admin')
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(403);
+    await request(app)
+      .post('/api/v1/users/me/password')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ currentPassword: 'unused', newPassword: 'NotAllowed@123' })
+      .expect(403);
+
+    const adminToken = await loginStaff('admin.demo');
+    const employeeId = (before.body as { data: { profile: { id: number } } }).data.profile.id;
+    await request(app)
+      .post(`/api/v1/users/admin/${employeeId}/reset-password`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ password: 'NotAllowed@123' })
+      .expect(422);
   });
 
   it('supports the administrator account lifecycle with audit-safe soft deletion', async () => {
-    const adminToken = await login('staff', 'admin.demo');
-    const registrationOptions = await request(app).get('/api/v1/auth/registration-options').expect(200);
-    const optionData = (registrationOptions.body as { data: {
+    const adminToken = await loginStaff('admin.demo');
+    const catalogResponse = await request(app).get('/api/v1/master-data/catalog').expect(200);
+    const optionData = (catalogResponse.body as { data: {
       departments: Array<{ id: number }>;
       circles: Array<{ id: number; divisions: Array<{ id: number; subdivisions: Array<{ id: number }> }> }>;
     } }).data;
@@ -112,7 +111,7 @@ describe('user profile and account administration API', () => {
       .post('/api/v1/auth/login')
       .send({ mode: 'staff', identifier: 'tech.milestone4', password: 'Demo@12345' })
       .expect(200);
-    const suspendedToken = token(suspendedLogin);
+    const suspendedToken = integrationAccessToken(suspendedLogin);
     expect(suspendedLogin.body).toMatchObject({
       data: { user: { status: 'suspended', role: 'technician' } },
     });
@@ -146,7 +145,7 @@ describe('user profile and account administration API', () => {
   });
 
   it('prevents an administrator from deactivating or deleting their own account', async () => {
-    const adminToken = await login('staff', 'admin.demo');
+    const adminToken = await loginStaff('admin.demo');
     const me = await request(app)
       .get('/api/v1/users/me/profile')
       .set('Authorization', `Bearer ${adminToken}`)

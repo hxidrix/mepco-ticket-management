@@ -6,6 +6,8 @@ const databaseSslModes = ['disabled', 'required', 'verify_identity'] as const;
 type DatabaseSslMode = (typeof databaseSslModes)[number];
 const attachmentStorageDrivers = ['local', 'vercel-blob'] as const;
 type AttachmentStorageDriver = (typeof attachmentStorageDrivers)[number];
+const smsDrivers = ['local-log', 'webhook'] as const;
+type SmsDriver = (typeof smsDrivers)[number];
 
 function readString(name: string, fallback: string): string {
   const value = process.env[name]?.trim();
@@ -151,6 +153,9 @@ export const env = Object.freeze({
   refreshCookieName: readString('REFRESH_COOKIE_NAME', 'mepco_refresh'),
   refreshCookieSecure: readBoolean('REFRESH_COOKIE_SECURE', nodeEnv === 'production'),
   enableApiDocs: readBoolean('ENABLE_API_DOCS', nodeEnv !== 'production'),
-  enableSelfRegistration: readBoolean('ENABLE_SELF_REGISTRATION', nodeEnv !== 'production'),
+  smsDriver: readChoice<SmsDriver>('SMS_DRIVER', smsDrivers, 'local-log'),
+  smsWebhookUrl: readOptionalString('SMS_WEBHOOK_URL'),
+  smsWebhookToken: readOptionalString('SMS_WEBHOOK_TOKEN'),
+  smsSenderId: readString('SMS_SENDER_ID', 'MEPCO'),
   reopenWindowDays: readInteger('REOPEN_WINDOW_DAYS', 7, 1, 90),
 });

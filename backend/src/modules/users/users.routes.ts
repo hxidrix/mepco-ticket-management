@@ -5,7 +5,7 @@ import { validateRequest } from '../../middleware/validate-request.js';
 import { asyncHandler } from '../../shared/async-handler.js';
 import { sendSuccess } from '../../shared/api-response.js';
 import { requestContext } from '../../shared/request-context.js';
-import { isCnic, isPhoneNumber } from '../../shared/identity-format.js';
+import { isCnic, isEmployeeIdInput, isPhoneNumber, normalizeEmployeeId } from '../../shared/identity-format.js';
 import { authenticate, authorizeRoles, requireActiveAccount } from '../auth/auth.middleware.js';
 import type { UserRole } from '../auth/auth.types.js';
 import {
@@ -14,9 +14,10 @@ import {
   softDeleteUser,
   updateUserAsAdmin,
 } from './users.repository.js';
-import { changePassword, createStaff, resetUserPassword, updateProfile } from './users.service.js';
+import { changePassword, createEmployee, createStaff, resetUserPassword, updateProfile } from './users.service.js';
 import type {
   AdminUserUpdateInput,
+  EmployeeCreateInput,
   ProfileUpdateInput,
   StaffCreateInput,
   UserStatus,
@@ -65,6 +66,7 @@ usersRouter.put(
 
 usersRouter.post(
   '/me/password',
+  authorizeRoles('technician', 'supervisor', 'administrator'),
   body('currentPassword').isString().isLength({ min: 1, max: 128 }),
   strongPassword('newPassword'), validateRequest,
   asyncHandler(async (request, response) => {
@@ -81,7 +83,7 @@ usersRouter.get(
   query('page').optional().isInt({ min: 1 }).toInt(),
   query('pageSize').optional().isInt({ min: 1, max: 100 }).toInt(),
   query('search').optional().trim().isLength({ max: 140 }),
-  query('role').optional().isIn(['consumer', 'employee', 'technician', 'supervisor', 'administrator']),
+  query('role').optional().isIn(['employee', 'technician', 'supervisor', 'administrator']),
   query('status').optional().isIn(['active', 'suspended', 'inactive']), validateRequest,
   asyncHandler(async (request, response) => {
     const page = Number(request.query.page ?? 1);
@@ -113,6 +115,32 @@ usersRouter.post(
   asyncHandler(async (request, response) => {
     const profile = await createStaff(request.body as StaffCreateInput, request.auth!.id, requestContext(request));
     sendSuccess(response, 201, { profile }, 'Staff account created successfully');
+  }),
+);
+
+usersRouter.post(
+  '/admin/employees',
+  body('employeeId').trim().custom(isEmployeeIdInput)
+    .withMessage('Employee ID must contain 1 to 8 digits'),
+  body('displayName').trim().isLength({ min: 2, max: 140 }),
+  body('email').isEmail().normalizeEmail(),
+  body('phone').trim().custom(isPhoneNumber)
+    .withMessage('Phone number must contain exactly 11 digits and begin with 03'),
+  body('cnic').trim().custom(isCnic).withMessage('CNIC must contain exactly 13 digits'),
+  body('departmentId').isInt({ min: 1 }).toInt(),
+  body('designation').trim().isLength({ min: 2, max: 140 }),
+  body('circleId').isInt({ min: 1 }).toInt(),
+  body('divisionId').isInt({ min: 1 }).toInt(),
+  body('subdivisionId').isInt({ min: 1 }).toInt(),
+  validateRequest,
+  asyncHandler(async (request, response) => {
+    const input = request.body as EmployeeCreateInput;
+    const profile = await createEmployee(
+      { ...input, employeeId: normalizeEmployeeId(input.employeeId) },
+      request.auth!.id,
+      requestContext(request),
+    );
+    sendSuccess(response, 201, { profile }, 'Employee account created successfully');
   }),
 );
 

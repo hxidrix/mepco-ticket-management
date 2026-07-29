@@ -1,25 +1,10 @@
 import request from 'supertest';
-import type { Response as SupertestResponse } from 'supertest';
-
 import { app } from '../../app.js';
-
-function accessToken(response: SupertestResponse): string {
-  const body = response.body as { data?: { accessToken?: unknown } };
-  if (typeof body.data?.accessToken !== 'string') throw new Error('Expected an access token');
-  return body.data.accessToken;
-}
-
-async function signIn(identifier: string, mode: 'consumer' | 'staff'): Promise<string> {
-  const response = await request(app).post('/api/v1/auth/login')
-    .send({ mode, identifier, password: 'Demo@12345' }).expect(200);
-  return accessToken(response);
-}
+import { loginEmployee, loginStaff } from '../../test/integration-auth.js';
 
 describe('master-data API', () => {
   it('returns the full active SRS catalog as structured ticket-form data', async () => {
-    const token = await signIn('10000000000001', 'consumer');
-    const response = await request(app).get('/api/v1/master-data/catalog')
-      .set('Authorization', `Bearer ${token}`).expect(200);
+    const response = await request(app).get('/api/v1/master-data/catalog').expect(200);
     const catalog = (response.body as { data: {
       departments: unknown[]; circles: Array<{ divisions: Array<{ subdivisions: unknown[] }> }>;
       categories: Array<{ complaintTypes: Array<{ name: string }> }>;
@@ -36,11 +21,11 @@ describe('master-data API', () => {
   });
 
   it('enforces administrator access and supports create, edit, ordering and deactivation', async () => {
-    const consumerToken = await signIn('10000000000001', 'consumer');
+    const employeeToken = await loginEmployee();
     await request(app).get('/api/v1/master-data/admin/circles?includeInactive=true')
-      .set('Authorization', `Bearer ${consumerToken}`).expect(403);
+      .set('Authorization', `Bearer ${employeeToken}`).expect(403);
 
-    const adminToken = await signIn('admin.demo', 'staff');
+    const adminToken = await loginStaff('admin.demo');
     const createdCircle = await request(app).post('/api/v1/master-data/admin/circles')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ name: 'Fictional Acceptance Circle', sortOrder: 99, isActive: true }).expect(201);
@@ -65,7 +50,7 @@ describe('master-data API', () => {
   });
 
   it('prevents deactivation of a required Other option', async () => {
-    const adminToken = await signIn('admin.demo', 'staff');
+    const adminToken = await loginStaff('admin.demo');
     const list = await request(app).get('/api/v1/master-data/admin/departments?includeInactive=true')
       .set('Authorization', `Bearer ${adminToken}`).expect(200);
     const other = (list.body as { data: Array<{

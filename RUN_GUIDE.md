@@ -69,9 +69,12 @@ Keep XAMPP and both terminals open while using the website.
 
 ## Create users
 
-- Consumers and employees register from the sign-in page with their own identity details.
-- The first administrator creates technicians, supervisors, and additional administrators from **User accounts**.
+- Consumers do not have accounts. They use **Submit Complaint** with their Reference Number and Consumer ID, and later use **Track Complaint** with those two values plus the tracking number.
+- The first administrator provisions employee accounts from **User accounts**. Employees sign in with their Employee ID and the last four CNIC digits.
+- The first administrator also creates technicians, supervisors, and additional administrators from **User accounts**. Staff sign in with username and password.
 - Never reuse one password for multiple accounts.
+
+For local acceptance testing, development seeding includes fictional consumer records. See [docs/PUBLIC_COMPLAINT_PORTAL.md](docs/PUBLIC_COMPLAINT_PORTAL.md) for safe test values. These records are not installed when `NODE_ENV=production`.
 
 ## Stop the application
 
@@ -99,7 +102,11 @@ npm.cmd run db:backup -- ..\backups\mepco-help-desk.sql
 npm.cmd run db:restore -- ..\backups\mepco-help-desk.sql
 ```
 
-`db:seed` adds or updates reference lists only. It does not create accounts or tickets.
+`db:seed` adds or updates reference lists and, in development only, the fictional local consumer verification directory. It does not create accounts, passwords, or tickets.
+
+## SMS while running locally
+
+The safe default `SMS_DRIVER=local-log` records the notification in `sms_outbox` and logs a delivery simulation. It does not contact a phone network. A locally running backend can send real SMS if the computer has Internet access and an approved SMS provider is configured through `SMS_DRIVER=webhook`. See [docs/SMS_DELIVERY.md](docs/SMS_DELIVERY.md); never commit a provider token.
 
 `npm.cmd run db:reset` deletes every table in the configured database. Use it only on a disposable local database after making a backup.
 
