@@ -9,6 +9,7 @@ const glowTargetSelector = [
   '.panel',
   '.overview-grid > article',
   '.public-action-card',
+  '.public-flow-card',
   '.button',
   '.auth-submit',
   '.auth-tabs button',

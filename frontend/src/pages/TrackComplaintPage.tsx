@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-
-import { BrandLogo } from '../components/BrandLogo';
-import { GlassSurface } from '../components/GlassSurface';
-import { SilkBackground } from '../components/SilkBackground';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { PublicFlowLayout } from '../components/PublicFlowLayout';
 import { getApiErrorMessage } from '../lib/auth-api';
 import { trackPublicComplaintRequest } from '../lib/public-complaints-api';
 import type { PublicTrackedComplaint } from '../lib/public-complaints-api';
@@ -37,17 +32,23 @@ export function TrackComplaintPage() {
   };
 
   return (
-    <main className="public-flow-page">
-      <SilkBackground className="silk-background--auth" />
-      <header className="public-flow-header"><Link to="/"><BrandLogo /></Link><ThemeToggle compact /></header>
-      <GlassSurface className="public-flow-card public-flow-card--wide" borderRadius={24}>
-        <div className="auth-card__heading"><p>Complaint tracking</p><h1>Check complaint progress</h1><span>All three details are required to protect your complaint information.</span></div>
-        <form className="auth-form public-track-form" onSubmit={(event) => void track(event)}>
+    <PublicFlowLayout
+      eyebrow="Complaint tracking"
+      title="Check complaint progress"
+      description="Use the tracking number issued at submission together with the billing identifiers for the same service connection."
+      wide={ticket !== null}
+    >
+        <div className="public-flow-card__heading">
+          <span>Private status lookup</span>
+          <h2>Enter complaint details</h2>
+          <p>All three values must match before any complaint information is displayed.</p>
+        </div>
+        <form className="public-flow-form public-track-form" onSubmit={(event) => void track(event)}>
           <label><span>Tracking number</span><input name="ticketNumber" required placeholder="MEPCO-2026-123456" pattern="MEPCO-[0-9]{4}-[0-9]{6}" /></label>
-          <label><span>Reference Number</span><input name="referenceNumber" required inputMode="numeric" pattern="[0-9]{14}" minLength={14} maxLength={14} /></label>
-          <label><span>Consumer ID</span><input name="consumerId" required inputMode="numeric" pattern="[0-9]{10}" minLength={10} maxLength={10} /></label>
+          <label><span>Reference Number</span><input name="referenceNumber" required inputMode="numeric" pattern="[0-9]{14}" minLength={14} maxLength={14} placeholder="Enter 14 digits" /></label>
+          <label><span>Consumer ID</span><input name="consumerId" required inputMode="numeric" pattern="[0-9]{10}" minLength={10} maxLength={10} placeholder="Enter 10 digits" /></label>
           {error !== null && <p className="auth-message auth-message--error">{error}</p>}
-          <button className="auth-submit" type="submit" disabled={busy}>{busy ? 'Checking...' : 'Track complaint'}</button>
+          <button className="button button--primary public-flow-form__submit" type="submit" disabled={busy}>{busy ? 'Checking...' : 'Track complaint'}</button>
         </form>
         {ticket !== null && (
           <section className="tracked-complaint" aria-live="polite">
@@ -63,8 +64,6 @@ export function TrackComplaintPage() {
             {ticket.resolutionSummary !== null && <div className="tracked-complaint__resolution"><strong>Resolution</strong><p>{ticket.resolutionSummary}</p></div>}
           </section>
         )}
-        <Link className="auth-switch" to="/">Back to home</Link>
-      </GlassSurface>
-    </main>
+    </PublicFlowLayout>
   );
 }

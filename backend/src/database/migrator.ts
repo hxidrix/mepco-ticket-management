@@ -52,7 +52,11 @@ export async function runMigrations(): Promise<MigrationResult> {
 
     for (const filename of files) {
       const sql = await readFile(new URL(`./migrations/${filename}`, import.meta.url), 'utf8');
-      const checksum = createHash('sha256').update(sql).digest('hex');
+      // Git may check SQL files out with CRLF on Windows and LF in Linux/Docker.
+      // Hash normalized content so line-ending conversion cannot make an applied
+      // migration appear to have been modified.
+      const normalizedSql = sql.replace(/\r\n?/gu, '\n');
+      const checksum = createHash('sha256').update(normalizedSql).digest('hex');
       const recordedChecksum = applied.get(filename);
 
       if (recordedChecksum !== undefined) {

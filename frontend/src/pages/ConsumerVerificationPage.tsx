@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-import { BrandLogo } from '../components/BrandLogo';
-import { GlassSurface } from '../components/GlassSurface';
-import { SilkBackground } from '../components/SilkBackground';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { PublicFlowLayout } from '../components/PublicFlowLayout';
 import { usePublicComplaint } from '../hooks/usePublicComplaint';
 import { getApiErrorMessage } from '../lib/auth-api';
 import { verifyConsumerRequest } from '../lib/public-complaints-api';
@@ -49,22 +46,24 @@ export function ConsumerVerificationPage() {
   };
 
   return (
-    <main className="public-flow-page">
-      <SilkBackground className="silk-background--auth" />
-      <header className="public-flow-header"><Link to="/"><BrandLogo /></Link><ThemeToggle compact /></header>
-      <GlassSurface className="public-flow-card" borderRadius={24}>
-        <div className="auth-card__heading">
-          <p>Consumer verification</p>
-          <h1>Confirm your billing details</h1>
-          <span>This check does not create an account or sign you in.</span>
-        </div>
+    <PublicFlowLayout
+      eyebrow="Consumer verification"
+      title="Confirm your billing details"
+      description="Enter the two identifiers printed on your electricity bill. We only use them to verify the service connection for this complaint."
+    >
+      <div className="public-flow-card__heading">
+        <span>Step 1 of 2</span>
+        <h2>{consumer === null ? 'Find your connection' : 'Review the matched record'}</h2>
+        <p>{consumer === null
+          ? 'Use the Reference Number and Consumer ID exactly as they appear on the bill.'
+          : 'Only masked information is shown. Confirm it before continuing.'}</p>
+      </div>
         {consumer === null ? (
-          <form className="auth-form" onSubmit={(event) => void verify(event)}>
-            <label><span>Reference Number</span><input name="referenceNumber" required inputMode="numeric" pattern="[0-9]{14}" minLength={14} maxLength={14} placeholder="14-digit reference number" autoComplete="off" /></label>
-            <label><span>Consumer ID</span><input name="consumerId" required inputMode="numeric" pattern="[0-9]{10}" minLength={10} maxLength={10} placeholder="10-digit Consumer ID" autoComplete="off" /></label>
+          <form className="public-flow-form" onSubmit={(event) => void verify(event)}>
+            <label><span>Reference Number</span><input name="referenceNumber" required inputMode="numeric" pattern="[0-9]{14}" minLength={14} maxLength={14} placeholder="Enter 14 digits" autoComplete="off" /></label>
+            <label><span>Consumer ID</span><input name="consumerId" required inputMode="numeric" pattern="[0-9]{10}" minLength={10} maxLength={10} placeholder="Enter 10 digits" autoComplete="off" /></label>
             {error !== null && <p className="auth-message auth-message--error">{error}</p>}
-            <button className="auth-submit" type="submit" disabled={busy}>{busy ? 'Verifying...' : 'Verify details'}</button>
-            <Link className="auth-switch" to="/">Cancel</Link>
+            <button className="button button--primary public-flow-form__submit" type="submit" disabled={busy}>{busy ? 'Verifying...' : 'Verify details'}</button>
           </form>
         ) : (
           <div className="verification-preview">
@@ -81,7 +80,6 @@ export function ConsumerVerificationPage() {
             </div>
           </div>
         )}
-      </GlassSurface>
-    </main>
+    </PublicFlowLayout>
   );
 }
