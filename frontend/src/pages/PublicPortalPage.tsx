@@ -14,6 +14,7 @@ export function PublicPortalPage() {
         <div className="public-portal__header-actions">
           <Link className="public-portal__sign-in" to="/login">
             Employee / staff sign in
+            <span aria-hidden="true">↗</span>
           </Link>
           <ThemeToggle compact />
         </div>
@@ -22,11 +23,12 @@ export function PublicPortalPage() {
         <div className="public-portal__intro">
           <p className="auth-hero__eyebrow">MEPCO Integrated Help Desk</p>
           <h1>Report. Track.<br />Resolve.</h1>
-          <p>Submit an electricity-service complaint or securely check its progress without creating an account.</p>
+          <p>Submit an complaint or securely check its progress.</p>
         </div>
         <div className="public-portal__actions">
           <GlassSurface className="public-action-card" borderRadius={24}>
             <div className="public-action-card__topline">
+              <span>01</span>
               <span>New complaint</span>
             </div>
             <div className="public-action-card__body">
@@ -36,11 +38,13 @@ export function PublicPortalPage() {
               </div>
               <Link className="button button--primary public-action-card__button" to="/complaints/verify">
                 Start complaint
+                <span aria-hidden="true">→</span>
               </Link>
             </div>
           </GlassSurface>
           <GlassSurface className="public-action-card" borderRadius={24}>
             <div className="public-action-card__topline">
+              <span>02</span>
               <span>Existing complaint</span>
             </div>
             <div className="public-action-card__body">
@@ -50,6 +54,7 @@ export function PublicPortalPage() {
               </div>
               <Link className="button public-action-card__button" to="/complaints/track">
                 Track complaint
+                <span aria-hidden="true">→</span>
               </Link>
             </div>
           </GlassSurface>

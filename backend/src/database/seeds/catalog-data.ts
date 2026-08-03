@@ -233,7 +233,6 @@ export const ticketStatuses = [
   ['New', 'new', 'Submitted and awaiting triage or assignment', false],
   ['Assigned', 'assigned', 'Ownership has been given to an eligible technician', false],
   ['In Progress', 'in-progress', 'A technician is actively investigating or working', false],
-  ['Pending User', 'pending-user', 'Requester information or confirmation is required', false],
   ['Resolved', 'resolved', 'Resolution has been proposed and awaits review', false],
   ['Closed', 'closed', 'Work is accepted and complete', true],
   ['Reopened', 'reopened', 'The issue requires further work', false],

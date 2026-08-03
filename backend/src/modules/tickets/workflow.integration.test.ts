@@ -53,7 +53,7 @@ describe('ticket assignment and workflow API', () => {
     const technicianDetail = await request(app).get(`/api/v1/tickets/${ticketId}`)
       .set('Authorization', `Bearer ${assignedTechnician}`).expect(200);
     expect(technicianDetail.body).toMatchObject({
-      data: { allowedStatusTransitions: ['in-progress', 'pending-user', 'resolved'] },
+      data: { allowedStatusTransitions: ['in-progress', 'resolved'] },
     });
     await request(app).post(`/api/v1/tickets/${ticketId}/status`)
       .set('Authorization', `Bearer ${assignedTechnician}`)

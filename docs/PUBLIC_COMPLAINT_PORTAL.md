@@ -16,7 +16,7 @@ Consumers use the public portal at `/` without creating an account or signing in
 
 Tracking is read-only and requires all three values:
 
-- tracking number, such as `MEPCO-2026-123456`;
+- 10-digit numeric tracking number, such as `2026100001`;
 - the same 14-digit Reference Number;
 - the same 10-digit Consumer ID.
 

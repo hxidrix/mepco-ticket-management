@@ -11,8 +11,9 @@ A ticket management system for accountless MEPCO consumer complaints and authent
 - Fixed identity formats: 14-digit consumer Reference Number, 10-digit Consumer ID, 8-digit Employee ID, 11-digit phone beginning with `03`, and unique 13-digit CNIC for accounts.
 - Circle → Division → Sub-division profiles, ticket locations, staff scopes, reporting filters, and automatic routing.
 - Consumer priority classification and department/location-based staff assignment.
-- Public complaint attachments at initial submission (up to three approved files), read-only tracking using all three identifiers, and SMS outbox notifications.
-- Full employee ticket workflow, requester closure review, satisfaction rating, comments, internal notes, evidence attachments, history, notifications, and administrator soft deletion.
+- Public complaint attachments at initial submission (up to three approved files), 10-digit numeric tracking using all three identifiers, detailed read-only progress, and SMS outbox notifications.
+- Full employee ticket workflow, requester closure review, satisfaction rating, comments, internal notes, evidence attachments, history, event notifications, and administrator soft deletion.
+- Notification inbox events for ticket creation and assignment, status changes, ticket comments, private staff messages, announcements, reviews, and account-governance actions.
 - Suspension requests, manager decisions, restricted account portal, appeals, support requests, and secure technician/manager messaging.
 - Role-scoped dashboards, announcements, audit logs, SLA monitoring, and CSV/PDF reports.
 - Responsive light/dark liquid-glass interface with self-hosted Geist typography.

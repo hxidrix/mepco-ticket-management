@@ -66,16 +66,16 @@ Enter all three values on **Track Complaint**.
 
 | Status scenario | Tracking number | Reference Number | Consumer ID |
 | --- | --- | --- | --- |
-| New critical complaint | `MEPCO-2026-100001` | `10012345678901` | `0123456789` |
-| In-progress complaint | `MEPCO-2026-100002` | `10012345678901` | `0123456789` |
-| Waiting for consumer response | `MEPCO-2026-100003` | `10012345678903` | `0123456791` |
-| Resolved complaint | `MEPCO-2026-100004` | `10012345678904` | `0123456792` |
+| New critical complaint | `2026100001` | `10012345678901` | `0123456789` |
+| In-progress complaint | `2026100002` | `10012345678901` | `0123456789` |
+| Active billing complaint | `2026100003` | `10012345678903` | `0123456791` |
+| Resolved complaint | `2026100004` | `10012345678904` | `0123456792` |
 
 ## Other seeded operational data
 
 The demo seed also creates:
 
-- two employee tickets in assigned and pending-user states;
+- two employee tickets in assigned and in-progress states;
 - technician access scopes for IT, Operations, and Customer Services;
 - one active supervisor with cross-domain visibility;
 - one suspended employee for restricted-portal testing;

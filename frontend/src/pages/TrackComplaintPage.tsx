@@ -20,7 +20,7 @@ export function TrackComplaintPage() {
     const data = new FormData(event.currentTarget);
     try {
       setTicket(await trackPublicComplaintRequest({
-        ticketNumber: fieldValue(data, 'ticketNumber').toUpperCase(),
+        ticketNumber: fieldValue(data, 'ticketNumber'),
         referenceNumber: fieldValue(data, 'referenceNumber'),
         consumerId: fieldValue(data, 'consumerId'),
       }));
@@ -37,6 +37,7 @@ export function TrackComplaintPage() {
       title="Check complaint progress"
       description="Use the tracking number issued at submission together with the billing identifiers for the same service connection."
       wide={ticket !== null}
+      className={ticket === null ? '' : 'public-flow-page--tracking-result'}
     >
         <div className="public-flow-card__heading">
           <span>Private status lookup</span>
@@ -44,7 +45,7 @@ export function TrackComplaintPage() {
           <p>All three values must match before any complaint information is displayed.</p>
         </div>
         <form className="public-flow-form public-track-form" onSubmit={(event) => void track(event)}>
-          <label><span>Tracking number</span><input name="ticketNumber" required placeholder="MEPCO-2026-123456" pattern="MEPCO-[0-9]{4}-[0-9]{6}" /></label>
+          <label><span>Tracking number</span><input name="ticketNumber" required inputMode="numeric" placeholder="2026100001" pattern="[0-9]{10}" minLength={10} maxLength={10} /></label>
           <label><span>Reference Number</span><input name="referenceNumber" required inputMode="numeric" pattern="[0-9]{14}" minLength={14} maxLength={14} placeholder="Enter 14 digits" /></label>
           <label><span>Consumer ID</span><input name="consumerId" required inputMode="numeric" pattern="[0-9]{10}" minLength={10} maxLength={10} placeholder="Enter 10 digits" /></label>
           {error !== null && <p className="auth-message auth-message--error">{error}</p>}
@@ -52,14 +53,26 @@ export function TrackComplaintPage() {
         </form>
         {ticket !== null && (
           <section className="tracked-complaint" aria-live="polite">
-            <div><p>{ticket.ticketNumber}</p><h2>{ticket.subject}</h2><span className={`status-badge status-${ticket.statusSlug}`}>{ticket.statusName}</span></div>
+            <header className="tracked-complaint__heading">
+              <div><span>Tracking number</span><code>{ticket.ticketNumber}</code></div>
+              <span className={`status-badge status-${ticket.statusSlug}`}>{ticket.statusName}</span>
+              <h2>{ticket.subject}</h2>
+              <p>{ticket.description}</p>
+            </header>
             <dl>
               <div><dt>Category</dt><dd>{ticket.categoryName}</dd></div>
               <div><dt>Complaint type</dt><dd>{ticket.complaintTypeName}</dd></div>
               <div><dt>Priority</dt><dd>{ticket.priorityName}</dd></div>
               <div><dt>Submitted</dt><dd>{new Date(ticket.createdAt).toLocaleString()}</dd></div>
               <div><dt>Last updated</dt><dd>{new Date(ticket.updatedAt).toLocaleString()}</dd></div>
-              <div><dt>Location</dt><dd>{ticket.subdivisionName}, {ticket.divisionName}</dd></div>
+              <div><dt>Circle</dt><dd>{ticket.circleName}</dd></div>
+              <div><dt>Division</dt><dd>{ticket.divisionName}</dd></div>
+              <div><dt>Sub-division</dt><dd>{ticket.subdivisionName}</dd></div>
+              <div><dt>Service detail</dt><dd>{ticket.locationDetails ?? 'No additional location detail provided'}</dd></div>
+              <div><dt>SLA target</dt><dd>{ticket.slaTargetHours} hours</dd></div>
+              <div><dt>Target time</dt><dd>{new Date(ticket.slaDueAt).toLocaleString()}</dd></div>
+              {ticket.resolvedAt !== null && <div><dt>Resolved</dt><dd>{new Date(ticket.resolvedAt).toLocaleString()}</dd></div>}
+              {ticket.closedAt !== null && <div><dt>Closed</dt><dd>{new Date(ticket.closedAt).toLocaleString()}</dd></div>}
             </dl>
             {ticket.resolutionSummary !== null && <div className="tracked-complaint__resolution"><strong>Resolution</strong><p>{ticket.resolutionSummary}</p></div>}
           </section>

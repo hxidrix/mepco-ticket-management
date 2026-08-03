@@ -3,12 +3,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
-import { getApiErrorMessage } from '../lib/auth-api';
 import { activeAnnouncementsRequest } from '../lib/administration-api';
 import type { Announcement } from '../lib/administration-api';
-import { ticketMetricsRequest, ticketsRequest } from '../lib/tickets-api';
+import { getApiErrorMessage } from '../lib/auth-api';
+import { ticketMetricsRequest } from '../lib/tickets-api';
 import type { TicketMetrics } from '../lib/tickets-api';
-import type { TicketSummary } from '../types/tickets';
 
 const roleCopy = {
   consumer: 'Track electricity-service complaints and stay informed from submission to closure.',
@@ -25,46 +24,30 @@ function formatUpdatedAt(value: string): string {
 export function DashboardPage() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<TicketMetrics | null>(null);
-  const [pendingTickets, setPendingTickets] = useState<TicketSummary[]>([]);
-  const [pendingTotal, setPendingTotal] = useState<number | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void Promise.allSettled([
-      ticketMetricsRequest(),
-      ticketsRequest({ params: { page: 1, pageSize: 4, status: 'pending-user', sortBy: 'updatedAt', sortOrder: 'desc' } }),
-      activeAnnouncementsRequest(),
-    ]).then(([metricsResult, pendingResult, announcementsResult]) => {
-      if (!active) return;
-      const failures: unknown[] = [];
-      if (metricsResult.status === 'fulfilled') setMetrics(metricsResult.value);
-      else failures.push(metricsResult.reason);
-      if (pendingResult.status === 'fulfilled') {
-        setPendingTickets(pendingResult.value.items);
-        setPendingTotal(pendingResult.value.meta.totalItems);
-      } else failures.push(pendingResult.reason);
-      if (announcementsResult.status === 'fulfilled') setAnnouncements(announcementsResult.value);
-      else failures.push(announcementsResult.reason);
-      if (failures[0] !== undefined) setError(getApiErrorMessage(failures[0]));
-    });
+    void Promise.allSettled([ticketMetricsRequest(), activeAnnouncementsRequest()]).then(
+      ([metricsResult, announcementsResult]) => {
+        if (!active) return;
+        const failures: unknown[] = [];
+        if (metricsResult.status === 'fulfilled') setMetrics(metricsResult.value);
+        else failures.push(metricsResult.reason);
+        if (announcementsResult.status === 'fulfilled') setAnnouncements(announcementsResult.value);
+        else failures.push(announcementsResult.reason);
+        setError(failures[0] === undefined ? null : getApiErrorMessage(failures[0]));
+      },
+    );
     return () => { active = false; };
   }, []);
 
   if (user === null) return null;
   const requester = user.role === 'consumer' || user.role === 'employee';
-  const responseTitle = requester ? 'Waiting for your response' : 'Waiting on requester';
-  const responseCopy = requester
-    ? 'A support team member needs more information or confirmation from you.'
-    : 'These tickets cannot move forward until the requester replies.';
 
   return (
-    <motion.main
-      className="workspace-page overview-page"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
+    <motion.main className="workspace-page overview-page" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <header className="overview-hero">
         <div className="overview-hero__copy">
           <p>Authenticated workspace / {user.role}</p>
@@ -72,12 +55,12 @@ export function DashboardPage() {
           <span>{roleCopy[user.role]}</span>
         </div>
         <div className="overview-hero__actions">
-          {requester && <Link className="button button--primary" to="/app/tickets/new">Submit ticket</Link>}
+          {requester ? <Link className="button button--primary" to="/app/tickets/new">Submit ticket</Link> : null}
           <Link className="button button--secondary" to="/app/tickets">Open ticket queue</Link>
         </div>
       </header>
 
-      {error !== null && <p className="page-message is-error">Some dashboard information could not be loaded: {error}</p>}
+      {error !== null ? <p className="page-message is-error">Some dashboard information could not be loaded: {error}</p> : null}
 
       <section className="overview-grid overview-metrics" aria-label="Ticket metrics">
         <article>
@@ -94,13 +77,6 @@ export function DashboardPage() {
             <p>Tickets still moving through the workflow.</p>
           </Link>
         </article>
-        <article className={(pendingTotal ?? 0) > 0 ? 'overview-metric--attention' : undefined}>
-          <Link className="overview-metric-link" to="/app/tickets?status=pending-user" aria-label="View tickets awaiting a response">
-            <div><span>Awaiting response</span><small>{requester ? 'Action required' : 'Requester action'}</small></div>
-            <strong>{pendingTotal ?? '—'}</strong>
-            <p>{requester ? 'Tickets that need your reply.' : 'Tickets paused for requester input.'}</p>
-          </Link>
-        </article>
         <article className={(metrics?.summary.overdue ?? 0) > 0 ? 'overview-metric--risk' : undefined}>
           <Link className="overview-metric-link" to="/app/tickets?view=overdue" aria-label="View tickets past SLA">
             <div><span>Past SLA</span><small>Needs attention</small></div>
@@ -108,42 +84,6 @@ export function DashboardPage() {
             <p>Open tickets beyond their complaint-type and priority target.</p>
           </Link>
         </article>
-      </section>
-
-      <section className={`panel response-watch${(pendingTotal ?? 0) > 0 ? ' response-watch--active' : ' response-watch--clear'}`} aria-labelledby="response-watch-title">
-        <div className="response-watch__summary">
-          <div className="response-watch__signal" aria-hidden="true"><span /></div>
-          <div>
-            <span className="response-watch__eyebrow">Response watch</span>
-            <h2 id="response-watch-title">{(pendingTotal ?? 0) > 0 ? responseTitle : 'No responses outstanding'}</h2>
-            <p>{(pendingTotal ?? 0) > 0 ? responseCopy : 'Nothing is currently blocked waiting for user information.'}</p>
-          </div>
-          <strong>{pendingTotal ?? '—'}</strong>
-        </div>
-
-        {pendingTickets.length > 0 ? (
-          <div className="response-ticket-list">
-            {pendingTickets.map((ticket) => (
-              <Link to={`/app/tickets/${ticket.id}`} key={ticket.id}>
-                <div>
-                  <code>{ticket.ticketNumber}</code>
-                  <strong>{ticket.subject}</strong>
-                  <span>{ticket.categoryName} · Updated {formatUpdatedAt(ticket.updatedAt)}</span>
-                </div>
-                <div>
-                  <span className={`priority-mark priority-mark--${ticket.prioritySlug}`}>{ticket.priorityName}</span>
-                  <b>Review ticket</b>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : pendingTotal === null ? (
-          <p className="response-watch__loading">Checking for tickets that need a response…</p>
-        ) : null}
-
-        {(pendingTotal ?? 0) > 0 && (
-          <Link className="response-watch__all" to="/app/tickets?status=pending-user">View all awaiting-response tickets</Link>
-        )}
       </section>
 
       <div className="overview-dashboard-grid">
@@ -165,7 +105,7 @@ export function DashboardPage() {
         <aside className="panel dashboard-announcements" aria-labelledby="announcements-title">
           <div className="panel__heading">
             <div><span>From MEPCO</span><h2 id="announcements-title">Announcements</h2></div>
-            {(user.role === 'supervisor' || user.role === 'administrator')
+            {user.role === 'supervisor' || user.role === 'administrator'
               ? <Link to="/app/announcements">Manage</Link>
               : <small>{announcements.length} active</small>}
           </div>
@@ -173,16 +113,11 @@ export function DashboardPage() {
             <div className="announcement-feed">
               {announcements.map((item) => (
                 <article key={item.id}>
-                  <span>Announcement</span>
-                  <strong>{item.title}</strong>
-                  <p>{item.body}</p>
-                  <small>{item.authorName}</small>
+                  <span>Announcement</span><strong>{item.title}</strong><p>{item.body}</p><small>{item.authorName}</small>
                 </article>
               ))}
             </div>
-          ) : (
-            <p className="empty-state">No active announcements right now.</p>
-          )}
+          ) : <p className="empty-state">No active announcements right now.</p>}
         </aside>
       </div>
     </motion.main>

@@ -16,7 +16,7 @@ describe('SRS master-data seed', () => {
       'supervisor',
       'administrator',
     ]);
-    expect(ticketStatuses).toHaveLength(8);
+    expect(ticketStatuses).toHaveLength(7);
   });
 
   it('contains the complete department and operational circle lists', () => {

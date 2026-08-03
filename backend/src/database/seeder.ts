@@ -1078,51 +1078,51 @@ async function seedTestActivity(connection: PoolConnection, users: TestUserIds):
   const itDepartment = 'Information Technology (IT) Directorate';
   const tickets: TicketSeed[] = [
     {
-      ticketNumber: 'MEPCO-2026-000001', domain: 'consumer', requesterId: users.consumer,
+      ticketNumber: '2026000001', domain: 'consumer', requesterId: users.consumer,
       subject: 'Live wire reported near demo street', description: 'A fictional critical safety scenario for acceptance testing.',
       categoryName: 'Line Complaints', complaintTypeName: 'Live Fallen Wire', prioritySlug: 'critical',
       statusSlug: 'new', ageDays: 1,
     },
     {
-      ticketNumber: 'MEPCO-2026-000002', domain: 'employee', requesterId: users.employee,
+      ticketNumber: '2026000002', domain: 'employee', requesterId: users.employee,
       subject: 'Desktop workstation will not start', description: 'Fictional IT hardware issue for assignment testing.',
       categoryName: itDepartment, complaintTypeName: 'Hardware', departmentName: itDepartment,
       prioritySlug: 'medium', statusSlug: 'assigned', assigneeId: users.technicianIt, ageDays: 2,
     },
     {
-      ticketNumber: 'MEPCO-2026-000003', domain: 'consumer', requesterId: users.consumer,
+      ticketNumber: '2026000003', domain: 'consumer', requesterId: users.consumer,
       subject: 'Recurring voltage fluctuation', description: 'Fictional active consumer issue.',
       categoryName: 'Line Complaints', complaintTypeName: 'Fluctuation', prioritySlug: 'high',
       statusSlug: 'in-progress', assigneeId: users.technicianOps, ageDays: 5,
     },
     {
-      ticketNumber: 'MEPCO-2026-000004', domain: 'employee', requesterId: users.employee,
-      subject: 'VPN details required', description: 'Fictional pending-user employee request.',
+      ticketNumber: '2026000004', domain: 'employee', requesterId: users.employee,
+      subject: 'VPN configuration in progress', description: 'Fictional active employee request.',
       categoryName: itDepartment, complaintTypeName: 'Network & Connectivity', departmentName: itDepartment,
-      prioritySlug: 'low', statusSlug: 'pending-user', assigneeId: users.technicianIt, ageDays: 8,
+      prioritySlug: 'low', statusSlug: 'in-progress', assigneeId: users.technicianIt, ageDays: 8,
     },
     {
-      ticketNumber: 'MEPCO-2026-000005', domain: 'consumer', requesterId: users.consumer,
+      ticketNumber: '2026000005', domain: 'consumer', requesterId: users.consumer,
       subject: 'Incorrect meter reading', description: 'Fictional resolved billing-related issue.',
       categoryName: 'Non-Line Complaints', complaintTypeName: 'Wrong Meter Reading', prioritySlug: 'medium',
       statusSlug: 'resolved', assigneeId: users.technicianOps, ageDays: 12,
       resolution: 'The fictional meter record was reviewed and corrected for demonstration.',
     },
     {
-      ticketNumber: 'MEPCO-2026-000006', domain: 'employee', requesterId: users.employee,
+      ticketNumber: '2026000006', domain: 'employee', requesterId: users.employee,
       subject: 'Portal access restored', description: 'Fictional completed employee ticket.',
       categoryName: itDepartment, complaintTypeName: 'Digital Portals', departmentName: itDepartment,
       prioritySlug: 'medium', statusSlug: 'closed', assigneeId: users.technicianIt, ageDays: 20,
       resolution: 'Access was restored using the fictional local demonstration workflow.',
     },
     {
-      ticketNumber: 'MEPCO-2026-000007', domain: 'consumer', requesterId: users.consumer,
+      ticketNumber: '2026000007', domain: 'consumer', requesterId: users.consumer,
       subject: 'Transformer issue returned', description: 'Fictional reopened consumer issue.',
       categoryName: 'Line Complaints', complaintTypeName: 'Tripping (Due to Transformer)', prioritySlug: 'high',
       statusSlug: 'reopened', assigneeId: users.technicianOps, ageDays: 30,
     },
     {
-      ticketNumber: 'MEPCO-2026-000008', domain: 'employee', requesterId: users.employee,
+      ticketNumber: '2026000008', domain: 'employee', requesterId: users.employee,
       subject: 'Duplicate equipment request', description: 'Fictional cancelled request.',
       categoryName: itDepartment, complaintTypeName: 'Hardware', departmentName: itDepartment,
       prioritySlug: 'low', statusSlug: 'cancelled', ageDays: 3,
@@ -1181,7 +1181,7 @@ async function seedTestActivity(connection: PoolConnection, users: TestUserIds):
 async function seedLocalDemoActivity(connection: PoolConnection, users: DemoUserIds): Promise<void> {
   const publicTickets: PublicTicketSeed[] = [
     {
-      ticketNumber: 'MEPCO-2026-100001',
+      ticketNumber: '2026100001',
       referenceNumber: '10012345678901',
       subject: 'Dangerous low-hanging service wire',
       description: 'The service wire is hanging unusually low near the front gate and needs an urgent safety inspection.',
@@ -1192,7 +1192,7 @@ async function seedLocalDemoActivity(connection: PoolConnection, users: DemoUser
       ageDays: 1,
     },
     {
-      ticketNumber: 'MEPCO-2026-100002',
+      ticketNumber: '2026100002',
       referenceNumber: '10012345678901',
       subject: 'Voltage fluctuates during evening hours',
       description: 'Lights dim repeatedly between 7 pm and 10 pm and household appliances restart intermittently.',
@@ -1204,19 +1204,19 @@ async function seedLocalDemoActivity(connection: PoolConnection, users: DemoUser
       ageDays: 3,
     },
     {
-      ticketNumber: 'MEPCO-2026-100003',
+      ticketNumber: '2026100003',
       referenceNumber: '10012345678903',
       subject: 'Meter reading needs verification',
       description: 'The current bill shows a reading that does not match the physical meter display.',
       categoryName: 'Non-Line Complaints',
       complaintTypeName: 'Wrong Meter Reading',
       prioritySlug: 'medium',
-      statusSlug: 'pending-user',
+      statusSlug: 'in-progress',
       assigneeId: users.technicianCsd,
       ageDays: 5,
     },
     {
-      ticketNumber: 'MEPCO-2026-100004',
+      ticketNumber: '2026100004',
       referenceNumber: '10012345678904',
       subject: 'Repeated transformer tripping resolved',
       description: 'The local transformer was tripping several times each day during peak usage.',
@@ -1236,7 +1236,7 @@ async function seedLocalDemoActivity(connection: PoolConnection, users: DemoUser
   const informationTechnology = 'Information Technology (IT) Directorate';
   const employeeTickets: TicketSeed[] = [
     {
-      ticketNumber: 'MEPCO-2026-200001',
+      ticketNumber: '2026200001',
       domain: 'employee',
       requesterId: users.employee,
       subject: 'Desktop cannot connect to the office network',
@@ -1250,7 +1250,7 @@ async function seedLocalDemoActivity(connection: PoolConnection, users: DemoUser
       ageDays: 2,
     },
     {
-      ticketNumber: 'MEPCO-2026-200002',
+      ticketNumber: '2026200002',
       domain: 'employee',
       requesterId: users.employee,
       subject: 'Access required for monthly reporting portal',
@@ -1259,7 +1259,7 @@ async function seedLocalDemoActivity(connection: PoolConnection, users: DemoUser
       complaintTypeName: 'Digital Portals',
       departmentName: informationTechnology,
       prioritySlug: 'low',
-      statusSlug: 'pending-user',
+      statusSlug: 'in-progress',
       assigneeId: users.technicianIt,
       ageDays: 4,
     },

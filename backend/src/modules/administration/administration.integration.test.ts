@@ -13,6 +13,9 @@ describe('administration governance API',()=>{
     const id=(create.body as {data:{id:number}}).data.id;
     const visible=await request(app).get('/api/v1/administration/announcements').set('Authorization',`Bearer ${employee}`).expect(200);
     expect((visible.body as {data:Array<{id:number}>}).data).toEqual(expect.arrayContaining([expect.objectContaining({id})]));
+    const notifications=await request(app).get('/api/v1/notifications').set('Authorization',`Bearer ${employee}`).expect(200);
+    expect((notifications.body as {data:{items:Array<{type:string;targetType:string|null;targetId:number|null}>}}).data.items)
+      .toEqual(expect.arrayContaining([expect.objectContaining({type:'announcement_published',targetType:'announcement',targetId:id})]));
     const audit=await request(app).get('/api/v1/administration/audit?search=announcement.created').set('Authorization',`Bearer ${admin}`).expect(200);
     const event=(audit.body as {data:Array<{action:string;actorRole:string|null;entityType:string;entityId:string|null;result:string;requestId:string|null;ipAddress:string|null}>}).data.find((item)=>item.action==='admin.announcement.created');
     expect(event).toMatchObject({actorRole:'supervisor',entityType:'announcement',entityId:String(id),result:'success'});

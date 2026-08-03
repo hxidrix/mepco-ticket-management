@@ -65,16 +65,21 @@ describe('public complaint flow', () => {
 
   it('requires and sends the tracking number, Reference Number, and Consumer ID', async () => {
     mocks.trackPublicComplaintRequest.mockResolvedValue({
-      ticketNumber: 'MEPCO-2026-123456',
+      ticketNumber: '2026123456',
       subject: 'Voltage fluctuation',
+      description: 'Lights repeatedly dim during evening peak hours.',
       categoryName: 'Line Complaints',
       complaintTypeName: 'Fluctuation',
+      departmentName: null,
       priorityName: 'High',
       statusName: 'Assigned',
       statusSlug: 'assigned',
       circleName: 'Multan Circle',
       divisionName: 'Multan Cantt Division',
       subdivisionName: 'Cantt',
+      locationDetails: 'Near the main market',
+      slaTargetHours: 24,
+      slaDueAt: '2026-07-30T06:00:00.000Z',
       resolutionSummary: null,
       createdAt: '2026-07-29T06:00:00.000Z',
       updatedAt: '2026-07-29T06:05:00.000Z',
@@ -88,7 +93,7 @@ describe('public complaint flow', () => {
     );
 
     fireEvent.change(screen.getByLabelText('Tracking number'), {
-      target: { value: 'MEPCO-2026-123456' },
+      target: { value: '2026123456' },
     });
     fireEvent.change(screen.getByLabelText('Reference Number'), {
       target: { value: '10012345678901' },
@@ -99,7 +104,7 @@ describe('public complaint flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Track complaint' }));
 
     await waitFor(() => expect(mocks.trackPublicComplaintRequest).toHaveBeenCalledWith({
-      ticketNumber: 'MEPCO-2026-123456',
+      ticketNumber: '2026123456',
       referenceNumber: '10012345678901',
       consumerId: '0123456789',
     }));

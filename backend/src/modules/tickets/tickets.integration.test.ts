@@ -44,7 +44,7 @@ describe('authenticated employee ticket API', () => {
     const firstTicket = (first.body as { data: { ticket: { id: number; ticketNumber: string } } }).data.ticket;
     const secondTicket = (second.body as { data: { ticket: { id: number } } }).data.ticket;
     expect(secondTicket.id).toBe(firstTicket.id);
-    expect(firstTicket.ticketNumber).toMatch(/^MEPCO-\d{4}-\d{6}$/u);
+    expect(firstTicket.ticketNumber).toMatch(/^\d{10}$/u);
 
     const detail = await request(app).get(`/api/v1/tickets/${firstTicket.id}`)
       .set('Authorization', `Bearer ${employee}`).expect(200);

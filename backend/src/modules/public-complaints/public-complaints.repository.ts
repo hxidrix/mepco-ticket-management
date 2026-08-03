@@ -40,14 +40,19 @@ interface ExistingTicketRow extends RowDataPacket {
 interface PublicTicketRow extends RowDataPacket {
   ticketNumber: string;
   subject: string;
+  description: string;
   categoryName: string;
   complaintTypeName: string;
+  departmentName: string | null;
   priorityName: string;
   statusName: string;
   statusSlug: string;
   circleName: string;
   divisionName: string;
   subdivisionName: string;
+  locationDetails: string | null;
+  slaTargetHours: number;
+  slaDueAt: Date;
   resolutionSummary: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -312,13 +317,17 @@ export async function trackPublicComplaint(
   consumerId: string,
 ) {
   const [rows] = await databasePool.execute<PublicTicketRow[]>(
-    `SELECT ticket.ticket_number AS ticketNumber, ticket.subject,
+    `SELECT ticket.ticket_number AS ticketNumber, ticket.subject, ticket.description,
             ticket.category_name_snapshot AS categoryName,
             ticket.complaint_type_name_snapshot AS complaintTypeName,
+            ticket.department_name_snapshot AS departmentName,
             priority.name AS priorityName, status.name AS statusName, status.slug AS statusSlug,
             ticket.circle_name_snapshot AS circleName,
             ticket.division_name_snapshot AS divisionName,
             ticket.subdivision_name_snapshot AS subdivisionName,
+            ticket.location_details AS locationDetails,
+            ticket.sla_target_hours AS slaTargetHours,
+            DATE_ADD(ticket.created_at, INTERVAL ticket.sla_target_hours HOUR) AS slaDueAt,
             ticket.resolution_summary AS resolutionSummary,
             ticket.created_at AS createdAt, ticket.updated_at AS updatedAt,
             ticket.resolved_at AS resolvedAt, ticket.closed_at AS closedAt

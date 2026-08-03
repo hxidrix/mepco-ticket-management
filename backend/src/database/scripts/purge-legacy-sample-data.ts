@@ -11,7 +11,7 @@ const usernames = ['tech.it', 'tech.ops', 'tech.csd', 'tech.inactive', 'supervis
 const referenceNumbers = ['10000000000001', '10000000000099'];
 const employeeIds = ['00000001'];
 const seededTicketNumbers = Array.from({ length: 8 }, (_, index) =>
-  `MEPCO-2026-${String(index + 1).padStart(6, '0')}`,
+  `2026${String(index + 1).padStart(6, '0')}`,
 );
 
 try {

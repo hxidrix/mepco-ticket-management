@@ -12,7 +12,7 @@ This file lists the configurable operational targets supplied with the MEPCO Hel
 - Example: a 30-day new-connection request marked High receives a 24-hour effective target.
 - The effective target is copied onto the ticket when it is created. Later master-data edits do not rewrite that ticket's original target.
 - A deliberate priority change recalculates the effective target from the ticket's frozen complaint baseline.
-- Resolved, Closed, Cancelled, and Pending User tickets are not shown as overdue. Pending User means MEPCO is waiting for the requester.
+- Resolved, Closed, and Cancelled tickets are not shown as overdue. Every active ticket continues to be measured against its target.
 - These are elapsed-hour targets, not business-hour calendars. Holiday and working-hour calendars can be added when an official policy exists.
 
 ## Consumer — Line Complaints

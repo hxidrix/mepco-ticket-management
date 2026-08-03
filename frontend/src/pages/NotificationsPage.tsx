@@ -77,9 +77,10 @@ export function NotificationsPage() {
                   {markingId === item.id ? 'Saving' : 'Mark as read'}
                 </button>
               ) : <span className="notification-read-state"><span className="notification-read-state__icon" aria-hidden="true" /> Read</span>}
-              {item.targetType === 'ticket' && item.targetId !== null && <Link className="button button--primary notification-target-button" to={`/app/tickets/${item.targetId}`} onClick={() => void markOne(item)}>View ticket <span aria-hidden="true">→</span></Link>}
-              {(item.targetType === 'suspension_case' || item.targetType === 'support_request') && item.targetId !== null && <Link className="button button--primary notification-target-button" to="/app/account-governance" onClick={() => void markOne(item)}>View request <span aria-hidden="true">→</span></Link>}
-              {item.targetType === 'internal_message_thread' && item.targetId !== null && <Link className="button button--primary notification-target-button" to={`/app/messages?thread=${item.targetId}`} onClick={() => void markOne(item)}>View message <span aria-hidden="true">→</span></Link>}
+              {item.targetType === 'ticket' && item.targetId !== null ? <Link className="button button--primary notification-target-button" to={`/app/tickets/${item.targetId}`} onClick={() => void markOne(item)}>View ticket</Link> : null}
+              {(item.targetType === 'suspension_case' || item.targetType === 'support_request') && item.targetId !== null ? <Link className="button button--primary notification-target-button" to="/app/account-governance" onClick={() => void markOne(item)}>View request</Link> : null}
+              {item.targetType === 'internal_message_thread' && item.targetId !== null ? <Link className="button button--primary notification-target-button" to={`/app/messages?thread=${item.targetId}`} onClick={() => void markOne(item)}>View message</Link> : null}
+              {item.targetType === 'announcement' ? <Link className="button button--primary notification-target-button" to="/app" onClick={() => void markOne(item)}>View announcement</Link> : null}
             </div>
           </article>)}
         </div>}

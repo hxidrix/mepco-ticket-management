@@ -31,7 +31,7 @@ const metrics: TicketMetrics = {
   workload: [{ assigneeId: 7, assigneeName: 'Sara IT Technician', count: 3 }],
   recent: [{
     id: 42,
-    ticketNumber: 'MEPCO-2026-000042',
+    ticketNumber: '2026000042',
     domain: 'consumer',
     subject: 'Power supply interruption',
     description: 'Supply is unavailable.',
@@ -96,7 +96,7 @@ describe('Reports and SLA', () => {
     expect(screen.getAllByText('80%')).toHaveLength(2);
     expect(screen.getByText('Power Outage')).toBeVisible();
     expect(screen.getByText('12 hours')).toBeVisible();
-    expect(screen.getByRole('link', { name: /MEPCO-2026-000042/u })).toHaveAttribute('href', '/app/tickets/42');
+    expect(screen.getByRole('link', { name: /2026000042/u })).toHaveAttribute('href', '/app/tickets/42');
 
     fireEvent.change(screen.getByLabelText('Ticket domain'), { target: { value: 'consumer' } });
     fireEvent.change(screen.getByLabelText('Circle'), { target: { value: '10' } });

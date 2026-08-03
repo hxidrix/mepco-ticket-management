@@ -43,7 +43,6 @@ function percentage(value: number, total: number): number {
 
 function ticketSlaState(ticket: TicketSummary): { label: string; tone: string } {
   if (['resolved', 'closed', 'cancelled'].includes(ticket.statusSlug)) return { label: 'Complete', tone: 'complete' };
-  if (ticket.statusSlug === 'pending-user') return { label: 'Paused for user', tone: 'paused' };
   if (ticket.isOverdue === 1) return { label: 'Past target', tone: 'breached' };
   return { label: `Due ${formatDate(ticket.slaDueAt)}`, tone: 'healthy' };
 }
@@ -154,7 +153,7 @@ export function ReportsPage() {
             <div className="sla-health-ring" style={{ '--sla-health': `${slaHealth * 3.6}deg` } as CSSProperties}>
               <div><strong>{slaHealth}%</strong><span>within target</span></div>
             </div>
-            <div className="report-health-copy"><strong>{Math.max(0, open - overdue)} of {open} open tickets</strong><p>Pending-user tickets are paused and do not count as overdue while MEPCO waits for the requester.</p><Link to="/app/tickets?view=overdue">Review past-SLA tickets <span aria-hidden="true">→</span></Link></div>
+            <div className="report-health-copy"><strong>{Math.max(0, open - overdue)} of {open} open tickets</strong><p>Every active ticket is measured continuously against its saved complaint-type and priority target.</p><Link to="/app/tickets?view=overdue">Review past-SLA tickets <span aria-hidden="true">→</span></Link></div>
           </div>
         </article>
 

@@ -100,7 +100,7 @@ publicComplaintsRouter.post(
 publicComplaintsRouter.post(
   '/track',
   verificationLimiter,
-  body('ticketNumber').trim().matches(/^MEPCO-\d{4}-\d{6}$/u)
+  body('ticketNumber').trim().matches(/^\d{10}$/u)
     .withMessage('Enter a valid complaint tracking number'),
   ...consumerIdentityValidation,
   validateRequest,

@@ -12,14 +12,19 @@ export interface VerifiedConsumer {
 export interface PublicTrackedComplaint {
   ticketNumber: string;
   subject: string;
+  description: string;
   categoryName: string;
   complaintTypeName: string;
+  departmentName: string | null;
   priorityName: string;
   statusName: string;
   statusSlug: string;
   circleName: string;
   divisionName: string;
   subdivisionName: string;
+  locationDetails: string | null;
+  slaTargetHours: number;
+  slaDueAt: string;
   resolutionSummary: string | null;
   createdAt: string;
   updatedAt: string;

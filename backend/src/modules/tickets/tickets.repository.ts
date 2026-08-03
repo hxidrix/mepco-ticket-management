@@ -86,7 +86,7 @@ const ticketSelect = `
     t.complaint_sla_target_hours AS complaintSlaTargetHours,
     t.sla_target_hours AS slaTargetHours,
     DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR) AS slaDueAt,
-    (s.slug NOT IN ('resolved', 'closed', 'cancelled', 'pending-user')
+    (s.slug NOT IN ('resolved', 'closed', 'cancelled')
       AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)) AS isOverdue,
     s.id AS statusId, s.name AS statusName, s.slug AS statusSlug,
     t.current_assignee_id AS assigneeId, assignee.display_name AS assigneeName,
@@ -102,7 +102,7 @@ const ticketSelect = `
   LEFT JOIN users assignee ON assignee.id = t.current_assignee_id`;
 
 export function ticketNumber(): string {
-  return `MEPCO-${new Date().getUTCFullYear()}-${String(randomInt(0, 1_000_000)).padStart(6, '0')}`;
+  return `${new Date().getUTCFullYear()}${String(randomInt(0, 1_000_000)).padStart(6, '0')}`;
 }
 
 function scopeCondition(actor: TicketActor): { sql: string; values: SqlValue[] } {
@@ -398,7 +398,7 @@ export async function listTickets(actor: TicketActor, input: TicketListInput) {
   if (input.search !== undefined) { conditions.push('(t.ticket_number LIKE ? OR t.subject LIKE ? OR t.description LIKE ?)'); const q = `%${input.search}%`; values.push(q, q, q); }
   if (input.status !== undefined) { conditions.push('s.slug = ?'); values.push(input.status); }
   if (input.view === 'open') conditions.push("s.slug NOT IN ('resolved','closed','cancelled')");
-  if (input.view === 'overdue') conditions.push("s.slug NOT IN ('resolved','closed','cancelled','pending-user') AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)");
+  if (input.view === 'overdue') conditions.push("s.slug NOT IN ('resolved','closed','cancelled') AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)");
   if (input.priority !== undefined) { conditions.push('p.slug = ?'); values.push(input.priority); }
   if (input.domain !== undefined) { conditions.push('t.domain = ?'); values.push(input.domain); }
   if (input.categoryId !== undefined) { conditions.push('t.category_id = ?'); values.push(input.categoryId); }
@@ -585,14 +585,14 @@ function allowedWorkflowTargets(
   ticket: Pick<WorkflowRow, 'assigneeId' | 'requesterId' | 'statusSlug' | 'resolvedAt' | 'closedAt'>,
 ): string[] {
   if (actor.role === 'technician') {
-    if (ticket.assigneeId !== actor.id || !['assigned', 'in-progress', 'pending-user', 'reopened'].includes(ticket.statusSlug)) {
+    if (ticket.assigneeId !== actor.id || !['assigned', 'in-progress', 'reopened'].includes(ticket.statusSlug)) {
       return [];
     }
-    return ['in-progress', 'pending-user', 'resolved'].filter((status) => status !== ticket.statusSlug);
+    return ['in-progress', 'resolved'].filter((status) => status !== ticket.statusSlug);
   }
   if (actor.role === 'supervisor' || actor.role === 'administrator') {
     if (['closed', 'cancelled', 'resolved'].includes(ticket.statusSlug)) return ['reopened'];
-    return ['in-progress', 'pending-user', 'resolved', 'cancelled']
+    return ['in-progress', 'resolved', 'cancelled']
       .filter((status) => status !== ticket.statusSlug);
   }
   if (ticket.requesterId !== actor.id) return [];
@@ -941,7 +941,7 @@ export async function ticketMetrics(actor: TicketActor) {
   const [summaries] = await databasePool.execute<SummaryMetricRow[]>(
     `SELECT COUNT(*) AS total,
       SUM(s.slug NOT IN ('resolved','closed','cancelled')) AS open,
-      SUM(s.slug NOT IN ('resolved','closed','cancelled','pending-user')
+      SUM(s.slug NOT IN ('resolved','closed','cancelled')
         AND UTC_TIMESTAMP() > DATE_ADD(t.created_at, INTERVAL t.sla_target_hours HOUR)) AS overdue,
       SUM(s.slug IN ('resolved','closed')) AS resolved,
       ROUND(AVG(CASE WHEN t.resolved_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE,t.created_at,t.resolved_at)/60 END),1) AS averageResolutionHours

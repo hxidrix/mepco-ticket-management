@@ -40,7 +40,7 @@ The backend sends an HTTPS `POST` with a bearer token (when configured) and this
   "to": "03001234567",
   "senderId": "MEPCO",
   "event": "complaint_submitted",
-  "message": "MEPCO complaint MEPCO-2026-123456 has been submitted...",
+  "message": "MEPCO complaint 2026100001 has been submitted...",
   "idempotencyKey": "mepco-sms-123"
 }
 ```

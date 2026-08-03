@@ -89,6 +89,17 @@ export async function saveAnnouncement(
     for (const roleId of roleIds) await connection.execute(
       'INSERT INTO announcement_audiences (announcement_id,role_id) VALUES (?,?)', [announcementId, roleId],
     );
+    if (id === null && input.isActive) {
+      const placeholders = roleIds.map(() => '?').join(',');
+      await connection.execute(
+        `INSERT INTO notifications (recipient_id,type,title,message,target_type,target_id)
+         SELECT u.id,'announcement_published','New MEPCO announcement',?,'announcement',?
+         FROM users u
+         WHERE u.role_id IN (${placeholders}) AND u.status='active' AND u.deleted_at IS NULL
+           AND u.id <> ?`,
+        [input.title, announcementId, ...roleIds, actorId],
+      );
+    }
     await writeAudit(connection, { actorId, action: id === null ? 'admin.announcement.created' : 'admin.announcement.updated', entityType: 'announcement', entityId: String(announcementId), context });
     await connection.commit(); return announcementId!;
   } catch (error) { await connection.rollback(); throw error; } finally { connection.release(); }

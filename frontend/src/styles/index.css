@@ -85,11 +85,18 @@
 .public-flow-header {
   width: min(1380px, calc(100% - 56px));
   margin: 0 auto;
-  min-height: clamp(76px, 9vh, 94px);
+  min-height: 108px;
+  box-sizing: border-box;
+  padding-block: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
+}
+
+.public-portal__header .brand-lockup__plate,
+.public-flow-header .brand-lockup__plate {
+  width: 4.1rem;
 }
 
 .public-portal__header-actions {
@@ -259,7 +266,7 @@
 .public-flow-layout {
   display: grid;
   width: min(1160px, calc(100% - 48px));
-  min-height: calc(100dvh - clamp(76px, 9vh, 94px));
+  min-height: calc(100dvh - 108px);
   grid-template-columns: minmax(280px, 0.72fr) minmax(460px, 1fr);
   gap: clamp(36px, 6vw, 84px);
   align-items: center;
@@ -513,23 +520,68 @@
   border-top: 1px solid var(--border);
 }
 
-.tracked-complaint > div:first-child {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
+.tracked-complaint__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 18px;
+  align-items: start;
   margin-bottom: 22px;
 }
 
-.tracked-complaint > div:first-child p,
-.tracked-complaint > div:first-child h2 {
+.tracked-complaint__heading > div {
+  display: grid;
+  gap: 5px;
+}
+
+.tracked-complaint__heading > div > span {
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tracked-complaint__heading code {
+  color: var(--brand-blue);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.tracked-complaint__heading h2,
+.tracked-complaint__heading p {
+  grid-column: 1 / -1;
   margin: 0;
 }
 
-.tracked-complaint > div:first-child h2 {
-  flex-basis: 100%;
-  font-size: 1.55rem;
+.tracked-complaint__heading h2 {
+  margin-top: 4px;
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
   letter-spacing: -0.035em;
+}
+
+.tracked-complaint__heading p {
+  max-width: 54rem;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.public-flow-page--tracking-result .public-flow-layout {
+  align-items: start;
+  padding-top: clamp(20px, 4vh, 38px);
+}
+
+.public-flow-page--tracking-result .public-flow-intro {
+  position: sticky;
+  top: 124px;
+  align-self: start;
+  padding-top: 12px;
+}
+
+.public-flow-page--tracking-result .public-flow-intro h1 {
+  font-size: clamp(2.8rem, 4.25vw, 4.35rem);
+  line-height: 0.96;
 }
 
 .tracked-complaint__resolution {
@@ -632,11 +684,13 @@
 }
 
 .complaint-success__sms {
-  padding: 12px 14px;
+  margin: 18px 0 0;
+  padding: 15px 16px;
   border-left: 2px solid var(--brand-blue);
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--brand-blue) 6%, transparent);
   font-size: 0.72rem;
+  line-height: 1.55;
 }
 
 @media (min-width: 721px) and (max-width: 1100px) {
@@ -692,7 +746,8 @@
     font-size: clamp(3.2rem, 7vw, 4.8rem);
   }
 
-  .public-flow-page--form .public-flow-intro {
+  .public-flow-page--form .public-flow-intro,
+  .public-flow-page--tracking-result .public-flow-intro {
     position: static;
   }
 }
@@ -782,6 +837,16 @@
   .verification-preview__actions {
     grid-template-columns: 1fr;
     flex-direction: column;
+  }
+
+  .tracked-complaint__heading {
+    grid-template-columns: 1fr;
+  }
+
+  .tracked-complaint__heading > .status-badge,
+  .tracked-complaint__heading h2,
+  .tracked-complaint__heading p {
+    grid-column: 1;
   }
 }
 
@@ -3045,7 +3110,6 @@ textarea:focus-visible {
 .ticket-status--assigned { color: #175cd3; background: #dbeafe; }
 .ticket-status--in-progress,
 .ticket-status--reopened { color: #6941c6; background: #ebe9fe; }
-.ticket-status--pending-user { color: #b54708; background: #fef0c7; }
 .ticket-status--resolved,
 .ticket-status--closed { color: #067647; background: #dcfae6; }
 .ticket-status--cancelled { color: #475467; background: #eaecf0; }
@@ -3777,7 +3841,6 @@ time,
 .ticket-status--new,
 .ticket-status--assigned { color: #3d9ee2; background: rgba(29, 127, 211, 0.13); border-color: rgba(29, 127, 211, 0.16); }
 .priority-mark--high,
-.ticket-status--pending-user,
 .status-pill--suspended { color: #db9a38; background: rgba(219, 154, 56, 0.13); border-color: rgba(219, 154, 56, 0.16); }
 .priority-mark--critical { color: #e46970; background: rgba(228, 105, 112, 0.13); border-color: rgba(228, 105, 112, 0.16); }
 .ticket-status--in-progress,
@@ -4827,7 +4890,7 @@ main.public-flow-page > .silk-background--auth {
 }
 
 .overview-metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .overview-metrics article {

@@ -61,7 +61,7 @@ describe('public complaint portal API', () => {
     const ticket = (submission.body as {
       data: { ticket: { id: number; ticketNumber: string; smsQueued: boolean } };
     }).data.ticket;
-    expect(ticket.ticketNumber).toMatch(/^MEPCO-\d{4}-\d{6}$/u);
+    expect(ticket.ticketNumber).toMatch(/^\d{10}$/u);
     expect(ticket.smsQueued).toBe(true);
 
     const [attachmentRows] = await databasePool.execute<Array<RowDataPacket & {
