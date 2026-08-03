@@ -47,8 +47,6 @@ Required application values:
 - `CORS_ORIGIN`: final HTTPS application origin.
 - `REFRESH_COOKIE_SECURE=true`.
 - `ENABLE_API_DOCS=false`.
-- `SMS_DRIVER=local-log` unless an approved HTTPS SMS gateway webhook is configured.
-- `SMS_WEBHOOK_URL`, `SMS_WEBHOOK_TOKEN`, and `SMS_SENDER_ID` only when using the webhook driver.
 
 Do not add `VITE_API_URL`; the frontend intentionally defaults to the same-origin `/api/v1` path for secure refresh cookies and preview deployments.
 
@@ -98,7 +96,7 @@ Verify these URLs on the deployment:
 
 Then perform both smoke tests:
 
-1. Verify a non-production consumer record, submit a complaint with an attachment, and track it using tracking number + Reference Number + Consumer ID.
+1. Verify a non-production consumer record, submit a complaint with an attachment, track it using tracking number + Reference Number + Consumer ID, and test the secondary Reference Number + Consumer ID finder.
 2. Sign in as an employee/staff member, create or process a ticket, add/download a private attachment, refresh the page, and sign out.
 
 ## Operational notes

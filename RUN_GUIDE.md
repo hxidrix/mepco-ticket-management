@@ -104,9 +104,9 @@ npm.cmd run db:restore -- ..\backups\mepco-help-desk.sql
 
 `db:seed` adds or updates reference lists and, in development only, the fictional local consumer verification directory. It does not create accounts, passwords, or tickets.
 
-## SMS while running locally
+## Recovering a forgotten tracking number
 
-The safe default `SMS_DRIVER=local-log` records the notification in `sms_outbox` and logs a delivery simulation. It does not contact a phone network. A locally running backend can send real SMS if the computer has Internet access and an approved SMS provider is configured through `SMS_DRIVER=webhook`. See [docs/SMS_DELIVERY.md](docs/SMS_DELIVERY.md); never commit a provider token.
+The main complaint lookup uses the 10-digit tracking number, Reference Number, and Consumer ID. If the tracking number is unavailable, use the secondary finder on the tracking page with the Reference Number and Consumer ID. It lists complaints for that verified connection without creating an account or session.
 
 `npm.cmd run db:reset` deletes every table in the configured database. Use it only on a disposable local database after making a backup.
 

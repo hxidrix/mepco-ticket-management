@@ -9,7 +9,6 @@ import { AppError } from '../../shared/app-error.js';
 import { deleteAttachment, storeAttachment } from '../../shared/attachment-storage.js';
 import { writeAudit } from '../../shared/audit.js';
 import type { RequestContext } from '../auth/auth.types.js';
-import { dispatchSmsOutbox, queueSms } from '../sms/sms.service.js';
 import {
   leastBusyTechnician,
   ticketNumber,
@@ -22,7 +21,6 @@ interface ConsumerRecordRow extends RowDataPacket {
   referenceNumber: string;
   consumerId: string;
   fullName: string;
-  registeredPhone: string | null;
   tariff: string;
   circleId: number;
   circleName: string;
@@ -60,10 +58,21 @@ interface PublicTicketRow extends RowDataPacket {
   closedAt: Date | null;
 }
 
+interface PublicTicketSummaryRow extends RowDataPacket {
+  ticketNumber: string;
+  subject: string;
+  categoryName: string;
+  complaintTypeName: string;
+  priorityName: string;
+  statusName: string;
+  statusSlug: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface PublicComplaintInput extends TicketCreateInput {
   referenceNumber: string;
   consumerId: string;
-  contactPhone?: string;
 }
 
 export interface UploadFile {
@@ -97,7 +106,7 @@ async function consumerRecord(
   const [rows] = await databasePool.execute<ConsumerRecordRow[]>(
     `SELECT record.id, record.reference_number AS referenceNumber,
             record.consumer_id AS consumerId, record.full_name AS fullName,
-            record.registered_phone AS registeredPhone, record.tariff,
+            record.tariff,
             record.circle_id AS circleId, circle.name AS circleName,
             record.division_id AS divisionId, division.name AS divisionName,
             record.subdivision_id AS subdivisionId, subdivision.name AS subdivisionName
@@ -128,7 +137,6 @@ export async function verifyConsumer(referenceNumber: string, consumerId: string
     name: maskName(consumer.fullName),
     subdivision: consumer.subdivisionName,
     tariff: consumer.tariff,
-    hasRegisteredPhone: consumer.registeredPhone !== null,
   };
 }
 
@@ -148,12 +156,8 @@ export async function submitPublicComplaint(
   input: PublicComplaintInput,
   files: UploadFile[],
   context: RequestContext,
-): Promise<{ id: number; ticketNumber: string; smsQueued: boolean }> {
+): Promise<{ id: number; ticketNumber: string }> {
   const consumer = await requireConsumer(input.referenceNumber, input.consumerId);
-  const contactPhone = consumer.registeredPhone ?? input.contactPhone ?? null;
-  if (contactPhone === null) {
-    throw new AppError(422, 'CONTACT_PHONE_REQUIRED', 'Enter a mobile number for complaint updates');
-  }
   const extensions = files.map(validateAttachment);
   const connection = await databasePool.getConnection();
   const storedLocators: string[] = [];
@@ -167,7 +171,7 @@ export async function submitPublicComplaint(
       );
       if (existing[0] !== undefined) {
         await connection.commit();
-        return { ...existing[0], smsQueued: false };
+        return existing[0];
       }
     }
 
@@ -201,14 +205,14 @@ export async function submitPublicComplaint(
         [result] = await connection.execute<ResultSetHeader>(
           `INSERT INTO tickets
            (ticket_number, idempotency_key, requester_id, consumer_record_id,
-            complaint_contact_phone, domain, subject, description, category_id,
+            domain, subject, description, category_id,
             complaint_type_id, department_id, circle_id, division_id, subdivision_id,
             other_category, other_complaint_type, location_details, priority_id, status_id,
             current_assignee_id, complaint_sla_target_hours, sla_target_hours,
             category_name_snapshot, complaint_type_name_snapshot, department_name_snapshot,
             circle_name_snapshot, division_name_snapshot, subdivision_name_snapshot)
-           VALUES (?, ?, NULL, ?, ?, 'consumer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [number, input.idempotencyKey ?? null, consumer.id, contactPhone,
+           VALUES (?, ?, NULL, ?, 'consumer', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [number, input.idempotencyKey ?? null, consumer.id,
             input.subject, input.description, input.categoryId, input.complaintTypeId,
             validated.departmentId, consumer.circleId, consumer.divisionId, consumer.subdivisionId,
             input.otherCategory ?? null, input.otherComplaintType ?? null,
@@ -284,8 +288,6 @@ export async function submitPublicComplaint(
       );
     }
 
-    const smsMessage = `MEPCO complaint ${number} has been submitted. Keep this number with your Reference Number and Consumer ID to track progress.`;
-    await queueSms(connection, result.insertId, contactPhone, 'complaint_submitted', smsMessage);
     await writeAudit(connection, {
       actorId: null,
       action: 'public_complaint.created',
@@ -296,12 +298,10 @@ export async function submitPublicComplaint(
         ticketNumber: number,
         consumerRecordId: consumer.id,
         attachmentCount: files.length,
-        smsQueued: true,
       },
     });
     await connection.commit();
-    void dispatchSmsOutbox(10).catch(() => undefined);
-    return { id: result.insertId, ticketNumber: number, smsQueued: true };
+    return { id: result.insertId, ticketNumber: number };
   } catch (error) {
     await connection.rollback();
     await Promise.all(storedLocators.map((locator) => deleteAttachment(locator).catch(() => undefined)));
@@ -309,6 +309,28 @@ export async function submitPublicComplaint(
   } finally {
     connection.release();
   }
+}
+
+export async function listPublicComplaints(
+  referenceNumber: string,
+  consumerId: string,
+): Promise<PublicTicketSummaryRow[]> {
+  const consumer = await requireConsumer(referenceNumber, consumerId);
+  const [rows] = await databasePool.execute<PublicTicketSummaryRow[]>(
+    `SELECT ticket.ticket_number AS ticketNumber, ticket.subject,
+            ticket.category_name_snapshot AS categoryName,
+            ticket.complaint_type_name_snapshot AS complaintTypeName,
+            priority.name AS priorityName, status.name AS statusName,
+            status.slug AS statusSlug, ticket.created_at AS createdAt,
+            ticket.updated_at AS updatedAt
+     FROM tickets ticket
+     JOIN priorities priority ON priority.id = ticket.priority_id
+     JOIN ticket_statuses status ON status.id = ticket.status_id
+     WHERE ticket.consumer_record_id = ? AND ticket.deleted_at IS NULL
+     ORDER BY ticket.created_at DESC, ticket.id DESC`,
+    [consumer.id],
+  );
+  return rows;
 }
 
 export async function trackPublicComplaint(

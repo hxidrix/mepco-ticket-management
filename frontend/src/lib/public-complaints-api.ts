@@ -6,7 +6,18 @@ export interface VerifiedConsumer {
   name: string;
   subdivision: string;
   tariff: string;
-  hasRegisteredPhone: boolean;
+}
+
+export interface PublicComplaintSummary {
+  ticketNumber: string;
+  subject: string;
+  categoryName: string;
+  complaintTypeName: string;
+  priorityName: string;
+  statusName: string;
+  statusSlug: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PublicTrackedComplaint {
@@ -50,12 +61,20 @@ export async function verifyConsumerRequest(
 export async function submitPublicComplaintRequest(
   input: Record<string, string | number>,
   attachments: File[],
-): Promise<{ id: number; ticketNumber: string; smsQueued: boolean }> {
+): Promise<{ id: number; ticketNumber: string }> {
   const data = new FormData();
   for (const [key, value] of Object.entries(input)) data.append(key, String(value));
   for (const attachment of attachments) data.append('attachments', attachment);
   const response = await apiClient.post('/public/complaints/submit', data);
-  return unwrap<{ ticket: { id: number; ticketNumber: string; smsQueued: boolean } }>(response.data).ticket;
+  return unwrap<{ ticket: { id: number; ticketNumber: string } }>(response.data).ticket;
+}
+
+export async function findPublicComplaintsRequest(input: {
+  referenceNumber: string;
+  consumerId: string;
+}): Promise<PublicComplaintSummary[]> {
+  const response = await apiClient.post('/public/complaints/lookup', input);
+  return unwrap<{ tickets: PublicComplaintSummary[] }>(response.data).tickets;
 }
 
 export async function trackPublicComplaintRequest(input: {

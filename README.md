@@ -11,7 +11,7 @@ A ticket management system for accountless MEPCO consumer complaints and authent
 - Fixed identity formats: 14-digit consumer Reference Number, 10-digit Consumer ID, 8-digit Employee ID, 11-digit phone beginning with `03`, and unique 13-digit CNIC for accounts.
 - Circle → Division → Sub-division profiles, ticket locations, staff scopes, reporting filters, and automatic routing.
 - Consumer priority classification and department/location-based staff assignment.
-- Public complaint attachments at initial submission (up to three approved files), 10-digit numeric tracking using all three identifiers, detailed read-only progress, and SMS outbox notifications.
+- Public complaint attachments at initial submission (up to three approved files), primary 10-digit numeric tracking using all three identifiers, and a secondary Reference Number plus Consumer ID complaint finder.
 - Full employee ticket workflow, requester closure review, satisfaction rating, comments, internal notes, evidence attachments, history, event notifications, and administrator soft deletion.
 - Notification inbox events for ticket creation and assignment, status changes, ticket comments, private staff messages, announcements, reviews, and account-governance actions.
 - Suspension requests, manager decisions, restricted account portal, appeals, support requests, and secure technician/manager messaging.
@@ -19,7 +19,7 @@ A ticket management system for accountless MEPCO consumer complaints and authent
 - Responsive light/dark liquid-glass interface with self-hosted Geist typography.
 - OpenAPI 3.1 documentation for the complete versioned API.
 
-See [public complaint portal](docs/PUBLIC_COMPLAINT_PORTAL.md), [SMS delivery](docs/SMS_DELIVERY.md), [identifier formats](docs/IDENTIFIER_FORMATS.md), [location hierarchy](docs/LOCATION_HIERARCHY.md), [SLA targets](docs/SLA_TARGETS.md), and [internal messaging](docs/INTERNAL_MESSAGES.md).
+See [public complaint portal](docs/PUBLIC_COMPLAINT_PORTAL.md), [identifier formats](docs/IDENTIFIER_FORMATS.md), [location hierarchy](docs/LOCATION_HIERARCHY.md), [SLA targets](docs/SLA_TARGETS.md), and [internal messaging](docs/INTERNAL_MESSAGES.md).
 
 ## Technology
 
@@ -100,7 +100,7 @@ Copy-Item .env.example .env
 
 Edit `.env` before starting. Replace both database passwords and both JWT secrets. JWT secrets must be different, deployment-specific, and at least 32 characters. The production backend intentionally rejects missing or example secrets.
 
-For a local HTTP-only Compose run, keep `REFRESH_COOKIE_SECURE=false`. Set it to `true` behind production HTTPS. Set `CORS_ORIGIN` to the exact public frontend origin. Keep `ENABLE_API_DOCS=false` unless protected documentation is intentionally required. Keep `SMS_DRIVER=local-log` until an approved provider webhook is configured.
+For a local HTTP-only Compose run, keep `REFRESH_COOKIE_SECURE=false`. Set it to `true` behind production HTTPS. Set `CORS_ORIGIN` to the exact public frontend origin. Keep `ENABLE_API_DOCS=false` unless protected documentation is intentionally required.
 
 ```powershell
 docker compose config --quiet
@@ -206,7 +206,6 @@ The variable templates are `.env.example`, `backend/.env.example`, `frontend/.en
 - Put uploads on durable private storage, add malware scanning, and define retention rules.
 - Schedule encrypted backups and test restoration.
 - Replace the local fictional consumer directory with an authoritative read-only MEPCO consumer lookup before accepting live public data.
-- Configure an approved SMS gateway or keep `SMS_DRIVER=local-log`; local-log mode does not send real messages.
 - Add centralized monitoring, TLS termination, rate-limit review, privacy approval, and an incident-response process before organizational deployment.
 
 ## Release checklist
@@ -215,7 +214,7 @@ The variable templates are `.env.example`, `backend/.env.example`, `frontend/.en
 2. Run `verify`, isolated integration tests, dependency audits, `docker compose config --quiet`, and `git diff --check`.
 3. Confirm no `.env`, backup, upload, log, or generated build file is staged.
 4. Confirm no shared/sample account exists and bootstrap credentials have been cleared.
-5. Confirm production secrets, HTTPS, secure cookies, CORS, storage, backups, monitoring, consumer-directory integration, and SMS-provider approval.
+5. Confirm production secrets, HTTPS, secure cookies, CORS, storage, backups, monitoring, and consumer-directory integration.
 6. Perform role-by-role acceptance testing in staging.
 7. Obtain business, security, privacy, and operations approval before serving real MEPCO data.
 

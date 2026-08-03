@@ -25,7 +25,7 @@ export function NewTicketPage() {
   const [priorityId, setPriorityId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [submitted, setSubmitted] = useState<{ ticketNumber: string; smsQueued: boolean } | null>(null);
+  const [submitted, setSubmitted] = useState<{ ticketNumber: string } | null>(null);
   const domain = verification !== null ? 'consumer' : user?.role === 'employee' ? 'employee' : null;
 
   useEffect(() => {
@@ -69,7 +69,6 @@ export function NewTicketPage() {
           ...common,
           referenceNumber: verification.referenceNumber,
           consumerId: verification.consumerId,
-          contactPhone: value(data, 'contactPhone'),
         }, attachments);
         setSubmitted(ticket);
         setVerification(null);
@@ -100,7 +99,7 @@ export function NewTicketPage() {
           <span>Tracking number</span>
           <code>{submitted.ticketNumber}</code>
           <p>The complaint has been recorded and routed to the appropriate MEPCO team.</p>
-          {submitted.smsQueued && <p className="complaint-success__sms">An SMS update has been queued for the registered or supplied mobile number.</p>}
+          <p className="complaint-success__notice">Save this tracking number. If you lose it, you can find your complaints again using your Reference Number and Consumer ID.</p>
           <div><Link className="button button--primary" to="/complaints/track">Track complaint</Link><Link className="button" to="/">Return home</Link></div>
         </section>
       </PublicFlowLayout>
@@ -129,7 +128,6 @@ export function NewTicketPage() {
         ? <div className="ticket-form__auto-priority"><strong>Priority is assigned automatically</strong><p>The issue type and description determine the initial priority. Staff can review it later.</p></div>
         : <label><span>Priority</span><select name="priorityId" required value={priorityId} onChange={(event) => setPriorityId(event.target.value)}>{catalog?.priorities.map((priority) => <option key={priority.id} value={priority.id}>{priority.name}</option>)}</select></label>}
       <label><span>Location details <small>optional</small></span><input name="locationDetails" placeholder="Feeder, landmark, office, or room" /></label>
-      {domain === 'consumer' && verification?.consumer.hasRegisteredPhone === false && <label><span>Mobile number for updates</span><input name="contactPhone" required inputMode="tel" pattern="03[0-9]{9}" minLength={11} maxLength={11} placeholder="03001234567" /></label>}
       {domain === 'consumer' && <label className="public-file-field form-grid__wide"><span>Supporting attachments <small>optional, up to 3 files</small></span><input name="attachments" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.txt,.doc,.docx" /><em>Accepted: JPG, PNG, PDF, TXT, DOC and DOCX. Maximum 5 MB per file.</em></label>}
       <div className="ticket-form__note form-grid__wide"><strong>Before submitting</strong><p>Check the details carefully. A unique tracking number and traceable history will be created.</p></div>
       <button className="button button--primary form-grid__wide" type="submit" disabled={busy || catalog === null}>{busy ? 'Submitting...' : domain === 'consumer' ? 'Submit complaint' : 'Submit ticket'}</button>

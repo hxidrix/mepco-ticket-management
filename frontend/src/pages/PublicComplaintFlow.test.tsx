@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 import { PublicComplaintProvider } from '../context/PublicComplaintProvider';
 import { ConsumerVerificationPage } from './ConsumerVerificationPage';
@@ -8,6 +8,7 @@ import { TrackComplaintPage } from './TrackComplaintPage';
 
 const mocks = vi.hoisted(() => ({
   verifyConsumerRequest: vi.fn(),
+  findPublicComplaintsRequest: vi.fn(),
   trackPublicComplaintRequest: vi.fn(),
 }));
 
@@ -21,6 +22,7 @@ vi.mock('../components/ThemeToggle', () => ({
 
 vi.mock('../lib/public-complaints-api', () => ({
   verifyConsumerRequest: mocks.verifyConsumerRequest,
+  findPublicComplaintsRequest: mocks.findPublicComplaintsRequest,
   trackPublicComplaintRequest: mocks.trackPublicComplaintRequest,
 }));
 
@@ -38,6 +40,8 @@ function renderVerification() {
 }
 
 describe('public complaint flow', () => {
+  beforeEach(() => vi.clearAllMocks());
+
   it('shows only a masked consumer preview before continuing to the complaint form', async () => {
     mocks.verifyConsumerRequest.mockResolvedValue({
       referenceNumber: '**********8901',
@@ -45,7 +49,6 @@ describe('public complaint flow', () => {
       name: 'M******* A*****',
       subdivision: 'Cantt',
       tariff: 'A-1a Residential',
-      hasRegisteredPhone: true,
     });
     renderVerification();
 
@@ -110,5 +113,40 @@ describe('public complaint flow', () => {
     }));
     expect(await screen.findByRole('heading', { name: 'Voltage fluctuation' })).toBeVisible();
     expect(screen.getByText('Assigned')).toBeVisible();
+  });
+
+  it('keeps tracking number lookup primary and offers a secondary connection ticket list', async () => {
+    mocks.findPublicComplaintsRequest.mockResolvedValue([{
+      ticketNumber: '2026123456',
+      subject: 'Known complaint for this connection',
+      categoryName: 'Line Complaints',
+      complaintTypeName: 'Power Outage',
+      priorityName: 'High',
+      statusName: 'Assigned',
+      statusSlug: 'assigned',
+      createdAt: '2026-07-29T06:00:00.000Z',
+      updatedAt: '2026-07-29T06:05:00.000Z',
+    }]);
+    render(
+      <MemoryRouter>
+        <TrackComplaintPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Tracking number')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Find complaints' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Find my complaints' }));
+    const referenceInputs = screen.getAllByLabelText('Reference Number');
+    const consumerInputs = screen.getAllByLabelText('Consumer ID');
+    fireEvent.change(referenceInputs[1]!, { target: { value: '10012345678901' } });
+    fireEvent.change(consumerInputs[1]!, { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Find complaints' }));
+
+    await waitFor(() => expect(mocks.findPublicComplaintsRequest).toHaveBeenCalledWith({
+      referenceNumber: '10012345678901',
+      consumerId: '0123456789',
+    }));
+    expect(await screen.findByText('Known complaint for this connection')).toBeVisible();
+    expect(screen.getByText('2026123456')).toBeVisible();
   });
 });

@@ -260,6 +260,7 @@
 
 .public-flow-layout {
   display: grid;
+  box-sizing: border-box;
   width: min(1160px, calc(100% - 48px));
   min-height: calc(100dvh - 108px);
   grid-template-columns: minmax(280px, 0.72fr) minmax(460px, 1fr);
@@ -446,6 +447,138 @@
 .public-track-form .public-flow-form__submit,
 .public-track-form .auth-message {
   grid-column: 1 / -1;
+}
+
+.public-ticket-discovery {
+  margin-top: 26px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.public-ticket-discovery__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.public-ticket-discovery__heading > div > span {
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.public-ticket-discovery__heading h3 {
+  margin: 6px 0 4px;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.public-ticket-discovery__heading p,
+.public-ticket-discovery__results > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.public-ticket-discovery__heading > .button {
+  flex: 0 0 auto;
+}
+
+.public-ticket-discovery__form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--liquid-glass) 68%, transparent);
+}
+
+.public-ticket-discovery__form label {
+  display: grid;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-weight: 680;
+}
+
+.public-ticket-discovery__form input {
+  width: 100%;
+  min-height: 3.1rem;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid var(--liquid-edge-low);
+  border-radius: 0.8rem;
+  outline: 0;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--liquid-glass) 82%, transparent);
+}
+
+.public-ticket-discovery__form input:focus {
+  border-color: color-mix(in srgb, var(--brand-blue) 58%, var(--liquid-edge));
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+.public-ticket-discovery__form :is(.auth-message, .button) {
+  grid-column: 1 / -1;
+}
+
+.public-ticket-discovery__results {
+  margin-top: 20px;
+}
+
+.public-ticket-discovery__results > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.public-ticket-discovery__results > div:first-child span {
+  color: var(--text-tertiary);
+  font-size: 0.65rem;
+}
+
+.public-ticket-discovery__results article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.public-ticket-discovery__results article > div {
+  display: grid;
+  gap: 5px;
+}
+
+.public-ticket-discovery__results article > div:last-child {
+  justify-items: end;
+  gap: 10px;
+}
+
+.public-ticket-discovery__results code {
+  color: var(--brand-blue);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 720;
+}
+
+.public-ticket-discovery__results article strong {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.public-ticket-discovery__results article :is(span:not(.status-badge), small) {
+  color: var(--text-tertiary);
+  font-size: 0.64rem;
 }
 
 .verification-preview dl,
@@ -660,7 +793,7 @@
   text-decoration: none;
 }
 
-.complaint-success__sms {
+.complaint-success__notice {
   margin: 18px 0 0;
   padding: 15px 16px;
   border-left: 2px solid var(--brand-blue);
@@ -795,14 +928,31 @@
   }
 
   .public-track-form,
+  .public-ticket-discovery__form,
   .public-ticket-form,
   .public-ticket-form .verified-consumer-summary {
     grid-template-columns: 1fr;
   }
 
   .public-ticket-form > *,
-  .public-track-form > * {
+  .public-track-form > *,
+  .public-ticket-discovery__form > * {
     grid-column: 1;
+  }
+
+  .public-ticket-discovery__heading,
+  .public-ticket-discovery__results article {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .public-ticket-discovery__heading > .button {
+    width: 100%;
+  }
+
+  .public-ticket-discovery__results article > div:last-child {
+    justify-items: start;
   }
 
   .complaint-success > div,

@@ -50,7 +50,6 @@ interface ConsumerRecordSeedRow extends RowDataPacket {
   id: number;
   referenceNumber: string;
   consumerId: string;
-  registeredPhone: string | null;
   circleId: number;
   divisionId: number;
   subdivisionId: number;
@@ -972,7 +971,7 @@ async function ensurePublicDemoTicket(
 
   const [consumerRows] = await connection.execute<ConsumerRecordSeedRow[]>(
     `SELECT cr.id, cr.reference_number AS referenceNumber, cr.consumer_id AS consumerId,
-            cr.registered_phone AS registeredPhone, cr.circle_id AS circleId,
+            cr.circle_id AS circleId,
             cr.division_id AS divisionId, cr.subdivision_id AS subdivisionId,
             c.name AS circleName, d.name AS divisionName, sd.name AS subdivisionName
      FROM consumer_records cr
@@ -1011,19 +1010,18 @@ async function ensurePublicDemoTicket(
 
   const [ticketResult] = await connection.execute<ResultSetHeader>(
     `INSERT INTO tickets (
-       ticket_number, requester_id, consumer_record_id, complaint_contact_phone, domain,
+       ticket_number, requester_id, consumer_record_id, domain,
        subject, description, category_id, complaint_type_id, department_id,
        circle_id, division_id, subdivision_id, location_details, priority_id,
        complaint_sla_target_hours, sla_target_hours, status_id, current_assignee_id,
        resolution_summary, category_name_snapshot, complaint_type_name_snapshot,
        department_name_snapshot, circle_name_snapshot, division_name_snapshot,
        subdivision_name_snapshot, resolved_at, closed_at, created_at
-     ) VALUES (?, NULL, ?, ?, 'consumer', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+     ) VALUES (?, NULL, ?, 'consumer', ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                NULL, ?, ?, ?, ?, ?, ?)`,
     [
       seed.ticketNumber,
       consumer.id,
-      consumer.registeredPhone,
       seed.subject,
       seed.description,
       categoryId,

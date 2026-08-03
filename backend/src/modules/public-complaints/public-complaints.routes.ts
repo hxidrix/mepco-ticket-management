@@ -11,10 +11,10 @@ import { asyncHandler } from '../../shared/async-handler.js';
 import {
   isConsumerId,
   isConsumerReferenceNumber,
-  isPhoneNumber,
 } from '../../shared/identity-format.js';
 import { requestContext } from '../../shared/request-context.js';
 import {
+  listPublicComplaints,
   submitPublicComplaint,
   trackPublicComplaint,
   verifyConsumer,
@@ -75,8 +75,6 @@ publicComplaintsRouter.post(
   submissionLimiter,
   upload.array('attachments', 3),
   ...consumerIdentityValidation,
-  body('contactPhone').optional({ values: 'falsy' }).trim().custom(isPhoneNumber)
-    .withMessage('Phone number must contain exactly 11 digits and begin with 03'),
   body('subject').trim().isLength({ min: 5, max: 180 }),
   body('description').trim().isLength({ min: 10, max: 10000 }),
   body('categoryId').isInt({ min: 1 }).toInt(),
@@ -94,6 +92,19 @@ publicComplaintsRouter.post(
       requestContext(request),
     );
     sendSuccess(response, 201, { ticket }, 'Complaint submitted successfully');
+  }),
+);
+
+publicComplaintsRouter.post(
+  '/lookup',
+  verificationLimiter,
+  ...consumerIdentityValidation,
+  validateRequest,
+  asyncHandler(async (request, response) => {
+    const input = request.body as { referenceNumber: string; consumerId: string };
+    sendSuccess(response, 200, {
+      tickets: await listPublicComplaints(input.referenceNumber, input.consumerId),
+    });
   }),
 );
 

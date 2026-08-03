@@ -23,7 +23,6 @@ describe('public complaint portal API', () => {
         consumer: {
           referenceNumber: '**********8901',
           consumerId: '******6789',
-          hasRegisteredPhone: true,
         },
       },
     });
@@ -59,10 +58,9 @@ describe('public complaint portal API', () => {
 
     expect(submission.headers['set-cookie']).toBeUndefined();
     const ticket = (submission.body as {
-      data: { ticket: { id: number; ticketNumber: string; smsQueued: boolean } };
+      data: { ticket: { id: number; ticketNumber: string } };
     }).data.ticket;
     expect(ticket.ticketNumber).toMatch(/^\d{10}$/u);
-    expect(ticket.smsQueued).toBe(true);
 
     const [attachmentRows] = await databasePool.execute<Array<RowDataPacket & {
       uploaderId: number | null;
@@ -87,33 +85,26 @@ describe('public complaint portal API', () => {
     });
     expect(tracked.headers['set-cookie']).toBeUndefined();
 
+    const discovered = await request(app).post('/api/v1/public/complaints/lookup')
+      .send({ referenceNumber: '10012345678901', consumerId: '0123456789' })
+      .expect(200);
+    const discoveredTickets = (discovered.body as unknown as {
+      data: { tickets: Array<{ ticketNumber: string; subject: string }> };
+    }).data.tickets;
+    expect(discoveredTickets).toContainEqual(expect.objectContaining({
+      ticketNumber: ticket.ticketNumber,
+      subject: 'Voltage fluctuation at fictional residence',
+    }));
+    expect(discovered.headers['set-cookie']).toBeUndefined();
+
     await request(app).post('/api/v1/public/complaints/track').send({
       ticketNumber: ticket.ticketNumber,
       referenceNumber: '10012345678901',
       consumerId: '9999999999',
     }).expect(404);
-  });
 
-  it('requires a complaint-only phone when the consumer record has no registered mobile', async () => {
-    const catalogResponse = await request(app).get('/api/v1/master-data/catalog').expect(200);
-    const catalog = (catalogResponse.body as { data: Catalog }).data;
-    const category = catalog.categories.find((item) => item.domain === 'consumer');
-    const complaintType = category?.complaintTypes[0];
-    if (category === undefined || complaintType === undefined) throw new Error('Catalog missing');
-
-    const baseFields = {
-      referenceNumber: '10012345678902',
-      consumerId: '0123456790',
-      subject: 'Fictional complaint without a registered mobile',
-      description: 'This acceptance scenario confirms complaint-only mobile collection behavior.',
-      categoryId: String(category.id),
-      complaintTypeId: String(complaintType.id),
-      idempotencyKey: `public-phone-${Date.now()}`,
-    };
-    await request(app).post('/api/v1/public/complaints/submit')
-      .field(baseFields).expect(422);
-    await request(app).post('/api/v1/public/complaints/submit')
-      .field({ ...baseFields, contactPhone: '03001234567', idempotencyKey: `${baseFields.idempotencyKey}-ok` })
-      .expect(201);
+    await request(app).post('/api/v1/public/complaints/lookup')
+      .send({ referenceNumber: '10012345678901', consumerId: '9999999999' })
+      .expect(401);
   });
 });
