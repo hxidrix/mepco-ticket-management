@@ -249,7 +249,6 @@ export function InternalMessagesPage() {
         <div className="internal-message-conversation">
           {selected === null ? (
             <div className="internal-message-conversation__empty">
-              <span aria-hidden="true">↗</span>
               <h2>Select a conversation</h2>
               <p>Open a thread to read its messages and send a secure reply.</p>
             </div>

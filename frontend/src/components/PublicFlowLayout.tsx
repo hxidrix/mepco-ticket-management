@@ -12,6 +12,7 @@ interface PublicFlowLayoutProps {
   description: string;
   children: ReactNode;
   wide?: boolean;
+  hideIntro?: boolean;
   className?: string;
 }
 
@@ -21,11 +22,13 @@ export function PublicFlowLayout({
   description,
   children,
   wide = false,
+  hideIntro = false,
   className = '',
 }: PublicFlowLayoutProps) {
   const pageClassName = [
     'public-flow-page',
     wide ? 'public-flow-page--wide' : '',
+    hideIntro ? 'public-flow-page--without-intro' : '',
     className,
   ].filter(Boolean).join(' ');
 
@@ -42,15 +45,13 @@ export function PublicFlowLayout({
         </div>
       </header>
       <div className="public-flow-layout">
-        <section className="public-flow-intro">
-          <p className="auth-hero__eyebrow">{eyebrow}</p>
-          <h1>{title}</h1>
-          <p>{description}</p>
-          <div className="public-flow-intro__assurance">
-            <span>Secure verification</span>
-            <span>No consumer account required</span>
-          </div>
-        </section>
+        {!hideIntro && (
+          <section className="public-flow-intro">
+            <p className="auth-hero__eyebrow">{eyebrow}</p>
+            <h1>{title}</h1>
+            <p>{description}</p>
+          </section>
+        )}
         <GlassSurface className="public-flow-card" borderRadius={24}>
           {children}
         </GlassSurface>

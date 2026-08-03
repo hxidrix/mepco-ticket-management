@@ -144,6 +144,7 @@ export function NewTicketPage() {
         title="Tell us what needs attention"
         description="Provide a clear description and any useful evidence. Category, location, and issue details help route the complaint correctly."
         wide
+        hideIntro
         className="public-flow-page--form"
       >
         <div className="public-flow-card__heading">

@@ -153,7 +153,7 @@ export function ReportsPage() {
             <div className="sla-health-ring" style={{ '--sla-health': `${slaHealth * 3.6}deg` } as CSSProperties}>
               <div><strong>{slaHealth}%</strong><span>within target</span></div>
             </div>
-            <div className="report-health-copy"><strong>{Math.max(0, open - overdue)} of {open} open tickets</strong><p>Every active ticket is measured continuously against its saved complaint-type and priority target.</p><Link to="/app/tickets?view=overdue">Review past-SLA tickets <span aria-hidden="true">→</span></Link></div>
+            <div className="report-health-copy"><strong>{Math.max(0, open - overdue)} of {open} open tickets</strong><p>Every active ticket is measured continuously against its saved complaint-type and priority target.</p><Link to="/app/tickets?view=overdue">Review past-SLA tickets</Link></div>
           </div>
         </article>
 
@@ -205,7 +205,7 @@ export function ReportsPage() {
 
         <article className="panel report-policy-card">
           <div className="panel__heading"><div><span>Policy logic</span><h2>How targets are applied</h2></div></div>
-          <ol><li><span>01</span><div><strong>Complaint baseline</strong><p>Each complaint type provides its normal elapsed-hour target.</p></div></li><li><span>02</span><div><strong>Priority cap</strong><p>The shorter priority target is used when urgency requires it.</p></div></li><li><span>03</span><div><strong>Frozen on creation</strong><p>The effective target is saved with the ticket for consistent reporting.</p></div></li></ol>
+          <ol><li><div><strong>Complaint baseline</strong><p>Each complaint type provides its normal elapsed-hour target.</p></div></li><li><div><strong>Priority cap</strong><p>The shorter priority target is used when urgency requires it.</p></div></li><li><div><strong>Frozen on creation</strong><p>The effective target is saved with the ticket for consistent reporting.</p></div></li></ol>
           <div className="report-priority-caps">{catalog?.priorities.map((priority) => <div key={priority.id}><span>{priority.name}</span><strong>{priority.slaTargetHours === null ? 'Complaint target' : formatHours(priority.slaTargetHours)}</strong></div>)}</div>
         </article>
       </section>
