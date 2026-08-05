@@ -6,7 +6,7 @@ A ticket management system for accountless MEPCO consumer complaints and authent
 
 - Public consumer complaint submission and read-only tracking without consumer accounts, passwords, JWTs, cookies, or browser persistence.
 - Consumer verification using a 14-digit Reference Number plus 10-digit Consumer ID, with only masked details returned before submission.
-- Employee verification using an 8-digit Employee ID plus the last four CNIC digits; staff retain username/password authentication.
+- Employee complaint entry mirrors the consumer two-step flow: verify an 8-digit Employee ID with the last four CNIC digits, establish a secure employee session, then submit the employee-owned complaint; staff retain username/password authentication.
 - Secure employee/staff sessions with short-lived JWT access tokens, rotating HttpOnly refresh cookies, reuse detection, revocation, and logout.
 - Fixed identity formats: 14-digit consumer Reference Number, 10-digit Consumer ID, 8-digit Employee ID, 11-digit phone beginning with `03`, and unique 13-digit CNIC for accounts.
 - Circle → Division → Sub-division profiles, ticket locations, staff scopes, reporting filters, and automatic routing.

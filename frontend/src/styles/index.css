@@ -241,6 +241,13 @@
   text-decoration: none;
 }
 
+.public-action-card__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .public-flow-card {
   width: 100%;
   margin: 0;
@@ -716,6 +723,25 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.employee-complaint-form .panel {
+  width: min(100%, 68rem);
+  margin-inline: auto;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.public-ticket-form--employee .public-flow-card__heading {
+  margin-bottom: 0;
+}
+
+.verified-employee-summary strong {
+  line-height: 1.45;
+}
+
+.employee-complaint-verification .auth-password-field {
+  display: grid;
+  gap: 8px;
+}
+
 .public-ticket-form .ticket-form__auto-priority,
 .public-ticket-form .ticket-form__note {
   padding: 16px 18px;
@@ -1132,19 +1158,20 @@ textarea:focus-visible {
   aspect-ratio: 1;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.76);
+  border: 0;
   border-radius: 50%;
-  background: #fff;
-  box-shadow:
-    0 0 0 4px rgba(255, 255, 255, 0.06),
-    0 18px 45px rgba(2, 8, 23, 0.45);
+  background: transparent;
+  box-shadow: 0 14px 34px rgba(2, 8, 23, 0.36);
 }
 
 .brand-lockup__image {
   display: block;
-  width: 86%;
-  height: 86%;
-  object-fit: contain;
+  width: 108%;
+  height: 108%;
+  max-width: none;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .brand-lockup__copy {
@@ -2135,28 +2162,6 @@ textarea:focus-visible {
   line-height: 1.75;
 }
 
-.auth-hero__trust {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.4rem;
-  margin-top: clamp(3rem, 8vh, 5.5rem);
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-}
-
-.auth-hero__trust span::before {
-  display: inline-block;
-  width: 0.32rem;
-  height: 0.32rem;
-  margin-right: 0.55rem;
-  border-radius: 50%;
-  background: var(--brand-cyan);
-  box-shadow: 0 0 0 3px rgba(86, 214, 255, 0.08);
-  content: "";
-  vertical-align: 0.08rem;
-}
-
 .auth-form-side {
   position: relative;
   display: flex;
@@ -2578,10 +2583,6 @@ textarea:focus-visible {
     display: inline;
   }
 
-  .auth-hero__trust {
-    margin-top: 2.5rem;
-  }
-
   .auth-form-side {
     min-height: auto;
     overflow: visible;
@@ -2604,10 +2605,6 @@ textarea:focus-visible {
 
   .auth-hero__lead {
     font-size: 0.9rem;
-  }
-
-  .auth-hero__trust span:last-child {
-    display: none;
   }
 
   .auth-form-side {
@@ -4544,10 +4541,6 @@ time,
   font-size: clamp(3.55rem, 6.2vw, 6.35rem);
 }
 
-.auth-hero__trust {
-  margin-top: clamp(2.25rem, 5vh, 3.75rem);
-}
-
 .auth-form-side {
   padding: clamp(5.15rem, 8vh, 6.5rem) clamp(2rem, 4vw, 4rem) clamp(1.5rem, 3vh, 2.5rem);
 }
@@ -4557,7 +4550,6 @@ time,
   .auth-hero .brand-lockup { margin-bottom: clamp(2rem, 5vh, 3rem); }
   .auth-hero h1 { font-size: clamp(3.35rem, 6vw, 5.5rem); }
   .auth-hero__lead { margin-top: 1.35rem; }
-  .auth-hero__trust { margin-top: clamp(1.5rem, 4vh, 2.25rem); }
   .auth-page--login .auth-form-side { padding-top: 4.4rem; padding-bottom: 1rem; }
   .auth-page--login .auth-card .glass-surface__content { padding: 1.4rem 1.5rem; }
   .auth-page--login .auth-card__heading > span { margin-top: 0.5rem; line-height: 1.45; }
@@ -4844,11 +4836,6 @@ main.public-flow-page > .silk-background--auth {
 .auth-hero h1 span {
   color: #fff;
   background: none;
-}
-
-.auth-hero__trust span::before {
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: none;
 }
 
 :where(

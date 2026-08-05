@@ -12,8 +12,8 @@ export function PublicPortalPage() {
       <header className="public-portal__header">
         <BrandLogo />
         <div className="public-portal__header-actions">
-          <Link className="public-portal__sign-in" to="/login">
-            Employee / staff sign in
+          <Link className="public-portal__sign-in" to="/login?mode=staff">
+            Staff sign in
           </Link>
           <ThemeToggle compact />
         </div>
@@ -22,7 +22,7 @@ export function PublicPortalPage() {
         <div className="public-portal__intro">
           <p className="auth-hero__eyebrow">MEPCO Integrated Help Desk</p>
           <h1>Report. Track.<br />Resolve.</h1>
-          <p>Submit an complaint or securely check its progress.</p>
+          <p>Submit a complaint or securely check its progress.</p>
         </div>
         <div className="public-portal__actions">
           <GlassSurface className="public-action-card" borderRadius={24}>
@@ -32,11 +32,12 @@ export function PublicPortalPage() {
             <div className="public-action-card__body">
               <div>
                 <h2>Submit Complaint</h2>
-                <p>Verify your billing details, describe the problem, and attach supporting evidence.</p>
+                <p>Consumers verify their billing connection. Employees verify their MEPCO identity.</p>
               </div>
-              <Link className="button button--primary public-action-card__button" to="/complaints/verify">
-                Start complaint
-              </Link>
+              <div className="public-action-card__buttons">
+                <Link className="button button--primary public-action-card__button" to="/complaints/verify">Consumer complaint</Link>
+                <Link className="button public-action-card__button" to="/employee/complaints/verify">Employee complaint</Link>
+              </div>
             </div>
           </GlassSurface>
           <GlassSurface className="public-action-card" borderRadius={24}>

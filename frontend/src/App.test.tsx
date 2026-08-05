@@ -34,9 +34,11 @@ describe('public portal', () => {
 
     expect(await screen.findByRole('heading', { name: /report\. track\. resolve\./i })).toBeVisible();
     expect(screen.getByAltText('MEPCO')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Start complaint' })).toHaveAttribute('href', '/complaints/verify');
+    expect(screen.getByRole('link', { name: 'Consumer complaint' })).toHaveAttribute('href', '/complaints/verify');
+    expect(screen.getByRole('link', { name: 'Employee complaint' })).toHaveAttribute('href', '/employee/complaints/verify');
     expect(screen.getByRole('link', { name: 'Track complaint' })).toHaveAttribute('href', '/complaints/track');
-    expect(screen.getByRole('link', { name: 'Employee / staff sign in' })).toHaveAttribute('href', '/login');
+    expect(screen.queryByRole('link', { name: 'Employee sign in' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Staff sign in' })).toHaveAttribute('href', '/login?mode=staff');
     expect(screen.getByTestId('silk-background')).toBeInTheDocument();
   });
 });

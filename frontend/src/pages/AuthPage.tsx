@@ -23,7 +23,9 @@ export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const reduceMotion = useReducedMotion();
-  const [mode, setMode] = useState<LoginMode>('employee');
+  const [mode, setMode] = useState<LoginMode>(() => (
+    new URLSearchParams(location.search).get('mode') === 'staff' ? 'staff' : 'employee'
+  ));
   const [employeeCredentials, setEmployeeCredentials] = useState<{ employeeId: string; cnicLastFour: string } | null>(null);
   const [preview, setPreview] = useState<EmployeeVerificationPreview | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,7 +89,6 @@ export function AuthPage() {
             <h1 id="auth-hero-title">Report. Track. <span>Resolve.</span></h1>
             <p className="auth-hero__lead">One secure help desk for MEPCO consumers and employees with clear ownership, complete history and accountable resolution.</p>
           </motion.div>
-          <div className="auth-hero__trust"><span>Role based access</span><span>Traceable workflows</span><span>Secure account access</span></div>
         </div>
       </section>
       <section className="auth-form-side" aria-label="Employee and staff authentication">

@@ -21,6 +21,7 @@ const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const PublicPortalPage = lazy(() => import('./pages/PublicPortalPage').then((module) => ({ default: module.PublicPortalPage })));
 const ConsumerVerificationPage = lazy(() => import('./pages/ConsumerVerificationPage').then((module) => ({ default: module.ConsumerVerificationPage })));
+const EmployeeComplaintVerificationPage = lazy(() => import('./pages/EmployeeComplaintVerificationPage').then((module) => ({ default: module.EmployeeComplaintVerificationPage })));
 const TrackComplaintPage = lazy(() => import('./pages/TrackComplaintPage').then((module) => ({ default: module.TrackComplaintPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SuspendedAccountPage = lazy(() => import('./pages/SuspendedAccountPage').then((module) => ({ default: module.SuspendedAccountPage })));
@@ -38,6 +39,7 @@ function AppRoutes() {
       <Routes>
       <Route path="/" element={<PublicPortalPage />} />
       <Route path="/complaints/verify" element={<ConsumerVerificationPage />} />
+      <Route path="/employee/complaints/verify" element={<EmployeeComplaintVerificationPage />} />
       <Route path="/complaints/new" element={<NewTicketPage />} />
       <Route path="/complaints/track" element={<TrackComplaintPage />} />
       <Route path="/login" element={<AuthPage />} />

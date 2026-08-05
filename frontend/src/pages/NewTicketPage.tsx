@@ -117,6 +117,13 @@ export function NewTicketPage() {
           <div><span>Tariff</span><strong>{verification.consumer.tariff}</strong></div>
         </div>
       )}
+      {domain === 'employee' && user !== null && (
+        <div className="verified-consumer-summary verified-employee-summary form-grid__wide">
+          <div><span>Verified employee</span><strong>{user.displayName}</strong></div>
+          <div><span>Identity check</span><strong>Employee ID and CNIC confirmed</strong></div>
+          <div><span>Ownership</span><strong>Attached to your employee account</strong></div>
+        </div>
+      )}
       <label className="form-grid__wide"><span>Subject</span><input name="subject" required minLength={5} maxLength={180} placeholder="Briefly summarize the issue" /></label>
       <label className="form-grid__wide"><span>Description</span><textarea name="description" required minLength={10} maxLength={10000} rows={6} placeholder="Describe what happened, its impact, and anything already tried." /></label>
       <label><span>Category</span><select name="categoryId" value={categoryId} required onChange={(event) => { const next = event.target.value; setCategoryId(next); const category = categories.find((item) => String(item.id) === next); setComplaintTypeId(String(category?.complaintTypes[0]?.id ?? '')); }}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
@@ -130,8 +137,8 @@ export function NewTicketPage() {
       <label><span>Location details <small>optional</small></span><input name="locationDetails" placeholder="Feeder, landmark, office, or room" /></label>
       {domain === 'consumer' && <label className="public-file-field form-grid__wide"><span>Supporting attachments <small>optional, up to 3 files</small></span><input name="attachments" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.txt,.doc,.docx" /><em>Accepted: JPG, PNG, PDF, TXT, DOC and DOCX. Maximum 5 MB per file.</em></label>}
       <div className="ticket-form__note form-grid__wide"><strong>Before submitting</strong><p>Check the details carefully. A unique tracking number and traceable history will be created.</p></div>
-      <button className="button button--primary form-grid__wide" type="submit" disabled={busy || catalog === null}>{busy ? 'Submitting...' : domain === 'consumer' ? 'Submit complaint' : 'Submit ticket'}</button>
-      {domain === 'consumer' && <Link className="button form-grid__wide" to="/">Cancel</Link>}
+      <button className="button button--primary form-grid__wide" type="submit" disabled={busy || catalog === null}>{busy ? 'Submitting...' : 'Submit complaint'}</button>
+      <Link className="button form-grid__wide" to={domain === 'consumer' ? '/' : '/app/tickets'}>Cancel</Link>
     </>
   );
 
@@ -159,11 +166,15 @@ export function NewTicketPage() {
   }
 
   return (
-    <main className="workspace-page public-complaint-form">
-      <div className="workspace-page__heading"><div><p>Tickets / new employee request</p><h1>Submit a ticket</h1></div></div>
+    <main className="workspace-page public-complaint-form employee-complaint-form">
+      <div className="workspace-page__heading"><div><p>Employee complaints / new</p><h1>Submit an employee complaint</h1></div></div>
       {error !== null && <p className="page-message is-error">{error}</p>}
-      <form className="panel form-grid ticket-form" onSubmit={(event) => void submit(event)}>
-        <div className="panel__heading form-grid__wide"><div><span>Request details</span><h2>Tell us what needs attention</h2></div><small>employee</small></div>
+      <form className="panel public-ticket-form public-ticket-form--employee" onSubmit={(event) => void submit(event)}>
+        <div className="public-flow-card__heading form-grid__wide">
+          <span>Complaint details</span>
+          <h2>Tell us what needs attention</h2>
+          <p>Your verified employee account is attached automatically. Select the category, department, and priority that best describe the issue.</p>
+        </div>
         {fields}
       </form>
     </main>
